@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: 全仓语法检查
+        run: python -m py_compile main.py webui.py report.py wizard.py core/*.py crawlers/*.py
+      - name: 纯函数单测
+        run: python tests/test_core_units.py
+      - name: 警报链路回归测试
+        run: python tests/test_alert_path.py
+
+  uitest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: 安装 Chromium 内核
+        run: playwright install --with-deps chromium
+      - name: 全功能 UI 自检（40 断言，任何 JS 报错即失败）
+        run: python docs/uitest.py
+      - name: 上传自检结果
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uitest-result
+          path: docs/uitest_result.txt
