@@ -1,0 +1,87 @@
+# ===== 机票监控 配置样例 =====
+# 推荐用法：网页 ⚙️ 配置页修改（保存即热生效，零重启），本文件只是落盘格式。
+# 航线/阈值/通知/扫描周期/端口/无头模式等全部热加载；
+# 仅 output.db_path / output.log_path 为启动级（改动需重启进程）。
+users:
+- name: 你的名字
+  routes:
+  - from: SHA
+    from_name: 上海
+    to: URC
+    to_name: 乌鲁木齐
+    dates:
+    - '2026-10-01'
+    alert_threshold: 0
+    alert_direct: 1900
+    alert_transfer: 1700
+    transfer_arrival_max: 02:00
+  - from: SHA
+    from_name: 上海
+    to: URC
+    to_name: 乌鲁木齐
+    dates:
+    - '2026-10-01'
+    alert_direct: 1900
+    alert_transfer: 1700
+    transfer_arrival_max: 02:00
+    dep_time_min: '17:00'
+    dep_time_max: '23:59'
+  - from: SHA
+    from_name: 上海
+    to: URC
+    to_name: 乌鲁木齐
+    dates:
+    - '2026-10-01'
+    alert_direct: 1900
+    alert_transfer: 1700
+    transfer_arrival_max: 02:00
+  platforms:
+  - qunar
+  - fliggy
+  - tongcheng
+  - tuniu
+  - ctrip
+  notifier:
+    digest: true
+    storm_repeat: 3
+    report_hour: 9
+    win_toast: true          # Windows 右下角弹窗（达标本机触达，心跳不弹；false 关闭）
+    image_host:
+      provider: freeimage
+    push_drop_min: 30
+    push_rise_min: 50
+    dingtalk:
+      enabled: true
+      webhook: https://oapi.dingtalk.com/robot/send?access_token=你的token
+      secret: SEC开头的加签密钥（机器人安全设置选加签后获得）
+      at_mobile: 你的手机号（达标@你）
+    serverchan:
+      enabled: false
+      send_key: ''
+      channel: ''
+    ntfy:
+      topic: 你的ntfy主题（可选）
+    aliyun:
+      url: 阿里云云监控事件通知URL（可选，达标电话/短信）
+      user: AccessKey ID
+      password: AccessKey Secret
+schedule:
+  interval_minutes: 30
+  jitter_minutes: 5
+  run_on_start: true
+crawler:
+  headless: true
+  timeout_seconds: 45
+  delay_min: 5
+  delay_max: 15
+  user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0
+    Safari/537.36
+  mobile_user_agent: ''
+  debug: true
+  debug_dir: debug
+  user_data_dir: user_data
+output:
+  db_path: data/prices.db
+  log_path: logs/monitor.log
+web:
+  port: 8765
