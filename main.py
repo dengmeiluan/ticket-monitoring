@@ -13,7 +13,7 @@
 """
 import argparse
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 import os
 import subprocess
 import sys
@@ -256,7 +256,35 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
     return sweep
 
 
+def acquire_instance_lock() -> bool:
+    """单实例互斥锁：多实例并发会抢采/互踩 DB/调度互相干扰（历史多轮
+    事故）。锁文件 data/.instance.lock 被第二个实例加锁失败 → 立即
+    退出；进程退出时 OS 自动释放（含崩溃）。"""
+    import msvcrt
+    lock_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "data", ".instance.lock")
+    os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+    global _LOCK_FP
+    _LOCK_FP = open(lock_path, "a+b")
+    try:
+        msvcrt.locking(_LOCK_FP.fileno(), msvcrt.LK_NBLCK, 1)
+        return True
+    except OSError:
+        try:
+            _LOCK_FP.close()
+        except Exception:
+            pass
+        return False
+
+
+_LOCK_FP = None
+
+
 def main():
+    if not acquire_instance_lock():
+        print("⚠ 已有实例在运行（检测到实例锁），本次启动退出。"
+              "控制台仍可用：浏览器打开 http://127.0.0.1:8765")
+        sys.exit(1)
     ap = argparse.ArgumentParser(description=f"机票监控 ticket-monitoring v{__version__}")
     ap.add_argument("--version", action="version", version=__version__)
     ap.add_argument("-c", "--config", default="config.yaml", help="配置文件路径")
