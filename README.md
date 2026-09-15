@@ -50,7 +50,7 @@
 
 ![推送预览](docs/screenshots/console-preview.png)
 
-![移动端](docs/screenshots/console-mobile.png)
+<img src="docs/screenshots/console-mobile.png" width="380" alt="移动端">
 
 </details>
 

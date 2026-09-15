@@ -81,8 +81,8 @@ def main():
         pg.click("#navMon")
         pg.wait_for_timeout(600)
         theme("light")
-        pg.screenshot(path=os.path.join(OUT, "console-mobile.png"),
-                      full_page=True)
+        # 首屏视口截图：fullPage 超长条在 README 里缩成细长一条，观感差
+        pg.screenshot(path=os.path.join(OUT, "console-mobile.png"))
         b.close()
     if errors:
         print("!! 页面 JS 错误：")
