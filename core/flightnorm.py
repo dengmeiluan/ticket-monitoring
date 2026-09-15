@@ -112,6 +112,33 @@ def normalize(f, depart_date=""):
     """就地归一化一条航班明细 dict：crossDayN/crossDayDesc/totalDuration/durM。"""
     if not isinstance(f, dict):
         return f
+    # 航班名规范化（无前置依赖，缺起降时刻的行同样生效）：
+    # 渠道常吐纯代码（"UQ2600"），补中文航司前缀——同航线命名口径统一
+    name = str(f.get("name") or "")
+    m = re.fullmatch(r"([A-Z0-9]{2})(\d{3,4})", name)
+    if m and m.group(1) in AIRLINE_CN:
+        f["name"] = AIRLINE_CN[m.group(1)] + name
+    elif "/" in name:
+        # 中转共享段斜杠双名（"MU5533/SC8711"）：两段各自补前缀
+        parts = name.split("/")
+        fixed = []
+        for p in parts:
+            pm = re.fullmatch(r"([A-Z0-9]{2})(\d{3,4})", p.strip())
+            if pm and pm.group(1) in AIRLINE_CN and not pm.group(2).startswith("0"):
+                fixed.append(AIRLINE_CN[pm.group(1)] + p.strip())
+            else:
+                fixed.append(p.strip())
+        f["name"] = "/".join(fixed)
+    # 时刻补零（无前置依赖）：渠道 6:30 → 06:30
+    for _tk in ("depTime", "arrTime"):
+        _m = re.fullmatch(r"(\d{1,2}):(\d{2})", str(f.get(_tk) or ""))
+        if _m:
+            f[_tk] = f"{int(_m.group(1)):02d}:{_m.group(2)}"
+    # 时长规范化（无前置依赖）："29h55m"/"7时" 等 → "X时YY分"
+    _dur_raw = str(f.get("totalDuration") or "").strip()
+    _dur_min_val = _dur_min(_dur_raw)
+    if _dur_raw and _dur_min_val is not None:
+        f["totalDuration"] = fmt_dur(_dur_min_val)
     dep, arr = _hhmm(f.get("depTime")), _hhmm(f.get("arrTime"))
     if not (dep and arr):
         f.setdefault("crossDayN", 0)
@@ -122,20 +149,10 @@ def normalize(f, depart_date=""):
     computed = n * 1440 + arr[0] * 60 + arr[1] - (dep[0] * 60 + dep[1])
     if computed > 0 and (dur_ch is None or abs(dur_ch - computed) > 15):
         dur_ch = computed          # 渠道时长不可信（错值/缺值）→ 重算
-    for _tk in ("depTime", "arrTime"):
-        _m = re.fullmatch(r"(\d{1,2}):(\d{2})", str(f.get(_tk) or ""))
-        if _m:
-            f[_tk] = f"{int(_m.group(1)):02d}:{_m.group(2)}"   # 6:30→06:30
     f["totalDuration"] = fmt_dur(dur_ch)
     f["durM"] = dur_ch
     f["crossDayN"] = n
     f["crossDayDesc"] = f"+{n}天" if n > 0 else ""
-    # 航班名规范化：渠道常吐纯代码（"UQ2600"），补中文航司前缀
-    # （"乌鲁木齐航空UQ2600"）——同航线的命名口径统一（用户实锤不一致）
-    name = str(f.get("name") or "")
-    m = re.fullmatch(r"([A-Z0-9]{2})(\d{3,4})", name)
-    if m and m.group(1) in AIRLINE_CN:
-        f["name"] = AIRLINE_CN[m.group(1)] + name
     lay = f.get("layover")
     f["layoverT"] = fmt_dur(lay) if isinstance(lay, int) and lay > 0 else ""
     f["layoverM"] = lay if isinstance(lay, int) and lay > 0 else 0
