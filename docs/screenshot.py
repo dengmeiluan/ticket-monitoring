@@ -22,7 +22,9 @@ def main():
     errors = []
     with sync_playwright() as p:
         b = p.chromium.launch()
-        pg = b.new_page(viewport={"width": 1280, "height": 900})
+        # 1512 视口布局舒展；device_scale_factor=2 出高清图（GitHub 缩放后依然锐利）
+        pg = b.new_page(viewport={"width": 1512, "height": 860},
+                        device_scale_factor=2)
         pg.on("console",
               lambda m: errors.append(m.text) if m.type == "error" else None)
         pg.on("pageerror", lambda e: errors.append(str(e)))
@@ -46,29 +48,34 @@ def main():
         # 推送预览弹层（暗色下再截一张，覆盖弹层渲染）
         pg.click("#pvBtn")
         pg.wait_for_timeout(700)
-        pg.screenshot(path=os.path.join(OUT, "console-preview.png"))
+        pg.screenshot(path=os.path.join(OUT, "console-preview.png"),
+                      full_page=True)
         pg.keyboard.press("Escape")
         pg.wait_for_timeout(300)
         # K线模式（蜡烛图组件）
         pg.click("#mdK")
         pg.wait_for_timeout(600)
-        pg.screenshot(path=os.path.join(OUT, "console-kline.png"))
+        pg.screenshot(path=os.path.join(OUT, "console-kline.png"),
+                      full_page=True)
         pg.click("#mdLine")
         pg.wait_for_timeout(300)
         # 航班明细子视图（工作台表格）
         pg.click('.mtab[data-t="details"]')
         pg.wait_for_timeout(400)
-        pg.screenshot(path=os.path.join(OUT, "console-details.png"))
+        pg.screenshot(path=os.path.join(OUT, "console-details.png"),
+                      full_page=True)
         # 配置页（面板式设置台：用户与航线面板）
         pg.click("#navCfg")
         pg.wait_for_timeout(900)
         pg.click('#cfgnav .cnav[data-p="users"]')
         pg.wait_for_timeout(700)
-        pg.screenshot(path=os.path.join(OUT, "console-config.png"))
+        pg.screenshot(path=os.path.join(OUT, "console-config.png"),
+                      full_page=True)
         # 全局配置中心（调度/采集热载 + 启动级只读三组）
         pg.click('#cfgnav .cnav[data-p="globals"]')
         pg.wait_for_timeout(700)
-        pg.screenshot(path=os.path.join(OUT, "console-globals.png"))
+        pg.screenshot(path=os.path.join(OUT, "console-globals.png"),
+                      full_page=True)
         # 移动端（筛选抽屉 + 首列吸附）
         pg.set_viewport_size({"width": 390, "height": 844})
         pg.click("#navMon")
