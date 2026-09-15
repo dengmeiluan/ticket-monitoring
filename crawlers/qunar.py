@@ -821,6 +821,7 @@ class QunarCrawler(BaseCrawler):
             if not code:
                 continue
             info = f.get("binfo") or f.get("binfo1") or {}
+            b2 = f.get("binfo2") or {}
             dep_t = (info.get("depTime") or "").strip()
             arr_t = (info.get("arrTime") or "").strip()
             dep_d = (info.get("depDate") or "").strip()
@@ -833,6 +834,22 @@ class QunarCrawler(BaseCrawler):
             seen.add(key)
             mix_raw = (f.get("mixFlightName") or "").splitlines()
             mix = mix_raw[0].strip() if mix_raw else ""
+            trans = (f.get("transCity") or "").strip()
+            # 中转衔接：第二段起飞 − 第一段到达（跨天回绕）——H5 结构
+            # 中 binfo1.arr 即第一段到达、binfo2.dep 即第二段起飞
+            lay = ""
+            b2_dep = (b2.get("depTime") if isinstance(b2, dict) else "") or ""
+            b1_arr = info.get("arrTime") or ""
+            if trans and b2_dep and b1_arr:
+                def _hm(s):
+                    try:
+                        h, m = str(s).strip().split(":")
+                        return int(h) * 60 + int(m)
+                    except (ValueError, TypeError):
+                        return None
+                a1, d2 = _hm(b1_arr), _hm(b2_dep)
+                if a1 is not None and d2 is not None:
+                    lay = (d2 - a1) % 1440
             out.append({
                 "price": price,
                 "code": code,
@@ -844,6 +861,7 @@ class QunarCrawler(BaseCrawler):
                 "transCity": (f.get("transCity") or "").strip(),
                 "crossDayDesc": (f.get("crossDayDesc") or "").strip(),
                 "totalDuration": (f.get("transTime") or "").strip(),
+                "layover": lay,
             })
         return out
 
