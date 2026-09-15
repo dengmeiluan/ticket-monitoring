@@ -393,7 +393,10 @@ class QunarCrawler(BaseCrawler):
                     dur = re.sub(r"(\d+)h(\d+)m", r"\1时\2分", ft)
             lay = ""
             if b2:
-                # 中转停留 = 全程时长 - 两段飞行时长（决策关键：停多久）
+                # 中转停留（决策关键：停多久）三级计算：
+                # ① 全程时长 − 两段飞行时长；② 第二段起飞 − 第一段到达
+                # （跨天自动回绕）——两段起降时刻比 transTime 更稳定可得，
+                # 覆盖 ① 缺 transTime/flightTime 的 ~20% 缺失行
                 try:
                     from core.flightnorm import dur_min as _dm
                     t_m = _dm(dur)
@@ -403,6 +406,17 @@ class QunarCrawler(BaseCrawler):
                         lay = t_m - f1_m - f2_m
                 except Exception:
                     lay = ""
+                if not lay:
+                    def _hm(s):
+                        try:
+                            h, m = str(s).strip().split(":")
+                            return int(h) * 60 + int(m)
+                        except (ValueError, TypeError):
+                            return None
+                    a1 = _hm(b1.get("arrTime"))
+                    d2 = _hm(b2.get("depTime"))
+                    if a1 is not None and d2 is not None:
+                        lay = (d2 - a1) % 1440
             out.append({
                 "price": price,
                 "code": code,

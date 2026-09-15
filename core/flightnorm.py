@@ -122,6 +122,10 @@ def normalize(f, depart_date=""):
     computed = n * 1440 + arr[0] * 60 + arr[1] - (dep[0] * 60 + dep[1])
     if computed > 0 and (dur_ch is None or abs(dur_ch - computed) > 15):
         dur_ch = computed          # 渠道时长不可信（错值/缺值）→ 重算
+    for _tk in ("depTime", "arrTime"):
+        _m = re.fullmatch(r"(\d{1,2}):(\d{2})", str(f.get(_tk) or ""))
+        if _m:
+            f[_tk] = f"{int(_m.group(1)):02d}:{_m.group(2)}"   # 6:30→06:30
     f["totalDuration"] = fmt_dur(dur_ch)
     f["durM"] = dur_ch
     f["crossDayN"] = n

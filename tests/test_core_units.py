@@ -922,3 +922,37 @@ def test_transfer_baggage_lcc_guard():
          "transitServiceLabel": "本服务包含中转行李免提"}
     _norm(g, "2026-09-25")
     assert g["transferBaggage"] == "direct"   # 全服务航司联程标签可信
+
+
+def test_qunar_layover_fallback_by_segment_times():
+    """衔接时长三级计算：transTime 缺失时用第二段起飞−第一段到达兜底
+    （跨天回绕），缺失率 19.5% 的中转行不再无衔接时长。"""
+    from crawlers.qunar import QunarCrawler
+    text = json.dumps({"data": {"flights": [
+        {"minPrice": 2051, "code": "Y8755",
+         "binfo1": {"depTime": "6:30", "arrTime": "14:20",
+                    "flightTime": "2h10m", "shortName": "金鹏航空"},
+         "binfo2": {"depTime": "16:30", "arrTime": "21:45",
+                    "flightTime": "1h35m", "shortName": "天津航空"},
+         "transCity": "郑州"},
+        # 无 transTime 且 b2 无 depTime → 衔接仍缺失（如实）
+        {"minPrice": 2060, "code": "HO1093",
+         "binfo1": {"depTime": "14:10", "arrTime": "20:00"},
+         "binfo2": {"arrTime": "22:00"}, "transCity": "郑州"}]}})
+    flights = QunarCrawler._parse_pc_flights(text, "2026-10-01")
+    by = {f["code"]: f for f in flights}
+    assert by["Y8755"]["layover"] == 130        # 16:30 − 14:20 = 130 分钟
+    assert by["HO1093"]["layover"] == ""        # 数据不足如实缺失
+    from core.flightnorm import normalize as _fnorm
+    _fnorm(by["Y8755"], "2026-10-01")
+    assert by["Y8755"]["layoverT"] == "2时10分"  # normalize 产出展示文本
+
+
+def test_flightnorm_time_zero_pad():
+    """时刻规范化：渠道无前导零的 6:30 → 06:30（跨渠道格式统一）。"""
+    from core.flightnorm import normalize as _norm
+    f = {"name": "MU5131", "price": 2000, "depTime": "6:30",
+         "arrTime": "14:05", "depDate": "2026-09-25",
+         "arrDate": "2026-09-25"}
+    _norm(f, "2026-09-25")
+    assert f["depTime"] == "06:30" and f["arrTime"] == "14:05"
