@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      # 与本地验证命令逐字节同口径（避免环境插件差异导致行为漂移）
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+    steps:
+      # fetch-depth 0：版本门禁 test_version_matches_latest_tag 依赖
+      # git tag——浅克隆（默认 depth 1 不取 tag）曾使 git describe 返回
+      # 非零而门禁必红
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt pytest
+      # tag 竞态守卫（v1.5.50）：发版 main 与 tag 两步推送，CI 由 main
+      # push 触发时 checkout 快照可能还没拿到刚推的 tag，git describe
+      # 128 曾让版本门禁随机红——测试前显式补拉 tag
+      - name: 补拉 tag（版本门禁竞态守卫）
+        run: git fetch --tags --force origin
+      - name: 全仓语法检查
+        run: python -m py_compile main.py webui.py report.py wizard.py core/*.py crawlers/*.py
+      - name: 全量测试（单测 + 推送链路演练 + 链接同源门禁 + 版本门禁）
+        run: python -m pytest tests/ -q
+
+  uitest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: 安装 Chromium 内核
+        run: playwright install --with-deps chromium
+      - name: 全功能 UI 自检（任何 JS 报错即失败）
+        run: python docs/uitest.py
+      - name: 上传自检结果
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uitest-result
+          path: docs/uitest_result.txt

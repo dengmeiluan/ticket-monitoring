@@ -1,0 +1,42 @@
+name: Bug 反馈
+description: 某个功能不符合预期时请用这个模板
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: 感谢反馈！请先搜索现有 issue 避免重复；涉及安全问题请勿在此公开，走 [SECURITY.md](../blob/main/SECURITY.md) 的私密通道。
+  - type: dropdown
+    id: env
+    attributes:
+      label: 运行方式
+      options:
+        - Windows 发行包（Releases zip）
+        - 从源码运行（python main.py）
+        - 演示模式 / 在线演示站
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么？（期望 vs 实际）
+      placeholder: 简明描述：你做了什么、期望发生什么、实际发生了什么
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志片段
+      description: logs/monitor.log 中相关片段（**注意抹掉 Webhook/密钥/手机号**）
+      render: shell
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 截图
+      description: 控制台界面问题请附截图（亮/暗主题各一张更好）
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: 页脚显示的版本号，或 `python main.py --version`
+    validations:
+      required: true
