@@ -60,13 +60,20 @@ class TestQunarPcTransferDuration:
         assert f["layover"] == 540, \
             f"中转 layover 偏离起降差真值: {f['layover']!r}"
 
-    def test_transfer_wrap_guard_keys_absent(self):
+    def test_transfer_wrap_longstay_pinned(self):
         f = _one(_PC_TRANS_WRAP)
-        # span≥2 天回绕存疑→停留不取→全程留空（normalize 按起止时刻
-        # 重算兜底，2*1440+00:40−17:55=1845=4h+24h55+1h50 精确自洽）；
-        # 无值不落键（r239 空串落键收口，缺席=留空语义）
-        assert "totalDuration" not in f
-        assert "layover" not in f
+        # r273 日期钉：真停 24h55m 不再被 span≥2 回绕守卫丢弃——
+        # 二段起飞日(binfo2.date=10-07)相对首段到达日(binfo1.arrDate=
+        # 10-06) 钉天数百位，layover=1440+55=1495 与渠道 transTime
+        # 「1天55分钟」逐分一致（第三方信号互证）；全程随之重建
+        # 4h+24h55m+1h50m=30时45分（normalize 起止重算 2*1440+00:40
+        # −17:55=1845 同值自洽）
+        assert f["layover"] == 1495, f"真停应按日期钉恢复: {f.get('layover')!r}"
+        assert f["totalDuration"] == "30时45分"
+        from core.flightnorm import normalize
+        _t = normalize(dict(f), "2026-10-06")
+        assert _t["layoverM"] == 1495 and _t["layoverT"] == "24:55", _t
+        assert _t["durM"] == 1845
 
     def test_transfer_normalize_integration(self):
         from core.flightnorm import normalize

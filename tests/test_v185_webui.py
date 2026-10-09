@@ -68,10 +68,15 @@ class TestAuditV185Design:
 
     def test_p2_tablist_semantics(self):
         src = self._src()
-        # 三族标签页(监控 tabs/明细筛选 tabs/配置导航)补 tablist/tab
-        # +aria-selected 动态回写(mkactAll 同源挂载)
+        # 退役改写(r275)：三族标签页(监控 tabs/明细筛选 tabs/配置导航)
+        # 统一 button 形态——tablist/tab 旧形制禁复活(#montabs 混入
+        # 多租户 chip 后纯性破缺，按 #tabs 同律降级)，aria-pressed
+        # 动态回写为实效档(mkactAll 同源挂载)
         assert "function tabAria()" in src, "tabAria 助手缺"
-        assert "setAttribute('aria-selected'" in src, "aria-selected 回写缺"
+        assert "setAttribute('aria-selected'" not in src, \
+            "aria-selected 旧形制复活"
+        assert "querySelectorAll('.mtab').forEach(x=>" in src and \
+            "aria-pressed" in src, ".mtab aria-pressed 回写缺"
 
     def test_p2_form_a11y_trio(self):
         src = self._src()

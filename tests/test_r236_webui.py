@@ -68,10 +68,14 @@ def test_demo_wording_pvfoot_push():
 
 
 def test_montabs_aria_controls_tabpanel():
-    """P3-3：tabAria 补 aria-controls；四个子视图面板挂 role=tabpanel
-    （引用关联成对出现，缺一侧即失联）。"""
+    """P3-3 退役改写（r275）：#montabs 混入多租户切换 chip（非 tab
+    子件）后按 #tabs 同律降 button 形态——tab↔tabpanel 引用关联随
+    tablist 形制退役（禁复活）；面板侧 role=tabpanel 静态在位与
+    aria-label 可访问名回写保留（实效档）。"""
     src = _src()
-    assert "'aria-controls'" in src and "montab-'+x.dataset.t" in src, \
-        "tabAria 未补 aria-controls"
+    assert "setAttribute('aria-controls','montab-'" not in src, \
+        "tab↔tabpanel 引用关联复活"
     assert src.count('role="tabpanel"') == 4, \
         "tabpanel 数量=%d 应为 4" % src.count('role="tabpanel"')
+    assert "PNAME" in src and "montab-'" in src, \
+        "面板 aria-label 回写缺席"

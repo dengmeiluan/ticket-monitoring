@@ -55,18 +55,23 @@ def test_p2c_cdt_margin_double_count_removed():
 
 def test_p2d_letter_spacing_two_tier_tokens():
     s = _src()
-    # 令牌定义：主站 + notify 独立页两处 :root（--pill 先例）
+    # 令牌定义：主站 + notify 独立页两处 :root（--pill 先例）；
+    # r273 增设半像素档 --ls05（主站 ：root 独有，notify 无 0.5px 消费）
     assert s.count("--ls1:1px;--ls2:2px") == 2
+    assert s.count("--ls05:.5px") == 1
     # 五值并轨：0.8 与 1.5 档清零
     assert "letter-spacing:.8px" not in s
     assert "letter-spacing:1.5px" not in s
     # 微签族消费点全走令牌：主站 9 + notify .top b = 10 处 --ls1
     assert s.count("letter-spacing:var(--ls1)") == 10
-    # 装饰英文签两处 --ls2（.seclab .en / .grouplab .en）
-    assert s.count("letter-spacing:var(--ls2)") == 2
-    # 15px 展示性大字距维持字面（非微签族，不入令牌）
-    assert s.count("letter-spacing:2px") == 2
-    # 14px 页题字距维持原值（h1 非微签族，未在审计清单）
+    # --ls2 消费四处：装饰英文签两处（.seclab .en / .grouplab .en）
+    # + r273 收编的两处 15px 展示签（.pvbody .md-g 主站 / .md .g notify）
+    assert s.count("letter-spacing:var(--ls2)") == 4
+    assert s.count("letter-spacing:var(--ls05)") == 4
+    # 裸字距声明清零（半像素/两像素档全入令牌）
+    assert "letter-spacing:.5px" not in s
+    assert "letter-spacing:2px" not in s
+    # 14px 页题字距维持原值（h1 品牌字距非微签族，不入令牌）
     assert s.count("letter-spacing:1.2px") == 1
 
 

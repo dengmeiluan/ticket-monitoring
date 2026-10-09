@@ -1732,6 +1732,80 @@ def test_tongcheng_cabin_and_plane_new_keys():
     assert "stopCitys" not in g and _norm(g, "2026-10-06")["stopover"] is False
 
 
+# ---- 同程「明珠经济舱」品牌舱位词（南航经济舱域品牌产品） ----
+def test_tongcheng_mingzhu_cabin_brand():
+    """「明珠经济舱」词面转正（09-25 book1 CZ6998/CZ6994『明珠经济舱
+    全价』+ 10-15 conn CZ6941『明珠经济舱』两代独立 dump 实证，均为
+    所在行有票最低价政策，票价互证 4350/1549）：旧正则按子串截为
+    「经济舱」丢品牌——明珠入 cabin 词表首位（alternation 前置），
+    「全价」折扣同串双抓不受影响；直飞/中转两路径同轮。ieso 售罄
+    判定不受扰：明珠 td 含「经济舱」子串，eco_ticketed 反证原子天然
+    覆盖，幸存明珠行不会挂「经济舱售罄」标。"""
+    from crawlers.tongcheng import TongchengCrawler
+    text = json.dumps({"data": {"fl": [{
+        "fn": "CZ6998", "asn": "南航",
+        "dt": "2026-09-25 08:00", "at": "2026-09-25 11:20",
+        "td": "3h20m",
+        "lps": [
+            {"atp": 4350, "brs": [{"al": 20}],
+             "pts": [{"tt": 2, "td": "明珠经济舱全价"}]},
+            {"atp": 7100, "brs": [{"al": 30}],
+             "pts": [{"tt": 2, "td": "超值公务舱"}]},
+        ],
+    }]}})
+    out = TongchengCrawler._extract_flights(text)
+    assert len(out) == 1
+    f = out[0]
+    assert f["price"] == 4350 and f["cabin"] == "明珠经济舱", f
+    assert f["discount"] == "全价" and f["bizPrice"] == 7100, f
+    # 中转路径（10-15 conn fps[12] 同构：CZ6941/MU9198 成都中转）
+    fp = {"dt": "2026-10-15 13:20", "at": "2026-10-15 21:30",
+          "sd": "2h45m", "td": "8h10m", "sc": "成都",
+          "ss": [{"fn": "CZ6941", "dt": "2026-10-15 13:20",
+                  "at": "2026-10-15 16:05"},
+                 {"fn": "MU9198", "dt": "2026-10-15 18:20",
+                  "at": "2026-10-15 21:30"}],
+          "lps": [
+              {"atp": 1549, "brs": [{"al": 20}, {"al": 20}],
+               "pts": [{"td": "明珠经济舱"}]},
+              {"atp": 3934, "brs": [{"al": 30}, {"al": 30}],
+               "pts": [{"td": "公务舱"}]},
+          ]}
+    rows = TongchengCrawler._extract_transfer_flights(
+        json.dumps({"data": {"fps": [fp]}}, ensure_ascii=False), "")
+    assert rows, "样本应产出至少一行"
+    assert rows[0]["price"] == 1549 and rows[0]["cabin"] == "明珠经济舱", rows[0]
+    assert rows[0]["bizPrice"] == 3934, rows[0]
+
+
+def test_tongcheng_mingzhu_ieso_guard():
+    """ieso 售罄四重守卫对明珠行的短路保证：明珠有票政策让反证原子
+    (「经济舱」子串匹配)命中，幸存明珠行不挂「经济舱售罄」标——
+    反证原子若改等值匹配形态本钉当场红(届时售罄判定的豁免元组须
+    同轮扩明珠，见解析器该处注释)。对照路：经济舱域全灭仅公务有票，
+    幸存公务行照常挂标。"""
+    from crawlers.tongcheng import TongchengCrawler
+    base = {"fn": "CZ6998", "asn": "南航",
+            "dt": "2026-09-25 08:00", "at": "2026-09-25 11:20",
+            "td": "3h20m", "ieso": True, "lps": [
+                {"atp": 4350, "brs": [{"al": 20}],
+                 "pts": [{"tt": 2, "td": "明珠经济舱全价"}]},
+                {"atp": 7100, "brs": [{"al": 30}],
+                 "pts": [{"tt": 2, "td": "超值公务舱"}]},
+            ]}
+    out = TongchengCrawler._extract_flights(
+        json.dumps({"data": {"fl": [base]}}))
+    assert out[0]["cabin"] == "明珠经济舱", out[0]
+    assert "经济舱售罄" not in out[0].get("labels", ""), out[0]
+    ctrl = dict(base, fn="CZ6999", lps=[
+        {"atp": 7100, "brs": [{"al": 30}],
+         "pts": [{"tt": 2, "td": "超值公务舱"}]}])
+    out2 = TongchengCrawler._extract_flights(
+        json.dumps({"data": {"fl": [ctrl]}}))
+    assert out2[0]["cabin"] == "公务舱", out2[0]
+    assert "经济舱售罄" in out2[0].get("labels", ""), out2[0]
+
+
 # ---- 回归：全链路口径收口与假数据掐灭 ----
 
 def test_fliggy_tax_pad_qual_price():

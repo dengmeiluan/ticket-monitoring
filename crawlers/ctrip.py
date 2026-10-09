@@ -810,10 +810,12 @@ class CtripCrawler(BaseCrawler):
                                        # 「郑州机场中转权益」同族先例）
                                        # 郑州中转 G_2025CGOZZCS 5/191、
                                        # 昆明长水 G_KMZZHZS 2/191、
-                                       # 兰州 G_LHWZZJD 1/191
+                                       # 兰州 G_LHWZZJD 1/191、
+                                       # 合肥 G_HFEZZXXS 1/191
                                        '享“豫转豫好”免费服务',
                                        "晚安长水",
-                                       "经兰飞如意行权益"):
+                                       "经兰飞如意行权益",
+                                       '享“皖美中转”休息室服务'):
                         if _c not in labels:   # aset 同词重复去重（P2-8）
                             labels.append(_c)
             if has_wifi:

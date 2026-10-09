@@ -13,7 +13,7 @@
 """
 import argparse
 
-__version__ = "1.5.174"
+__version__ = "1.5.184"
 import os
 import subprocess
 import sys
@@ -182,6 +182,41 @@ def _anchored(p, default):
     _first_run 的 300s 节流查到空库必不跳过（首轮重推）。"""
     p = (str(p) if p else "").strip() or default
     return p if os.path.isabs(p) else os.path.join(_REPO_ROOT, p)
+
+
+def _recent_sweep_age(db_path):
+    """上轮落库距今秒数；DB 缺失/不可读/空表返回 None（调用方按不跳过）。"""
+    try:
+        import sqlite3 as _sq
+        from datetime import datetime as _dt
+        row = _sq.connect(db_path).execute(
+            "SELECT MAX(fetched_at) FROM flight_prices").fetchone()
+        if row and row[0]:
+            return (_dt.now() - _dt.strptime(
+                row[0][:19], "%Y-%m-%d %H:%M:%S")).total_seconds()
+    except Exception:
+        pass
+    return None
+
+
+class _FirstRunGate:
+    """首轮节流门（first-only）：仅进程启动后的首次触发检查「上轮落库
+    是否新鲜」，新鲜则跳过首轮（连环重启不轰炸推送），之后恒放行。
+    每轮触发都重查会把 5 分钟级短周期的实际轮距拉长一个数量级——
+    单轮扫描时长超过间隔时，每个对齐点都距上轮落库不足节流窗。"""
+
+    def __init__(self, age_fn, within_s=300):
+        self._age_fn = age_fn
+        self._within_s = within_s
+        self._armed = True
+        self.last_age = None  # 首检读到的龄值（日志单次读库用）
+
+    def should_skip(self):
+        if not self._armed:
+            return False
+        self._armed = False
+        self.last_age = self._age_fn()
+        return self.last_age is not None and self.last_age < self._within_s
 
 
 def _sent_load():
@@ -1267,25 +1302,16 @@ def main():
     sched_state["jitter_minutes"] = jitter
     logger.info("启动定时调度，每 %d 分钟一轮 (±%d 随机扰动)", interval, jitter)
     try:
+        _first_gate = _FirstRunGate(
+            lambda: _recent_sweep_age(_anchored(
+                (cfg.get("output") or {}).get("db_path"), "data/prices.db")))
+
         def _first_run():
-            """启动首轮节流：上轮完成 <5 分钟则跳过（连环重启不轰炸推送）。"""
-            try:
-                import sqlite3 as _sq
-                from datetime import datetime as _dt
-                db = _anchored(
-                    (cfg.get("output") or {}).get("db_path"),
-                    "data/prices.db")
-                row = _sq.connect(db).execute(
-                    "SELECT MAX(fetched_at) FROM flight_prices").fetchone()
-                if row and row[0]:
-                    age = (_dt.now() - _dt.strptime(
-                        row[0][:19], "%Y-%m-%d %H:%M:%S")).total_seconds()
-                    if age < 300:
-                        logger.info("[启动] 上轮 %.0f 分钟前已完成，跳过首轮",
-                                    age / 60)
-                        return
-            except Exception:
-                pass
+            """首轮节流（语义见 _FirstRunGate）：仅启动后的首次触发检查。"""
+            if _first_gate.should_skip():
+                logger.info("[启动] 上轮 %.0f 分钟前已完成，跳过首轮",
+                            (_first_gate.last_age or 0) / 60)
+                return
             sweep()
 
         run_scheduler(_first_run, sched_state,

@@ -245,6 +245,49 @@ def main():
     print("=== 聚合达标链路演练全过 ===")
 
 
+def test_check_multi_itinerary_order(monkeypatch, tmp_path):
+    """聚合推送按行程时间序展示：去程日期在前、返程在后。
+
+    渠道查询队列按 (from,to,date) 字典序排列（HAK<SHA），返程
+    「海→上」曾整体排到去程前——消息小节序与「另监控」清单序同染
+    （用户实报「应该优先展示去程」）。锚位语义不动（差值最小/达标
+    置顶仍打头），只回归展示序。直调 _digest_payload 纯构建：绕开
+    心跳闸与「达标航线小节置顶」规则（那是另一个语义面），单测
+    字典序病。"""
+    monkeypatch.chdir(tmp_path)
+    log = logging.getLogger("probe_order")
+
+    a = Alerter(log, notifier=None, storage=None, digest=True,
+                at_mobile="", storm_repeat=1, user="排序演练")
+    r_dep = Route(from_code="SHA", to_code="HAK", from_name="上海",
+                  to_name="海口", dates=["2027-01-29", "2027-01-30"],
+                  alert_direct=1500, alert_transfer=1500)
+    r_ret = Route(from_code="HAK", to_code="SHA", from_name="海口",
+                  to_name="上海", dates=["2027-02-13", "2027-02-14"],
+                  alert_direct=1500, alert_transfer=1500)
+    p_ret = (_ps([_fp(1749, "国航CA8574", "20:05", "22:45",
+                      dep="2027-02-13")], "HAK", "SHA", "2027-02-13")
+             + _ps([_fp(1749, "国航CA8574", "20:05", "22:45",
+                        dep="2027-02-14")], "HAK", "SHA", "2027-02-14"))
+    p_dep = (_ps([_fp(2110, "南航CZ6766", "20:35", "23:55",
+                      dep="2027-01-29")], "SHA", "HAK", "2027-01-29")
+             + _ps([_fp(1749, "国航CA8573", "15:30", "18:55",
+                        dep="2027-01-30")], "SHA", "HAK", "2027-01-30"))
+    # 传入顺序=渠道查询字典序（HAK→SHA 在前）——真实调度序
+    built = [(r_ret, a._build_sections(r_ret, p_ret)),
+             (r_dep, a._build_sections(r_dep, p_dep))]
+    pv = a._digest_payload(built, fresh=True, with_tables=False,
+                           with_charts=False)
+    t, d = pv["title"], pv["desp"]
+    bad = {}
+    bad["小节序:去程先于返程"] = (0 <= d.find("✈️ 上海→海口")
+                                   < d.find("✈️ 海口→上海"))
+    bad["另监控序:01/29先于02/13"] = (
+        0 <= t.find("上→海 01/29") < t.find("海→上 02/13"))
+    failed = {k for k, v in bad.items() if not v}
+    assert not failed, "行程序演练失败: %s" % failed
+
+
 def test_alert_path(monkeypatch, tmp_path):
     """pytest 入口：整条达标链路演练当作一个用例跑。
 

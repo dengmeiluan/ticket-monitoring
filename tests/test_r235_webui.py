@@ -103,15 +103,18 @@ def test_th_scope_col():
 
 
 def test_mtab_roving_tabindex():
-    """P2-7：.mtab tabIndex 选中 0/余 -1（roving 形制，Tab 序出 tablist）。"""
+    """P2-7 退役改写（r275）：roving tabIndex 随 tablist 形制退役
+    （#montabs 混入非 tab 子件后降 button 形态，全员可 Tab）——旧
+    roving 赋值禁复活；tabAria 助手在案（aria-pressed 回写实效档）。"""
     src = _src()
     i = src.index("function tabAria()")
-    # 窗口取块边界（下一个顶层 function）而非固定字符数：r258 P3-1 在
-    # 函数头部插入面板名回写后 700 字符窗已把目标推出窗外（三十一§3
+    # 窗口取块边界（下一个顶层 function）而非固定字符数（三十一§3
     # 判例：窗口长度是实现细节，块内合法增厚不应红）
     j = src.find("\nfunction ", i + 10)
     seg = src[i:j if j > 0 else i + 1600]
-    assert "x.tabIndex=x.classList.contains('on')?0:-1" in seg, seg
+    assert "x.tabIndex=x.classList.contains('on')?0:-1" not in seg, \
+        "roving tabIndex 复活"
+    assert "aria-pressed" in seg, "aria-pressed 回写缺席"
 
 
 def test_cfg_search_debounce():

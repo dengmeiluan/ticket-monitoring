@@ -60,6 +60,43 @@ def _span_days(d1: str, d2: str) -> int:
         return 0
 
 
+def _layover_pinned(b1, b2):
+    """跨日中转停留的日期钉计算（分钟），钉不住返回 None。
+
+    停留=二段起飞日(binfo2.date/depDate)相对首段到达日(binfo1.arrDate)
+    的天数差×1440+二段起飞钟面−首段到达钟面。旧 (d2−a1)%1440 在真停
+    ≥24h 时钟面差落 [0,1440) 不触发回绕修正——SC4926 真停 24:05 被
+    落成 0:05（ctrip 同指纹 1445 互证），LAY_MIN 衔接筛选按 5 分钟
+    保守误剔隔夜中转候选（r273 观测切片②实锤）。渠道分段级 date 键
+    是结构化真值（PC dump 中转行 23/23 在场），语义逐行验证
+    （b1.arrDate ≤ b2.date ≤ b2.arrDate）；验证不过/键缺/解析败/
+    结果 ≤0 返回 None，调用方退回旧 %1440 形态（<24h 停留两法数学
+    等价）。"""
+    def _hm(s):
+        try:
+            h, m = str(s).strip().split(":")
+            return int(h) * 60 + int(m)
+        except (ValueError, TypeError):
+            return None
+
+    def _d(s):
+        try:
+            return date.fromisoformat(str(s).strip()[:10])
+        except (TypeError, ValueError):
+            return None
+
+    a1 = _hm((b1.get("arrTime") or ""))
+    d2 = _hm((b2.get("depTime") or ""))
+    a1d = _d(b1.get("arrDate") or "")
+    d2d = _d(b2.get("date") or b2.get("depDate") or "")
+    a2d = _d(b2.get("arrDate") or "")
+    if a1 is None or d2 is None or a1d is None or d2d is None \
+            or a2d is None or not (a1d <= d2d <= a2d):
+        return None
+    lay = (d2d - a1d).days * 1440 + (d2 - a1)
+    return lay if 0 < lay <= 3 * 1440 else None
+
+
 def _meal_from_addons(add) -> tuple:
     """H5 flightAddInfoIntegration.flightAdditionInfos[] → (餐食, 托运)文本。
 
@@ -492,29 +529,35 @@ class QunarCrawler(BaseCrawler):
                 continue
             seen.add(key)
             air = (b1.get("shortName") or b1.get("name") or "").strip()
-            # 中转停留（决策关键：停多久）权威=两段起降差（%1440 跨天
-            # 回绕）：顶层 transTime 在 PC 报文的语义是停留时长而非全程
-            # （生产 dump 45/45 行=b2.dep−b1.arr 精确相等，「1天55分钟」
-            # 即跨天停留；直飞行恒 int 0）——「中转全程在 transTime」
-            # 系 H5 时代口径误解。span≥2 天且差值 <5h 的回绕假值不取
-            # （~25h 真实停留会被回绕成 60min，宁缺勿错）
+            # 中转停留（决策关键：停多久）权威=两段起降差带日期钉：
+            # 真停 ≥24h 时 (d2−a1)%1440 钟面差落 [0,1440) 不触发回绕
+            # 修正（SC4926 停 24:05 曾落 0:05 → LAY_MIN 保守误剔隔夜
+            # 中转，ctrip 同指纹 1445 互证）——二段起飞日取分段级
+            # binfo2.date 结构化真值（23/23 在场）钉天数百位；钉不住
+            # 退 %1440 旧形态（<24h 两法数学等价），span≥2 天且差值
+            # <5h 的回绕假值不取（~25h 真实停留会被回绕成 60min，
+            # 宁缺勿错）。顶层 transTime 在 PC 报文的语义=停留时长
+            # （生产 dump 45/45 行=b2.dep−b1.arr 精确相等，跨天含
+            # 1440，「1天55分钟」即跨天停留；直飞行恒 int 0）
             stop_m = None
             if b2:
-                def _hm(s):
-                    try:
-                        h, m = str(s).strip().split(":")
-                        return int(h) * 60 + int(m)
-                    except (ValueError, TypeError):
-                        return None
-                a1 = _hm(b1.get("arrTime"))
-                d2 = _hm(b2.get("depTime"))
-                if a1 is not None and d2 is not None:
-                    stop_m = (d2 - a1) % 1440
-                    if _span_days(
-                            (b1.get("date") or b1.get("depDate") or ""),
-                            (b2.get("arrDate") or "")) >= 2 \
-                            and stop_m < 300:
-                        stop_m = None
+                stop_m = _layover_pinned(b1, b2)
+                if stop_m is None:
+                    def _hm(s):
+                        try:
+                            h, m = str(s).strip().split(":")
+                            return int(h) * 60 + int(m)
+                        except (ValueError, TypeError):
+                            return None
+                    a1 = _hm(b1.get("arrTime"))
+                    d2 = _hm(b2.get("depTime"))
+                    if a1 is not None and d2 is not None:
+                        stop_m = (d2 - a1) % 1440
+                        if _span_days(
+                                (b1.get("date") or b1.get("depDate") or ""),
+                                (b2.get("arrDate") or "")) >= 2 \
+                                and stop_m < 300:
+                            stop_m = None
             from core.flightnorm import dur_min as _dm, fmt_dur as _fd
             # 全程时长：中转=两段飞行+停留重建（停留>两段飞行和时，旧
             # 一级公式 t_m−f1−f2 曾把真停 9h 算成 3h05、停留词面落
@@ -1545,12 +1588,17 @@ class QunarCrawler(BaseCrawler):
                         return None
                 a1, d2 = _hm(b1_arr), _hm(b2_dep)
                 if a1 is not None and d2 is not None:
-                    lay = (d2 - a1) % 1440
-                    # %1440 回绕只在 depDate→arrDate 跨度 ≤1 天时可信：
-                    # span≥2 天的 ~25h 真实停留会被回绕成 60min 假值
-                    span = _span_days(dep_d, arr_d)
-                    if span >= 2 and lay < 300:
-                        lay = ""
+                    # 日期钉优先（同 PC 路径：真停 ≥24h 的 %1440 回绕
+                    # 根治；助手自读 info.arrDate 首段到达日——arr_d
+                    # 可能已被上方 b2 整体到达口径覆写，不回传）
+                    lay = _layover_pinned(info, b2)
+                    if lay is None:
+                        lay = (d2 - a1) % 1440
+                        # %1440 回绕只在 depDate→arrDate 跨度 ≤1 天时可信：
+                        # span≥2 天的 ~25h 真实停留会被回绕成 60min 假值
+                        span = _span_days(dep_d, arr_d)
+                        if span >= 2 and lay < 300:
+                            lay = ""
             # binfo1.transInfo 是渠道结构化真值（首末段四段
             # 时刻+transTime 停留+中转城；分片重组后中转行 100% 在场，
             # 直飞行无此键），中转行直接采信——上面 binfo2 猜衔接链路

@@ -13,10 +13,13 @@ from webui import NOTIFY_PAGE, PAGE
 
 def test_cfgfilter_lgcard_in_both_lists():
     """：#cfgview .lgcard 必须同时出现在复位清单与搜索首循环。
-    （：复位清单锚改字面，不再依赖 find 排序巧合）"""
-    assert ('#cfgview .frow,#cfgview .row,#cfgview .grouplab,'
-            '#cfgview .lgcard') in PAGE, \
-        "复位清单锚点丢失（应含 .lgcard 字面）"
+    （r275 起复位清单新增孤儿头显隐成员并重组——按「lgcard 在两处
+    清单」的意图断言，不再锁整串字面）"""
+    clear_i = PAGE.find("function cfgSearchClear")
+    filter_i = PAGE.find("function cfgFilter(")   # 带括号防前缀误中 cfgFilterD
+    assert clear_i > 0 and filter_i > clear_i, "cfgSearchClear/cfgFilter 缺"
+    assert PAGE[clear_i:filter_i].count("#cfgview .lgcard") == 1, \
+        "复位清单未含 .lgcard"
     loop_i = PAGE.find("#cfgview .glgrid>div,#cfgview .srow,#cfgview .lgcard")
     assert loop_i > 0, "搜索首循环未并入 .lgcard"
     # 命中判定沿用 textContent+inputs 现成逻辑（lgcard 无 input 亦可）

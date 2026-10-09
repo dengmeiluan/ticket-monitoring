@@ -387,7 +387,8 @@ class TongchengCrawler(BaseCrawler):
                                 elif "全价" in td:
                                     discount = "全价"
                             cm = re.search(
-                                r"(超级经济舱|经济舱|公务舱|头等舱|商务舱)", td)
+                                r"(明珠经济舱|超级经济舱|经济舱|公务舱|头等舱|商务舱)",
+                                td)
                             if cm:
                                 cabin_name = cm.group(1)
                                 break
@@ -489,6 +490,13 @@ class TongchengCrawler(BaseCrawler):
                          or re.match(r"\s*(\d{1,3})\s*$", tx))
                     if m and 0 < int(m.group(1)) <= 100:
                         prate = m.group(1)
+                        # 恒档占位守卫（tuniu 恒 20 同律，宁缺勿错）：
+                        # 渠道上游退化时全量下发恒「50%」（实录：10-07
+                        # 报文同字段多值 {100,97,90} → 24h 内恒档透传），
+                        # 入库经同指纹决策字段补全扩散假准点率——恒档
+                        # 置空，渠道值域恢复多值即撤本守卫（观察哨在案）
+                        if prate == "50":
+                            prate = ""
                 elif tt == 4 and not meal:
                     meal = tx
                 elif tt == 2 and not plane_age:
@@ -527,6 +535,10 @@ class TongchengCrawler(BaseCrawler):
             if (f.get("ieso") is True and not eco_ticketed
                     and cabin_name
                     and cabin_name not in ("经济舱", "超级经济舱")):
+                # 「明珠经济舱」不进本元组：它含「经济舱」子串，在
+                # eco_ticketed 反证原子（上方子串匹配）处已被覆盖——
+                # 幸存明珠行恒在第 2 重守卫短路。若反证原子改等值
+                # 匹配形态，本元组须同轮扩明珠。
                 labels = "·".join(x for x in (labels, "经济舱售罄") if x)
             # 舱位：政策文本提取优先，旧 dump 的 cabinlevel 数字映射
             # 兜底；无值不落键（DB 观测 7 天 8,374 元素空串平铺，
@@ -661,14 +673,18 @@ class TongchengCrawler(BaseCrawler):
                     vh = None
                 if vh is not None and 100 <= vh <= 50000:
                     tb.append([d[5:], round(vh)])
-                # 改期日历节假日标注（调研 B-1，与 trendGo 同 pc[] 点位
-                # 零额外请求；isHoliday=true 才下发 holidayName 冗余不采，
-                # 词面=holidayName·tag〔班/休〕、无 tag 裸名——「哪天便宜
-                # 为什么便宜」的解释变量，webui 改期窗口柱图 title 消费）
+                # 改期日历节假日标注（与 trendGo 同 pc[] 点位零额外
+                # 请求；isHoliday=true 才下发）：词面=holidayName·tag
+                # 〔班/休〕、无 tag 裸名、holidayName 空而 tag 在场
+                # （调休班日/休息日，多代 dump 复现形态）→ 裸 tag——
+                # 「哪天便宜为什么便宜」的解释变量，webui 改期窗口
+                # 柱图 title 消费
                 hn = str(p.get("holidayName") or "").strip()
+                tag = str(p.get("tag") or "").strip()
                 if hn:
-                    tag = str(p.get("tag") or "").strip()
                     th.append([d[5:], f"{hn}·{tag}" if tag else hn])
+                elif tag:
+                    th.append([d[5:], tag])
             if tg:
                 lo = min(dedup.values(), key=lambda f: f.get("price") or 9e9)
                 lo["trendGo"] = tg
@@ -680,6 +696,10 @@ class TongchengCrawler(BaseCrawler):
 
     # 中转衔接时长 "2h15m"/"11h"（fps.sd）
     _RE_SD = re.compile(r"^(\d+)h(?:(\d+)m)?$")
+
+    # 中转段序中文词（共享承运词面「N段共享承运」用；三段封顶，
+    # 更深段位宁缺勿错）
+    _CN_SEG = ("一", "二", "三")
 
     # connection 政策级服务标签白名单（lps[].fwbqs[].td）：真值词面
     # 「第N程：免费上网」=中转机上 WiFi 服务承诺，与 sts tt=3 白名单
@@ -751,6 +771,17 @@ class TongchengCrawler(BaseCrawler):
             if not isinstance(fp, dict):
                 continue
             segs = [s for s in fp.get("ss") or [] if isinstance(s, dict)]
+            # 段级共享旗标（isf='True' 字符串形态，10-15 代新增键 42
+            # 处、True 稀疏段级在场；与 book1 直飞侧 icsf 同族语义、
+            # 跨渠道互证 ctrip ishared）→ labels 词面按段序「N段共享
+            # 承运」，任一段命中各生成一条——前三段词面随段位自动正
+            # 确，更深段位宁缺勿错不生成（_CN_SEG 边界）；实际承运号
+            # ss[] 无源不落（宁缺勿错）
+            share_txt = "·".join(
+                f"{cls._CN_SEG[_i]}段共享承运"
+                for _i, _s in enumerate(segs)
+                if _i < len(cls._CN_SEG)
+                and str(_s.get("isf") or "").strip() == "True")
             fns = [str(s.get("fn") or "").strip() for s in segs]
             fns = [x for x in fns if x]
             # 中转行定义=两段起（单段属异形报文，宁缺勿错不产行）
@@ -822,7 +853,7 @@ class TongchengCrawler(BaseCrawler):
                         if td_txt == "超惠飞":   # 白名单精确匹配（同 book1）
                             chaofei = True
                         cm = re.search(
-                            r"(超级经济舱|经济舱|公务舱|头等舱|商务舱)",
+                            r"(明珠经济舱|超级经济舱|经济舱|公务舱|头等舱|商务舱)",
                             td_txt)
                         if cm:
                             cabin_name = cm.group(1)
@@ -979,9 +1010,12 @@ class TongchengCrawler(BaseCrawler):
                 "transferService": svc_txt,
                 # 航司中转 vs 自行中转（随最低价政策配对，空=无标注）
                 "airlineTransfer": tc_tip,
-                # 第二段服务承诺（有值才落——labels 既有渲染通道，
-                # 行形态不漂移）
-                **({"labels": fw_txt} if fw_txt else {}),
+                # labels 组装：共享承运（决策级承运商信息）在前、第二
+                # 段服务承诺在后（有值才落——labels 既有渲染通道，行
+                # 形态不漂移）
+                **({"labels": "·".join(
+                       x for x in (share_txt, fw_txt) if x)}
+                   if (share_txt or fw_txt) else {}),
                 # 免费托运随最低价政策配对（与 book1 同键同值，
                 # webui/CSV/report 白名单既有零改动）
                 **({"baggage": "免费托运"} if bag_ok else {}),

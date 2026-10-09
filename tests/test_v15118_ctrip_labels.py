@@ -219,9 +219,10 @@ def test_webui_lure_price_whitelist_and_badge():
 def test_webui_p11_kpisum_touch_floor():
     """P1-1（r219 WebUI 审计）：概览 kpisum 内联链移动端热区 16px
     （36 地板的 44%）——inline 垂直 padding 实体扩张+水平负 margin
-    回收（不破一行排版，行高零漂移）。"""
-    assert ".kpisum a{position:relative;padding:12px 4px;margin:0 -4px}" \
-        in src()
+    回收（不破一行排版，行高零漂移）。r273 同声明追加基态
+    text-decoration:none（链接族下划线语言收口），热区语义不变。"""
+    assert (".kpisum a{position:relative;padding:12px 4px;margin:0 -4px;"
+            "text-decoration:none}") in src()
 
 
 def test_webui_p21_pushlog_empty_title():

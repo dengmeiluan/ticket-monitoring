@@ -995,13 +995,15 @@ class Alerter:
             last = self.storage.get_alert_state(route_key) if self.storage else None
             should_push, reason = self._should_push(bp.price, last)
 
-            # 控制台始终打印当前命中低价的状态
+            # 控制台始终打印当前命中低价的状态；notifier 未启用时
+            # 如实打「跳过」——词面「推送」实际静默=排查误导
             self.logger.warning(
                 "[低价] %s->%s %s ￥%.0f (阈值￥%.0f, 上次推送￥%s) -> %s",
                 route.from_name, route.to_name, date,
                 bp.price, route.alert_threshold,
                 f"{last:.0f}" if last else "-",
-                "推送" if should_push else f"跳过({reason})",
+                ("推送" if self.notifier else "跳过(未启用推送)")
+                if should_push else f"跳过({reason})",
             )
 
             if should_push and self.notifier:
@@ -1483,8 +1485,9 @@ class Alerter:
         if price < th:
             # 「真达标」词面（与恰达线分支/四档图例同字——
             # 旧「达标」是 正名的漏网）；「低￥N」走 gap_txt 单源；
-            # label 与档位词间空格分隔（
-            # 「直飞真达标」粘连连读）
+            # label 与档位词间空格分隔防「直飞真达标」粘连连读
+            # （r273 审校收口：行情破线/恰线/擦边三分支漏网同律，
+            # 全分支统一「label 档词」贴法）
             return (f"{label} {TIER_FULL['qual']} "
                     f"{gap_txt(price, th, True)}，建议出手")
         if price == th:
@@ -1501,13 +1504,13 @@ class Alerter:
         # 与建议行「差￥50」两数互斥。差额词走 gap_txt 单源（行情口径
         # qual_hit=False：恰达线出「行情破线」不与 🟩 图例互斥）
         if gap < 0:
-            return f"{label}{_MKT_SHORT}{gap_txt(mkt, th, False)}，蹲守{tax_pad}"
+            return f"{label} {_MKT_SHORT}{gap_txt(mkt, th, False)}，蹲守{tax_pad}"
         if gap == 0:
-            return f"{label}{gap_txt(mkt, th, False)}，蹲守{tax_pad}"
+            return f"{label} {gap_txt(mkt, th, False)}，蹲守{tax_pad}"
         if gap <= NEAR_RATIO:
             # 「擦边N%」词面单源（推送审校：与 kpi_tier_txt:107
             # 同形重复构造，改词面必漏其一——抽 _near_txt 小单源两处共用）
-            return f"{label}{_near_txt(gap)}，蹲守提醒{tax_pad}"
+            return f"{label} {_near_txt(gap)}，蹲守提醒{tax_pad}"
         return ""
 
     @staticmethod
@@ -1757,6 +1760,13 @@ class Alerter:
         with_charts=False → 整段跳过走势图块（预览器无本轮图 URL，
         走势分支曾恒出「⚠️ 走势图…」假警告误导用户）；
         no_data → 配置了但本轮全渠道零条的航线（desp 补对账行）。"""
+        # 行程时间序展示：去程日期在前返程在后。上游查询队列按
+        # (from,to,date) 字典序排列（HAK<SHA），返程「海→上」曾整体
+        # 排到去程前——标题「另监控」清单与正文小节序同染（用户实报
+        # 「应该优先展示去程」）。锚位语义不动（差值最小/达标置顶仍
+        # 打头），只回归展示序；单源在纯构建入口，预览器同吃。
+        rs_list = sorted(rs_list, key=lambda rp: (
+            min(rp[0].dates or [""]), rp[0].from_code, rp[0].to_code))
         hits = self._collect_hits(rs_list)
 
         def _summary_excl(r_x=None, d_x=None):
@@ -1998,6 +2008,11 @@ class Alerter:
                                         or [best]))
                 gauge = ""
                 l3_note = ""
+                # 预绑空串（Soldier M-3 加固）：行3 孤舱位省略条件与
+                # 兜底注并入条件都读 base1——现依赖「l3_note 真值 ⟹
+                # th>0 ⟹ base1 已绑」的结构不变量短路保护，条件重排
+                # 即 UnboundLocalError；显式预绑消隐性依赖
+                base1 = ""
                 if th > 0:
                     diff = best["price"] - th
                     # 🎯=「这个价能不能合规买到」组 OR 口径（_tie_any_ok
@@ -2119,6 +2134,17 @@ class Alerter:
                 if pad_tok:
                     toks.append(pad_tok)
                 cn = _cabin_cn(cabin_clean(best))
+                # 孤「经济舱」行3 整段省略（推送审校 P3-②：直飞行默认
+                # 舱位独占引用段占生产推送 78.5%，WinToast 连读
+                # 「；经济舱；」、短信/TTS 同耗——「默认态不占语义位」
+                # 与「超线不加点」同哲学）。非默认舱位（公务/头等/
+                # 超级经济）=异常态警示必留；「经济舱(Y)」括注形态含
+                # 退改等级信息不省（只省裸词）；行3 已有别 token
+                # （经停/直挂/税前）或行情注将并入时舱位照旧随行——
+                # 只省「整段仅剩它」的孤段
+                if cn == "经济舱" and not toks \
+                        and not (l3_note and l1 == base1):
+                    cn = ""
                 if cn:
                     toks.append(cn)
                 # 行1 尾注被降光 → 行情注并入行3 引用块兜底（仍超宽时
@@ -3895,7 +3921,8 @@ class Alerter:
             "[低价-%s] %s->%s %s ￥%.0f %s（阈值￥%.0f, 上次推送￥%s）-> %s",
             label, route.from_name, route.to_name, date, price,
             f["name"], threshold, f"{last:.0f}" if last else "-",
-            "推送" if should_push else f"跳过({reason})",
+            ("推送" if self.notifier else "跳过(未启用推送)")
+            if should_push else f"跳过({reason})",
         )
         if should_push and self.notifier:
             ok = self._push_flight(route, date, f, category, threshold,

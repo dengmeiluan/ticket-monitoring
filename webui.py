@@ -66,14 +66,16 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
 <title>机票监控台</title>
 <style>
  /* ===== 「签派控制台」设计语言：数字即主角（mono）、hairline 分区、扁平精密仪表 ===== */
- :root{--blue:#0b62d6;--orange:#c96a10;--red:#c22a2e;--green:#0e8345;
+ :root{--blue:#0b62d6;--orange:#c96a10;--red:#c22a2e;
+       --green:#0e8345;     /* 与推送图达标绿 C_QUAL 同值（跨端同色同义），改必双端同步（report.py） */
        --okrgb:14,131,69;   /* 绿档通道令牌：rgba(var(--okrgb),α) 消费（描边/底/晕全谱），暗色随 #43c072 换谱 */
        --bg:#eceff4;--card:#ffffff;--tx:#141f2b;--mut:#5a6c7d;--tx2:#3d4e5f;
        --line:#dde3ea;--line2:#cbd4de;--grid:#b8c2cf;--headbg:#eef2f7;--hover:#e8edf3;--rowalt:#f5f8fb;
        --tgbar:#6f8090;       /* r258 U1：改期微图普通日数据柱专档（原借 --line2 边框令牌对行底 1.41:1 <3:1 非文字图形档）→ 对 rowalt 3.8:1；.tgb.cheap/.lo 绿档与 .cur 蓝描边语义态不随此令牌 */
        --ctlbd:#7d8fa0;       /* r259 U1：交互控件边界专档（表单件边框/开关 off 轨/描边钮原借 --line/--line2 容器 hairline 对衬底 1.08-1.66 双主题 <3:1 非文字图形档）→ 亮对 rowalt 3.1/card 3.3（WCAG 精算）；hover/focus 提档链不随此令牌（.fbar 等表单件 hover --mut 更强、.tg hover --blue、描边钮 hover 换底）；容器分区/装饰 hairline 不随此令牌（--line/--line2 语义保留） */
        --stl:#a84c15;--okbg:#e9f4ec;--warn:#8a6c00;--okzone:rgba(var(--okrgb),.14);
-       /* --stl 消费点唯一（.stl.lay 衔接警示小字）：#c0561a 对 card 4.29 欠 AA → #a84c15 5.3 双主题过 */
+       /* --stl 消费点唯一（.stl.lay 衔接警示小字），与推送图 LAY_SHORT 同值
+          （跨端同色同义，report.py，改必双端同步）；对 card/rowalt 双主题过 AA */
        --ok-txt:#0b6e39;      /* P2-3：okbg 底绿词面加深（--green 对 okbg 4.28:1 欠 AA）→ 5.63:1；消费 .pill.ok/.hbadge.ok/.upill.ok 小字 */
        --orange-txt:#a45508;  /* r230 P2-2：文字级橙令牌（--orange 对白卡 3.78 全站正文级最低）→ 5.41:1；消费 .kpi.t .num 主数字（12px 小字已收 --ok-txt 族，主角同律） */
        --warn-deep:#6f5600;   /* P2-3：琥珀小标（.chip .bd.mid）加深（--warn 对 headbg 4.42:1 欠 AA）→ 6.21:1；仍琥珀=擦边语义不换谱 */
@@ -98,7 +100,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
        --sh-pop:0 18px 50px rgba(16,24,40,.35);   /* 弹层卡重阴影（遮罩语境单值，暗色底上同形自然）；r239 P3-2 裸值收口 */
        --r:14px;--r2:11px;--r3:9px;--r10:10px;--pill:999px;   /* 全胶囊家族单源（P2-C：.tag/.switch/.hbadge/.upill/.mchip/CTA 六处 20/18/999px 三写法并轨）；--r10=容器瓦片档（.tw/.fbar/.cdt/mtab/savebar/pldesp/notify 框，与 --r3 交互件档分立） */
        --r-xs:2px;--r-sm:5px;   /* 微件圆角两档（r239 P3-1 收口：色票/健康格/脉冲柱/键帽/滚动条 thumb/TG 柱顶）；1px 毛发档与 4/6/8px 特意值不入族（并入即改外观） */
-       --ls1:1px;--ls2:2px;   /* 微型大写标签字距两档单源：--ls1=正文级微签（11px 系），--ls2=装饰英文签（.seclab .en/.grouplab .en）；15px 展示性大字距不入族 */
+       --ls1:1px;--ls2:2px;--ls05:.5px;   /* 微型标签字距三档单源：--ls1=正文级微签（11px 系），--ls2=装饰英文签（.seclab .en/.grouplab .en），--ls05=11-14px 胶囊/代码的半像素档（.seclab .zh/.tag/.pseclab/.rtcode）；15px 展示性大字距与品牌 h1、mono 数字负字距不入族 */
        --kpiw:min(1168px,100%);   /* KPI/脉冲区限宽单源：流式封顶 1168
                                      （原 992 固定值在 1366/1280
                                      主流本留 ~150px 右空腔，100% 流式
@@ -194,7 +196,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
     全站 8 处消费全为 .inline（167 全量覆写），基础态无生产点 */
  .seclab{display:flex;align-items:baseline;gap:9px}
  .seclab .no{font-family:var(--num);font-size:11px;color:var(--mut);letter-spacing:var(--ls1)}
- .seclab .zh{font-size:14px;font-weight:700;letter-spacing:.5px}
+ .seclab .zh{font-size:14px;font-weight:700;letter-spacing:var(--ls05)}
  .seclab .en{font-size:10px;letter-spacing:var(--ls2);color:var(--mut);text-transform:uppercase}
  /* 卡内嵌用：脱掉分区条的边距与底线（曾 7 处复制内联，收编于此） */
  .seclab.inline{margin:0;border:none;padding:0}
@@ -217,7 +219,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  button:active{transform:scale(.96)}
  .rngchip:hover{background:var(--hover)}
  .uhead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
- .uname{font-size:15px;font-weight:700;letter-spacing:.3px}
+ .uname{font-size:15px;font-weight:700;letter-spacing:.3px}  /* 人名字距独立档：15px 展示性大字距不入 --ls05 族（同 h1 品牌对语义） */
  .udot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px;
    background:var(--line2);vertical-align:1px}
  .udot.hit{background:var(--green);animation:hitpulse 1.6s ease-in-out infinite}
@@ -227,7 +229,9 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  /* 1fr 轨道填满容器：KPI 双卡左缘与卡内下方 statline/mchips 全宽贴边
     对齐；460px 上限+居中曾让概览恒 2 卡整体内缩错位 */
  .kpi .lab{font-size:11px;color:var(--mut);letter-spacing:var(--ls1)}
- .kpi .fb{color:var(--tx2);font-size:12px;margin-top:2px}
+ /* fb 行统一 19px 地板：徽章（bagtag/stoptag inline-block）行高 19、
+    纯文本行 16，跨日期组两卡曾差 3px 节奏——min-height 归一 */
+ .kpi .fb{color:var(--tx2);font-size:12px;margin-top:2px;min-height:19px}
  /* fb 行词组粒度防断词：CJK 无断词边界逐字折行，「经郑州」曾折成
     「经郑/州」孤字（P1-1，768 档两组中转卡必现）——
     中转城市段整词 nowrap，空间不足时整段掉行不断字 */
@@ -244,8 +248,8 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  .xind::before{content:'▸';display:inline-block;transition:transform .15s ease-out,color .15s ease-out}
  tr[aria-expanded="true"] .xind::before{transform:rotate(90deg);color:var(--blue)}
  .stl.lay.ok{color:var(--ok-txt)}   /* 衔接达标小字：qual tint 底 --green 4.34 欠 AA，同 --ok-txt 族收编 */
- /* 衔接「停X」小字默认走 --stl 警示色（未达下限）：.stl 基类改中性灰
-    后衔接警示语义在此保留（.ok 覆写为绿） */
+ /* 衔接「停X」小字：下限已配置且未达=警示色，达标 .ok 覆写为绿；
+    下限未配置（=0）无警示语义，渲染式不落 .lay（走 .stl 基类中性灰） */
  .stl.lay{color:var(--stl)}
  .kpi .num{font-family:var(--num);font-size:clamp(24px,2.4vw,31px);font-weight:600;margin:3px 0 1px;
            letter-spacing:-1px;font-variant-numeric:tabular-nums}
@@ -322,6 +326,9 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
     词色同病成对收编（P2-1，4.48:1 差 0.02） */
  html[data-theme="dark"] tr.qual .stl,
  html[data-theme="dark"] tr.qual .stoptag{color:#8ba0b4}
+ /* 衔接达标小字是 .ok 语义绿档非中性子行，豁免上一条提亮灰（与
+    推送 PNG 达标行停时绿同语言）；特异度 (0,4,0) 压 (0,3,2) */
+ html[data-theme="dark"] tr.qual .stl.lay.ok{color:var(--ok-txt)}
  /* .mdat 日期副字同族漏收补齐（r239 WebUI 审计 P2-1）：其基础规则
     #ftable .mdat 带 ID 特异性 (1,1,0)，恒压类选择器组 (0,3,2)——
     覆写须同带 ID（LESSONS 十四§4 同族判例）；规则本体在窄屏媒体块，
@@ -329,7 +336,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  html[data-theme="dark"] #ftable tr.qual .mdat{color:#8ba0b4}
  html[data-theme="dark"] tr.qual:hover{background:rgba(67,192,114,.2)}
  .tag{border-radius:var(--pill);padding:3px 10px;font-size:11px;color:#fff;font-weight:600;
-   letter-spacing:.5px}
+   letter-spacing:var(--ls05)}
  .pdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;
    vertical-align:1px;background:var(--mut)}
  .pdot.qunar{background:var(--c-qunar)}.pdot.fliggy{background:var(--c-fliggy)}
@@ -612,7 +619,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
     对本件微晕不可辨是既有豁免理由，outline 形态不受 appearance 影响 */
  .switch:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
  /* 推送通道健康行（renderPushChannels）：小节签/状态词/计量小字 */
- .pseclab{margin:14px 0 4px;font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.5px}
+ .pseclab{margin:14px 0 4px;font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:var(--ls05)}
  .pst{font-size:12px;font-weight:600;flex:none}
  .pst.bad{color:var(--red)}.pst.ok{color:var(--green)}
  .pmeta{font-size:12px;color:var(--mut);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -699,7 +706,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  .pvbody .md-hr{border:none;border-top:1px solid var(--line);margin:10px 0}
  .pvbody .md-p{margin:6px 0}
  .pvbody .md-li{margin:6px 0;padding-left:16px;color:var(--tx)}
- .pvbody .md-g{font-size:15px;letter-spacing:2px}
+ .pvbody .md-g{font-size:15px;letter-spacing:var(--ls2)}
  .pvbody img{max-width:100%;border-radius:8px;border:1px solid var(--line);display:block;margin:6px 0}
  .pvbody a{color:var(--blue);text-decoration:none}
  .pvbody a:hover{text-decoration:underline}   /* 真实可点链接悬停零反馈，与 .toast:hover/a.vw:hover 同律 */
@@ -720,7 +727,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
     一直开着的旧标签页——10s 轮询发现服务端版本与页面代际不一致即亮此条 */
  .verbar{margin:12px 0 0;background:#ffe4e4;color:#8a1f1f;border:1px solid #f2b8b8;
          border-radius:var(--r10);padding:9px 14px;font-size:13px;text-align:center}
- .verbar a{color:#8a1f1f;font-weight:700}
+ .verbar a{color:#8a1f1f;font-weight:700;text-decoration:none}
  .verbar a:hover{text-decoration:underline}   /* 紧急刷新链悬停零反馈，与 .pvbody a:hover 同律 */
  html[data-theme="dark"] .verbar a{color:var(--ver-tx)}
  html[data-theme="dark"] .verbar{background:var(--ver-bg);color:var(--ver-tx);border-color:var(--ver-bd)}
@@ -913,7 +920,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  @keyframes cfgflash{0%{box-shadow:0 0 0 3px rgba(var(--blue-rgb),.5)}
   100%{box-shadow:0 0 0 3px rgba(var(--blue-rgb),0)}}
  .rtcode{font-family:var(--num);font-size:14px;font-weight:600;color:var(--blue);
-   letter-spacing:.5px}
+   letter-spacing:var(--ls05)}
  /* 未保存修改浮出保存条：display 恒 flex，显隐走 translateY+opacity 滑入
     （.on 由 JS 巡检 toggle，隐藏态平移出视口不吃点击）。
      补 visibility 双态（与 .pvmask 同范式）：仅 transform 隐藏时
@@ -980,7 +987,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  /* 行内明细/走势链接触控外扩（#foot a::after 同款族
     收编：实测 h=16 全站最小可点件之一，纯命中区视觉零变化，
     与相邻「｜」分隔 ~20px 不吃邻命中） */
- .kpisum a{position:relative;padding:12px 4px;margin:0 -4px}   /* r219 P1-1：内联链触控热区实体扩张（inline 垂直 padding 纯扩命中区不占布局；12px 地板=本地 16px 与 CI Linux ~14px 字体行高双环境均 ≥36 触控基准） */
+ .kpisum a{position:relative;padding:12px 4px;margin:0 -4px;text-decoration:none}   /* r219 P1-1：内联链触控热区实体扩张（inline 垂直 padding 纯扩命中区不占布局；12px 地板=本地 16px 与 CI Linux ~14px 字体行高双环境均 ≥36 触控基准） */
  .kpisum a::after{content:'';position:absolute;inset:-10px -4px}
  .kpisum a:hover{text-decoration:underline}   /* 与 .pvbody a:hover 同律 */
  /* 断点缝收敛：wrap 跨断点一次性 +140px 而 statline/pulsewrap
@@ -1119,6 +1126,9 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
   /* srow 行内输入触控高度对齐 fbar 38（基础 34px 低于 36 基准；
      srow min-height 容得下） */
   .srow .sctl input:not(.switch){height:38px}
+  /* .srow 16px 守卫走与上行同形的高特异形态（(0,3,1) 置尾胜基础
+     13px；清单形态 (0,2,1) 曾被压制=层叠败北，iOS 聚焦爆版） */
+  .srow .sctl input:not(.switch){font-size:16px}
   /* 三处 16px 清单互指（审计）：本块=≤900 粗指针（iPad 竖屏
      820 带）、≤760 任意指针、901+ 粗指针（iPad Pro 横屏）——
      条件语义各异勿合并，改动须三处同步 */
@@ -1156,7 +1166,12 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
      保留域；两数为 demo 实测口径，随卡内胶囊数浮动）。层叠：须晚于
      600 块 .grid 限宽声明 */
   .grid,.kpisum{max-width:min(1440px,100%)}
-  /* header 原生 -18px 出血是 1284 档视觉语言；统一 1680 后与卡同缘 */
+  /* header 原生 -18px 出血是 1284 档视觉语言；统一 1680 后与卡同缘。
+     摘出血后 h1（卡内文字轴）与 #mainnav（裸排胶囊卡，盒轴线）相
+     差 18px——窄带的 h1≡nav 同线是出血恰抵消 padding 的巧合，非设
+     计语言；本带对齐语言=「盒轴通线」：nav 与下方全部卡盒同线一柱
+     贯底，h1 内缩是 header 卡内呼吸空间。消台阶的两修法（nav 缩进
+     18px 破通线 / header padding 左 0 伤对称）害均大于台阶本身，备案不修 */
   header{margin-left:0;margin-right:0}}
  /* ===== 大屏触控设备（>900px 且 pointer:coarse）：iPad Pro 横屏 1366 等
     落在 ≤900 触控补丁盲区，控件回落 <36px 触控基准；声明与上方触控块
@@ -1199,6 +1214,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
   .srow input:not([type]),.fbar input[type=text],.cfgsearch,
   .fbar label input{font-size:16px}
   .srow .sctl input:not(.switch){height:38px}
+  .srow .sctl input:not(.switch){font-size:16px}
   .glcell input[type=text]{font-size:16px!important}
   /* 三处触控清单互指（审计）：本块=901+ 粗指针（iPad Pro 横屏）、
      姊妹块=≤900 粗指针（iPad 竖屏带）与 ≤760 任意指针——条件
@@ -1306,6 +1322,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
   .srow input[type=url],.srow input[type=tel],.srow input[type=password],
   .srow input:not([type]),.fbar input[type=text],.cfgsearch,
   .fbar label input{font-size:16px}
+  .srow .sctl input:not(.switch){font-size:16px}
   .glcell input[type=text]{font-size:16px!important}}
   /* P2-C：glcell 文本输入内联 13px 锁定，!important 压内联
      （iOS 聚焦自动放大且不回位；仅本媒体内生效，桌面 13px 观感不变） */
@@ -1325,7 +1342,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
   .kpi{padding:10px 12px}
   .grid{gap:8px}
   .ucard{padding:12px 12px}
-  header{padding:10px 12px}
+  header{padding:10px 10px}
   header h1{font-size:15px;letter-spacing:.6px}
   .wrap{padding:0 10px 14px}
   header{margin:0 -10px 4px}
@@ -1589,7 +1606,9 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  #montab-details .tabs>#fltBtn{position:sticky;right:0;z-index:1;
   box-shadow:0 0 0 4px var(--card)}}
  /* 页脚/演示条链接 hover 反馈（NOTIFY 轻页同位对齐：
-    真实可点链接悬停零反馈属缺陷） */
+    真实可点链接悬停零反馈属缺陷）；基态去 UA 恒下划线与
+    .numlink/a.vw 同语言（悬停才显形） */
+ #foot a,.demoBar a{text-decoration:none}
  #foot a:hover,.demoBar a:hover{text-decoration:underline}
  /* 1000-1439 中带日历恒单行（P1-2）：flex-wrap 下 shrink
     不跨折行线——1280 档首行 14 格后第 15 格必折行（1106 容器
@@ -2191,27 +2210,23 @@ function mkact(el){if(!el||el.dataset.kbd)return;el.dataset.kbd='1';
  el.addEventListener('keydown',e=>{
   if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}});}
 function mkactAll(){document.querySelectorAll('[role="button"],span[onclick],.mtab,#tabs span[data-f],.cnav,.plitem,.dx,.tg').forEach(mkact);tabAria();}
-/* 审计 P2-2：mkact 的 button 降级形态不携带选中态——#montabs 是
-   纯 tab 容器（子项恒 .mtab），补 tablist/tab+aria-selected 动态
-   回写（挂 mkactAll 尾随渲染补拍，showMonTab 切换点再补一拍，与
-   「量纲型 affordance 在可见性切换点重跑」同律）。#tabs/#cfgnav
-   混有图例/搜索等非 tab 子元素，ARIA tablist 须纯 tab 子集，维持
-   button 形态（读屏按按钮播报，功能无缺） */
-function tabAria(){const c=$('montabs');
-  if(c)c.setAttribute('role','tablist');
+/* 审计 P2-2：mkact 的 button 降级形态不携带选中态——.mtab 走
+   aria-pressed 动态回写（挂 mkactAll 尾随渲染补拍，showMonTab 切换
+   点再补一拍，与「量纲型 affordance 在可见性切换点重跑」同律）。
+   #tabs/#cfgnav 混有图例/搜索等非 tab 子元素，#montabs 后来也混入
+   多租户切换 chip（role=button 非 tab 子件）——ARIA tablist 须纯
+   tab 子集，三处统一 button 形态（读屏按按钮播报，功能无缺；
+   方向键 roving 挂容器 onkeydown 与形制无关，键盘切换不回归；
+   tabIndex roving 随 tablist 形制退役，button 下全员可 Tab） */
+function tabAria(){
  /* audit P3-1：面板侧回指可访问名——读屏聚焦 tabpanel 只播「tabpanel」，
-    随 tab aria-selected 同拍回写面板名（data-t→中文名映射，不取
-    .mtab textContent 防概览角标 <i> 词面混入） */
+    回写面板名（data-t→中文名映射，不取 .mtab textContent 防概览角标
+    <i> 词面混入） */
  const PNAME={overview:'概览',trend:'走势·日历',details:'航班明细',health:'渠道健康'};
  Object.keys(PNAME).forEach(k=>{const p=$('montab-'+k);
   if(p)p.setAttribute('aria-label',PNAME[k]);});
- document.querySelectorAll('.mtab').forEach(x=>{
-  x.setAttribute('role','tab');
-  x.setAttribute('aria-controls','montab-'+x.dataset.t);   /* r236 P3-3：tab↔tabpanel 引用关联（面板侧 role=tabpanel 静态在位） */
-  x.setAttribute('aria-selected',x.classList.contains('on')?'true':'false');
-  /* roving tabIndex（r235 P2-7）：选中 0 余 -1，Tab 序一步出 tablist
-     （方向键 roving 已在；仅改 Tab 序初值分配） */
-  x.tabIndex=x.classList.contains('on')?0:-1;});
+ document.querySelectorAll('.mtab').forEach(x=>
+  x.setAttribute('aria-pressed',x.classList.contains('on')?'true':'false'));
  /* 审计 P2-4：#tabs/#cfgnav 选中态只有 .on 类视觉呈现——button
     形态按 aria-pressed 播报（mkact 已赋予 role=button），切换点各补
     一拍，本函数随 mkactAll 尾随渲染兜初始态 */
@@ -2274,8 +2289,8 @@ function buildRouteChips(){if(!S||!S.users.length)return;const u=S.users[U];
  FLT.routes=new Set(keep.length?keep:new Set());   /* 初始空集=全部：全亮默认稀释选中语义，plats 同律 */
  chipsRefocus('routechips',()=>{
  box.innerHTML='<span class="chiplab">航线：</span>'+rs.map(p=>
-  `<span class="chip${FLT.routes.has(p)?' on':''}" onclick="togRoute(this,'${p}')">${p}</span>`).join('');});}
-function togRoute(el,p){if(FLT.routes.has(p))FLT.routes.delete(p);else FLT.routes.add(p);
+  `<span class="chip${FLT.routes.has(p)?' on':''}" data-r="${he(p)}" onclick="togRoute(this)">${he(p)}</span>`).join('');});}
+function togRoute(el){const p=el.dataset.r;if(FLT.routes.has(p))FLT.routes.delete(p);else FLT.routes.add(p);
  el.classList.toggle('on');saveUI();table();}
 function buildChips(){if(!S||!S.users.length)return;const u=S.users[U];
  const age=u.platAge||{};
@@ -2644,7 +2659,7 @@ function _chunkHtml(ci){if(_CHUNKS[ci]!=null)return _CHUNKS[ci];
   `<td class="datd">${f.date?dSlash(f.date):'—'}</td>`+
   `<td${((f.labels||f.labelNote||f.baggage||f.carryon||f.bizPrice!=null)||(f.childPrice!=null||f.infantPrice!=null)||f.distance!=null||(f.nearby&&f.nearby.length)||(f.trendRound&&f.trendRound.length))?` title="${he((f.labels||'').split('·').join(' · '))+(f.labels&&f.labelNote?'｜':'')+he(f.labelNote||'')+((f.labels||f.labelNote)&&f.baggage?'｜':'')+(f.baggage?he(f.baggage):'')+((f.labels||f.labelNote||f.baggage)&&f.carryon?'｜':'')+(f.carryon?he(f.carryon):'')+((f.labels||f.labelNote||f.baggage||f.carryon)&&f.bizPrice!=null?'｜':'')+(f.bizPrice!=null?he(f.bizCabin||'公务')+'￥'+he(String(f.bizPrice)):'')+((f.childPrice!=null||f.infantPrice!=null)?(((f.labels||f.labelNote||f.bizPrice!=null||f.baggage||f.carryon)?'｜':'')+(f.childPrice!=null?'儿童价￥'+he(String(f.childPrice)):'')+((f.childPrice!=null&&f.infantPrice!=null)?'｜':'')+(f.infantPrice!=null?'婴儿价￥'+he(String(f.infantPrice)):'')):'')+(f.distance!=null?((f.labels||f.labelNote||f.baggage||f.carryon||f.bizPrice!=null||f.childPrice!=null||f.infantPrice!=null)?'｜':'')+'航程'+he(String(f.distance))+'km':'')+(f.nearby&&f.nearby.length?((f.labels||f.labelNote||f.baggage||f.carryon||f.bizPrice!=null||f.childPrice!=null||f.infantPrice!=null||f.distance!=null)?'｜':'')+he(_nb_txt(f)):'')+(f.trendRound&&f.trendRound.length?((f.labels||f.labelNote||f.baggage||f.carryon||f.bizPrice!=null||f.childPrice!=null||f.infantPrice!=null||f.distance!=null||(f.nearby&&f.nearby.length))?'｜':'')+he(_rt_txt(f)):'')}"`:''}><div class="mmeta"><span class="tag ${f.transfer?'t-t':'t-d'}"${(f.transfer&&f.transferService)?` title="中转服务：${he(f.transferService)}"`:''}>${f.transfer?'中转':'直飞'}</span><span class="mdat">${f.date?dSlash(f.date):'—'}</span></div><span class="xind" aria-hidden="true"></span>${he(f.name)}${f.stop?`<span class="stoptag">经停${he(f.stopCity||'')}${f.stopTimeT?` 停${he(f.stopTimeT)}`:''}${f.stopWin?`(${he(f.stopWin)})`:''}</span>`:''}${f.bagState==='direct'?'<span class="bagtag">直挂</span>':(f.bagState==='recheck'?'<span class="stoptag" title="渠道标注行李需重新托运（中转不直挂）">需转运</span>':'')}${f.lcc?'<span class="stoptag" title="廉价航空：中转常需重新值机、行李托运受限">廉航</span>':''}${(f.cabinT||f.prate||f.meal||f.shareCarrier||f.fewTicket||f.depTerminal||f.arrTerminal||f.depAirport||f.arrAirport||f.planeSize||f.ptripNote||f.airlineTransfer||f.avgDelay!=null||f.transTerminal||f.transDepTerminal||f.transferTax!=null||(f.leftTickets>0&&f.leftTickets<10))?`<div class="stl" style="margin-top:3px">${[f.cabinT?he(f.cabinT):'',f.cabinCode?'<span title="舱位代码'+(f.seatTilt!=null?'｜座椅倾斜'+f.seatTilt+'°':'')+'">'+he(f.cabinCode)+'</span>':'',f.prate?'准点'+he(String(f.prate))+'%'+(f.cancelRate!=null?'·取消'+he(String(f.cancelRate))+'%':''):'',f.meal?he(f.meal):'',f.planeSize?'<span title="数据源：渠道连廊率/机龄">'+he(f.planeSize)+(f.bridgeRate!=null?'·廊桥'+he(String(f.bridgeRate))+'%':'')+(f.planeAge?'·机龄'+he(String(f.planeAge))+'年':'')+'</span>':'',f.shareCarrier?'共享·'+he(f.shareAirline?f.shareAirline+f.shareCarrier:f.shareCarrier):(f.shareAirline?'承运·'+he(f.shareAirline):''),f.fewTicket?he(f.fewTicket):'',(f.leftTickets>0&&f.leftTickets<10)?'余'+he(String(f.leftTickets))+'张':'',(f.depTerminal||f.arrTerminal||f.depAirport||f.arrAirport)?'<span class="nw">'+he(((_ttc(f.depAirport,f.depTerminal,f.depAirportCode))&&(_ttc(f.arrAirport,f.arrTerminal,f.arrAirportCode))&&_ttc(f.arrAirport,f.arrTerminal,f.arrAirportCode)!==_ttc(f.depAirport,f.depTerminal,f.depAirportCode))?(_ttc(f.depAirport,f.depTerminal,f.depAirportCode)+'→'+_ttc(f.arrAirport,f.arrTerminal,f.arrAirportCode)):(_ttc(f.arrAirport,f.arrTerminal,f.arrAirportCode)||_ttc(f.depAirport,f.depTerminal,f.depAirportCode)))+'</span>':'',f.transTerminal?'换乘·'+he(f.transTerminal)+(f.transDepTerminal?'（'+he((f.transDepTerminal.match(/T\d+/)||[''])[0])+'出）':''):'',f.transferTax!=null?'<span title="飞猪列表价为不含机建燃油的裸价，出行总成本需另加此项">+机建燃油￥'+he(String(f.transferTax))+'</span>':'',f.ptripNote?he(f.ptripNote):'',_ad_txt(f.avgDelay),f.airlineTransfer?he(f.airlineTransfer):''].filter(Boolean).join(' ｜ ')}</div>`:''}${tgCap(f,k)}${f.view?`<a class="vw" href="${he(f.view)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="去${he(f.plat||'去哪儿')}查看该航线">↗</a>`:''}${f.route?`<span class="stl nw"> <span style="display:inline-block">${he(f.route)}</span><span class="tj" role="button" tabindex="0" title="查看该航线价格走势" data-r="${he(f.route)}" data-d="${he(f.date||'')}" onclick="event.stopPropagation();jumpRowTrend(this.dataset.r,this.dataset.d)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();jumpRowTrend(this.dataset.r,this.dataset.d)}">📈</span></span>`:''}</td><td>${f.depTime}</td>`+
   `<td>${f.arrTime}${f.cross?`<span class="stl"> ${he(f.cross)}</span>`:''}</td>`+
-  `<td>${durTxt(f.dur)||'—'}</td><td>${f.trans?he(f.trans):'—'}${(f.lay2dep||f.transGoDate)?`<div class="stl">二段 ${[f.transGoDate&&dSlash(f.transGoDate),f.lay2dep].filter(Boolean).join(' ')} 起飞</div>`:''}${f.layoverT?`<div class="stl lay${(f.layMin>0&&(+f.layoverM||0)>=f.layMin)?' ok':''}"${f.layMin>0?' title="航线衔接下限 '+f.layMin+' 分钟"':''}>停${f.layoverT}</div>`:''}</td>`+
+  `<td>${durTxt(f.dur)||'—'}</td><td>${f.trans?he(f.trans):'—'}${(f.lay2dep||f.transGoDate)?`<div class="stl">二段 ${[f.transGoDate&&dSlash(f.transGoDate),f.lay2dep].filter(Boolean).join(' ')} 起飞</div>`:''}${f.layoverT?`<div class="${f.layMin>0?('stl lay'+((+f.layoverM||0)>=f.layMin?' ok':'')):'stl'}"${f.layMin>0?' title="航线衔接下限 '+f.layMin+' 分钟"':''}>停${f.layoverT}</div>`:''}</td>`+
   `<td><span class="pdot ${f.platKey||''}"></span>${f.plat}${f.stale?`<span class="stl">·${f.stale}h前</span>`:''}</td></tr>`+
   tgrowHtml(f,k,TGOPEN===k)+xrowHtml(u,k,EXP===k,fp(f));
  }
@@ -2896,6 +2911,7 @@ function togChart(i){if(!S||!S.users.length)return;
     量纲参考，不构成画图理由 */
  if(!vals.length||!(K?CD.length+CT.length:hd.length+ht.length)){
   ctx.clearRect(0,0,W,H);HPTS=null;$('ringNote').innerHTML='';
+  $('lgZone').style.display='none';$('lgThD').style.display='none';$('lgThT').style.display='none';
   $('chartEmpty').innerHTML='暂无走势数据<span>完成第一轮扫描后，这里会出现近 48h 的最低价曲线</span>';
   $('chartEmpty').style.display='flex';return;}
  $('chartEmpty').style.display='none';
@@ -3003,7 +3019,11 @@ function togChart(i){if(!S||!S.users.length)return;
    cs.forEach((c,i)=>{const st=stOf(c);
     const pv=i>0?cs[i-1]:null;
     const pst=pv?stOf(pv):0;
-    if(pst===2&&st!==2)fallMark(X(xf(i))+off,Y(c.l));/* ▼红=达标回落 */
+    /* 环标中心与烛体同款双端钳位（r273 P3-1：烛体钳位当年只护了
+       蜡烛，末桶环心 X+koff 越过 W-R、半径再外扩半截环贴 canvas
+       右缘——同式钳进绘图区，左右对称） */
+    const cx=Math.max(L+cw/2,Math.min(W-R-cw/2,X(xf(i))+off));
+    if(pst===2&&st!==2)fallMark(cx,Y(c.l));/* ▼红=达标回落 */
     if(!st)return;
     if(!pst||pst!==st||i===cs.length-1){
      /* ●=真达标环锚 hp（桶内真达标轮自身价，与明细 🔥 同所指——
@@ -3012,13 +3032,13 @@ function togChart(i){if(!S||!S.users.length)return;
      const rp=(st===2&&c.hp!=null)?c.hp:c.l;
      const grn=cssv('--green')||'#0e8345';
      if(st===2){/* ●实心=真达标（与折线/图例同语言） */
-      ctx.beginPath();ctx.arc(X(xf(i))+off,Y(rp),5,0,7);
+      ctx.beginPath();ctx.arc(cx,Y(rp),5,0,7);
       ctx.fillStyle=grn;ctx.fill();
       ctx.lineWidth=1.5;ctx.strokeStyle=cssv('--card')||'#fff';ctx.stroke();
      }else{
       const ring=st===-1?[5,2,cssv('--warn')||'#8a6c00']
        :[5,1,grn];
-      ctx.beginPath();ctx.arc(X(xf(i))+off,Y(rp),ring[0],0,7);
+      ctx.beginPath();ctx.arc(cx,Y(rp),ring[0],0,7);
       ctx.fillStyle=cssv('--card')||'#fff';ctx.fill();
       ctx.lineWidth=ring[1];ctx.strokeStyle=ring[2];ctx.stroke();}}});};
   ringK(CD,-koff,CR.r.th.direct,axd);ringK(CT,koff,CR.r.th.transfer,axt);
@@ -4419,7 +4439,7 @@ function buildForm(){if(!CFG)return;let h='',gh='';
     +(r.dates||[]).map(d=>`<span class="chip on dchip">${esc(d)}<i class="dx" title="删除该日期" onclick="delDate(${i},${j},'${esc(d)}')">✕</i></span>`).join('')
     +`</span><input type="text" id="dpick-${i}-${j}" placeholder="如 2026-10-08" style="width:128px" onkeydown="if(event.key==='Enter')addDate(${i},${j})"><button class="btn2" title="日历选择" onclick="pickDate(${i},${j})">📅</button><input type="date" id="dreal-${i}-${j}" class="dreal" tabindex="-1"><button class="btn2" style="margin-right:0" onclick="addDate(${i},${j})">➕ 加日期</button></div></div>
    </div>`;});
-   h+=`<button class="btn2" onclick="addRoute(${i})">➕ 添加航线</button>
+   h+=`<button class="btn2 addrbtn" onclick="addRoute(${i})">➕ 添加航线</button>
    `+glab('D','通知渠道','CHANNELS',[
       dt.enabled?'钉钉✓':'钉钉×',
       ((u.notifier||{}).ntfy||{}).enabled?'ntfy✓':null,
@@ -4855,8 +4875,9 @@ function cfgSearchClear(){/* 搜索态复位单源：CFGQ/输入框/命中计数
  const hi=$('cfgHits');if(hi)hi.textContent='';
  document.querySelectorAll(''
   +'#cfgview .glgrid>div,#cfgview .srow,#cfgview .rline,#cfgview .chcard,'
-  +'#cfgview .frow,#cfgview .row,#cfgview .grouplab,#cfgview .lgcard,'
-  +'#cfgview .chgrid>button,#cfgview .ucard>.danger')
+  +'#cfgview .frow,#cfgview .row,#cfgview .lgcard,'
+  +'#cfgview .chgrid>button,#cfgview .ucard button.danger,'
+  +'#cfgview .addrbtn,#cfgview .grouplab,#cfgview .uhead2,#cfgview .uhead,#cfgview .subsec')
   .forEach(el=>{el.style.display='';el.style.boxShadow='';});}
 function cfgFilter(qraw){const q=(qraw||'').trim().toLowerCase();
  const hits=$('cfgHits');if(!q){cfgSearchClear();
@@ -4867,16 +4888,24 @@ function cfgFilter(qraw){const q=(qraw||'').trim().toLowerCase();
  let n=0;
  document.querySelectorAll(''
   +'#cfgview .glgrid>div,#cfgview .srow,#cfgview .lgcard,'
-  +'#cfgview .chgrid>button,#cfgview .ucard>.danger').forEach(d=>{
+  +'#cfgview .chgrid>button,#cfgview .ucard button.danger,'
+  +'#cfgview .addrbtn').forEach(d=>{
   /* 登录卡（.lgcard）并入字段级过滤——搜索态
      非命中登录卡整版滞留会把真命中顶出首屏（清空复位清单同步加）；
-      动作件（添加邮箱通道/删除用户按钮）并入——
-     受过滤收编，不得悬在空分区里 */
+      动作件并入——受过滤收编，不得悬在空分区里（删除用户钮实际
+     DOM 多包一层 div，旧版子代选择器恒不命中=死选择器，后代选择器
+     收编——同时覆盖航线/邮箱通道的删除钮，同为删除类动作件语义
+     一致；「添加航线」钮在折叠包裹层内同理，按专类收编） */
   const inputs=[...d.querySelectorAll('input')].map(i=>i.value).join(' ');
   const m=((d.textContent||'')+' '+inputs).toLowerCase().includes(q);
   /* 被 !important 藏住的行（图床 ih-free Token 行）命中也
      不计——inline display='' 压不过 !important，行仍隐形；计入会出
-     「✓ 1 项匹配」却无高亮行的假命中（audit160 P2-1） */
+     「✓ 1 项匹配」却无高亮行的假命中（audit160 P2-1）。
+     先清上一轮自己写入的 inline 再判：守卫无法区分 !important 隐藏
+     与本函数上轮写下的普通 inline none——命中判定在前时，前轮被藏
+     的行本轮即使命中也在复位前被 return，顺序查询第二轮起假零
+     （清空路径全量复位才复活）。复位后仍 none=真 !important 档 */
+  d.style.display='';
   if(m&&getComputedStyle(d).display==='none')return;
   d.style.display=m?'':'none';
   d.style.boxShadow=m?'0 0 0 2px '+cssv('--glow'):'';   /* 主题随动（曾钉亮色蓝，暗色下与 --glow 脱节） */
@@ -4900,7 +4929,21 @@ function cfgFilter(qraw){const q=(qraw||'').trim().toLowerCase();
      残留曾与新高亮并存现双圈；空查询路径本就有整体复位） */
   if(rhm){n++;rl.style.boxShadow='0 0 0 2px '+cssv('--glow');}
   else if(!vis)rl.style.boxShadow='';});
- document.querySelectorAll('#cfgview .grouplab').forEach(g=>{g.style.display='';});
+ /* 孤儿头隐藏：结构头（分区/用户卡/静态卡头/全局 subsec）随「其后
+    最近的本分区可见内容行」显隐——命中集中于单面板时其余面板的头
+    悬空=可点件漂浮的孤儿头（只随全页命中数 n 判定只覆盖 n=0 档）；
+    沿 nextElementSibling 扫描至下一个结构头为止，遇任一可见内容行
+    即在位。清空路径走 cfgSearchClear 同清单还原 */
+ document.querySelectorAll('#cfgview .grouplab,#cfgview .uhead2,#cfgview .uhead,#cfgview .subsec').forEach(g=>{
+  const ROWS='.srow,.glgrid>div,.frow,.row,.lgcard,.rline,.chcard';
+  let keep=false,sib=g.nextElementSibling;
+  while(sib&&!keep){
+   if(/\b(grouplab|uhead2|uhead|subsec)\b/.test(sib.className||''))break;
+   const rows=sib.matches(ROWS)?[sib]
+    :Array.from(sib.querySelectorAll? sib.querySelectorAll(ROWS):[]);
+   keep=rows.some(d=>getComputedStyle(d).display!=='none');
+   sib=sib.nextElementSibling;}
+  g.style.display=keep?'':'none';});
  hits.textContent=n?('✓ '+n+' 项匹配'):'无匹配项';
 
 }
@@ -5026,12 +5069,12 @@ NOTIFY_PAGE = r"""<!DOCTYPE html>
  /* --- 分隔线：渐隐 hairline（默认裸 hr 极廉价） */
  .md hr{border:none;height:1px;margin:14px 0;
        background:linear-gradient(90deg,transparent,var(--line2) 18%,var(--line2) 82%,transparent)}
- .md .g{letter-spacing:2px;font-size:15px}
+ .md .g{letter-spacing:var(--ls2);font-size:15px}
  .md b{font-variant-numeric:tabular-nums}
  .md img{max-width:100%;border-radius:var(--r10);border:1px solid var(--line);display:block;margin:10px 0}
  .foot{margin-top:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
  .foot a{display:inline;color:var(--blue);font-size:13px;font-weight:400;
-        padding:0;margin:0;border:none;background:none}
+        padding:0;margin:0;border:none;background:none;text-decoration:none}
  .foot a:hover{background:none;text-decoration:underline}
  .ts{color:var(--mut);font-size:12px;font-variant-numeric:tabular-nums}
 </style></head><body>
@@ -6497,6 +6540,10 @@ class _Handler(BaseHTTPRequestHandler):
                 data = None
                 d = _anchored(None, "data/notify")
                 if DEMO["on"]:
+                    # desp 内「真达标/破线/擦边」为图例词面手抄样例——
+                    # 与 alerter._legend_line/_TIER_TABLE 同源词面，改版
+                    # 日须同轮同步（同步律；投影化因 desp 是静态演示
+                    # 文本、不引 Python 侧依赖）
                     data = {"nid": "NDEMO",
                             "title": "🚨 达标 上海→乌鲁木齐 09/25",
                             "desp": "#### 🚨 已达标——可出手\n\n"

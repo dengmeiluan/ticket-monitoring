@@ -97,6 +97,10 @@ class TestWebuiV1555Pins:
         assert "@media(min-width:1920px){\n  canvas{height:clamp(280px,42vh,460px)}}" in src
         assert ".wrap{max-width:1716px}" in src
         assert "header{margin-left:0;margin-right:0}}" in src  # ≥1920 停出血
+        # r280 P3-1 定谳备案：停出血后 h1（卡内文字轴）与 nav（盒轴线）
+        # 差 18px 属「盒内呼吸 vs 盒轴通线」的结构差，非齐线破口——
+        # nav 必须留在盒轴（下方 all-of-1920 钉组锁通线），禁加缩进
+        assert "#mainnav{margin-left:18px}" not in src
         assert "margin-left:-198px" not in src      # 负 margin 突破绝迹
         assert "applyWide" not in src               # 总闸退役
         assert ".wide{" not in src and ".wide," not in src

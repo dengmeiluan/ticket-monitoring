@@ -367,7 +367,7 @@ def demo_pulse(seed=11):
     每轮各渠道行数/耗时，供主页概览条与脉冲柱演示。"""
     rng = random.Random(seed)
     now = datetime.now().replace(second=0, microsecond=0)
-    chans = {"qunar": (70, 16), "fliggy": (24, 9),
+    chans = {"qunar": (70, 16), "ctrip": (18, 8), "fliggy": (24, 9),
              "tongcheng": (30, 12), "tuniu": (12, 7)}
     rounds = []
     for i in range(40):
@@ -384,7 +384,8 @@ def demo_pulse(seed=11):
             cs[plat] = {"ok": rows > 0, "rows": rows,
                         "lat": round(6 + rng.random() * 14, 1)}
         rounds.append({"ts": ts.strftime("%Y-%m-%d %H:%M"),
-                       "dur": round(sum(c["lat"] for c in cs.values()) / 3, 1),
+                       "dur": round(sum(c["lat"] for c in cs.values())
+                                    / len(cs), 1),
                        "rows": sum(c["rows"] for c in cs.values()),
                        "fails": sum(1 for c in cs.values() if not c["ok"]),
                        "chans": cs})

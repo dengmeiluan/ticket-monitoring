@@ -1895,6 +1895,18 @@ def main():
                 b.split("|")[0] == "" and b.split("|")[1] == "none"
                 for b in _g2))
             ck("无匹配计数", "无匹配项" in (pg.inner_text("#cfgHits") or ""))
+            # r275 P3-1：0 命中档孤儿头全退场（结构头+动作钮）——
+            # 无匹配字段却让分区头/用户卡头/添加航线钮悬空漂浮
+            ck("无匹配孤儿头隐藏", pg.evaluate(
+                "()=>[...document.querySelectorAll("
+                "'#cfgview .grouplab,#cfgview .uhead2,#cfgview .uhead,"
+                "#cfgview .subsec,#cfgview .addrbtn,"
+                "#cfgview .ucard button.danger')]"
+                ".every(d=>d.style.display==='none')"))
+            # 动作钮收编真命中：搜「添加航线」钮文本精确命中可见
+            pg.fill("#cfgSearch", "添加航线"); pg.wait_for_timeout(300)
+            ck("搜索收编添加航线钮", pg.is_visible(".addrbtn")
+               and "无匹配项" not in (pg.inner_text("#cfgHits") or ""))
             pg.fill("#cfgSearch", ""); pg.wait_for_timeout(300)
             ck("清空登录卡复位", pg.evaluate(
                 "()=>[...document.querySelectorAll('#cfgview .lgcard')]"
@@ -3415,6 +3427,49 @@ def main():
             ck("r261 P3-1 日历悬停词面与格面同格式",
                isinstance(_r261, dict) and _r261.get("bare") is False
                and "/" in (_r261.get("face") or ""))
+
+            # ---- r280 WebUI 三钉（P1-1 顺序搜索/P2-1 孤儿头/P3-1 齐线）：
+            # 段在流程最末（统计落盘前）；钉内搜索态测毕复位清空，
+            # 几何钉切视口测毕恢复（共享 page 状态复位律） ----
+            step("r280 WebUI 三案")
+            pg.evaluate("switchView('cfg')"); pg.wait_for_timeout(600)
+            # P1-1 顺序搜索假零：守卫先清上轮自写 inline 再判——
+            # 命中判定在前时，前轮被藏行本轮即使命中也在复位前被
+            # return（第二轮起假零，清空才复活）
+            _s = lambda q: (pg.evaluate("(q)=>cfgFilter(q)", q),
+                            pg.wait_for_timeout(200))
+            _s("演示用户")
+            _s("扫描周期")
+            _s("演示用户")
+            _r280a = pg.evaluate("""()=>{
+              const vis=e=>e&&getComputedStyle(e).display!=='none';
+              const row=[...document.querySelectorAll('#cfgview .srow')]
+                .find(d=>{const i=d.querySelector('input');
+                          return i&&i.value==='演示用户';});
+              return {hits:document.querySelector('#cfgHits').textContent,
+                      rowVis:row?vis(row):null};}""")
+            pg.evaluate("cfgFilter('')"); pg.wait_for_timeout(200)
+            ck("r280 P1-1 顺序搜索第二轮不假零（先复位再判）",
+               isinstance(_r280a, dict) and _r280a.get("rowVis") is True
+               and "✓" in (_r280a.get("hits") or ""))
+            # P2-1 孤儿头：命中集中于单面板时其余面板结构头退场
+            # （只随全页命中数判定只覆盖 0 命中档）
+            _s("扫描周期")
+            _r280b = pg.evaluate("""()=>{
+              const vis=e=>getComputedStyle(e).display!=='none';
+              const all=[...document.querySelectorAll(
+                '#cfgview .grouplab,#cfgview .uhead2,#cfgview .uhead,'
+                +'#cfgview .subsec')];
+              return {visN:all.filter(vis).length,
+                      uh2:all.filter(e=>e.classList.contains('uhead2'))
+                          .filter(vis).length};}""")
+            pg.evaluate("cfgFilter('')"); pg.wait_for_timeout(200)
+            ck("r280 P2-1 部分命中档非命中面板头退场（孤儿头）",
+               isinstance(_r280b, dict) and _r280b.get("uh2") == 0
+               and _r280b.get("visN", 0) > 0)
+            # P3-1 ≥1920 h1↔nav 18px 差已定谳备案（nav 留盒轴通线，
+            # h1 内缩=header 卡内呼吸；裁决注释在 webui ≥1920 块，
+            # 禁缩进反断言在 tests/test_v1555_webui.py）——钉位不另设
 
             bad0 = [n for n, v in checks if not v]
             prog.write("JS 错误: %s\n" % (errors[:3] if errors else "无"))

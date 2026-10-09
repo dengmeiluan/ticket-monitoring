@@ -449,9 +449,9 @@ class DESIGN:
     CAP_DIRECT_BG = (234, 242, 252) # 直飞胶囊浅底
     CAP_TRANSFER_BG = (253, 244, 232)  # 中转胶囊浅底
     PRICE_PLAIN = (20, 70, 160)     # 非达标价格深蓝
-    LAY_SHORT = (192, 86, 26)       # 衔接偏短警示 暗橙红（原 (176,137,0)
-                                    # 与擦边琥珀同色两义，分色；webui
-                                    # --stl 同步改值——两处同值同注释纪律）
+    LAY_SHORT = (168, 76, 21)       # 衔接偏短警示 暗橙红（与擦边琥珀 C_NEAR
+                                    # 同图两义分色勿回退；webui --stl 同值
+                                    # 同步律——改必双端同步，对卡底 5.66 过 AA）
     CHAIN_TX = (64, 76, 92)         # 比价渠道链
     TIP_LINE = (214, 222, 232)      # 空态卡/提示框描边（收编：曾
                                     # 3 处裸值两套灰 (226,230,235)/
@@ -588,12 +588,34 @@ def _summary_lines(measure, items, budget, max_lines=3):
     return lines_
 
 
+def _layover_legend_word(rows, lay_min):
+    """总表图例首行衔接词条按「表内数据可达性」条件化：图例只解释
+    图上真实存在的颜色。lay_min=0 时停时恒中性灰（无警示语义），
+    词条给灰态解码；lay_min>0 时表内中转行均过衔接滤网（入池要求
+    layoverM ≥ lay_min）则只挂绿词条——「橙红」词条仅在短衔接行
+    真实在场（防御位被激活）时才入图。
+    备案缝隙（防御场景，生产数据流不可达）：判定域是 rows 原始
+    items，渲染域按 top_n 截取——短衔接行被截出图时词条过度解释
+    （方向是过度解释非漏解释，危害低于漏解释）；transfer 组全滤空
+    时同理挂绿词条而图上无停时小字。"""
+    if lay_min <= 0:
+        return "停时=衔接时长（未设下限）"
+    for item in rows:
+        if item[0] != "transfer":
+            continue
+        for f in item[1]:
+            if isinstance(f, dict) and (f.get("layoverM") or 0) < lay_min:
+                return "橙红=衔接不足 · 绿停时=衔接达标"
+    return "绿停时=衔接达标"
+
+
 def render_flights_table(rows, title, out_path="data/flights_table.png",
                          top_n=5, summary="", stamp_note="", ops_notes=""):
     """rows: [(kind, [flight dict] | [compare dict | str])] kind: direct/transfer/compare。
     direct/transfer 渲染分组明细表；compare 渲染三列小表
     （航班+时刻 ｜ 渠道价格链 ｜ 可省），旧式预拼字符串仍兼容直落。
     组第 4 元可带 meta dict：layover_min（衔接下限，着色绿/琥珀）、
+    arrival_max（到达约束——组头时刻与空态归因词面共用）、
     plat_mins（{platform: 最低价}——组尾「各渠道最低」子节，
     自钉钉文本段撤入）、
     summary: 图顶摘要行（脱离消息上下文也能看懂当前行情）。
@@ -965,6 +987,7 @@ def render_flights_table(rows, title, out_path="data/flights_table.png",
         return y + head_h
 
     alt = 0
+    lay_min = 0  # 纯 compare rows 无 direct/transfer 组时的防御默认（词条函数恒可达）
     for item in rows:
         kind, fs = item[0], item[1]
         label_override = item[2] if len(item) > 2 else None
@@ -1119,10 +1142,7 @@ def render_flights_table(rows, title, out_path="data/flights_table.png",
             # 空态按约束归因：「该轮未回中转数据」与「有班但被衔接/到达
             # 约束滤掉」是两种成因，恒写前者曾让配置了衔接下限的用户对
             # 着明细找「为什么图上没有」（日报语境亦无「轮」概念）
-            empty = ("暂无满足约束的班次（衔接≥%d 分钟·%s 前到达）"
-                     % (lay_min, meta.get("arrival_max") or "次日 02:00")
-                     if lay_min > 0 or meta.get("arrival_max")
-                     else "暂无数据（该轮渠道未回中转班次，下轮自动补上）")
+            empty = _transfer_empty_note(lay_min, meta.get("arrival_max"))
             d.text((24, y + row_h / 2), empty, font=f_cell, fill=C_TEXT,
                    anchor="lm")
             y += row_h
@@ -1327,12 +1347,11 @@ def render_flights_table(rows, title, out_path="data/flights_table.png",
             y += 24
         y += 18
     if legend_h:
-        # 两行图例：首行=衔接警示色（四档位色词条在 summary 盒尾
-        # _TBL_TIER_LEGEND，同词面不二处消费；决策色全部有解码——
-        # 橙红 LAY_SHORT 着色的「停X·二段HH:MM」必须有词条，否则
-        # 首见者只能猜）；次行=徽标与比价词条。衔接词条与走势环
-        # 小注、webui 明细档位同语言
-        _fit_text(d, "橙红=衔接不足 · 绿停时=衔接达标",
+        # 两行图例：首行=衔接词条（按表内数据可达性条件化，见图解；
+        # 四档位色词条在 summary 盒尾 _TBL_TIER_LEGEND，同词面不二处
+        # 消费）；次行=徽标与比价词条。衔接词条与走势环小注、webui
+        # 明细档位同语言
+        _fit_text(d, _layover_legend_word(rows, lay_min),
                   24, h - 44, TBL_W - 48, base=14, min_size=11,
                   fill=DESIGN.MUTED)
         _fit_text(d, "经停=同机号中途落地 · 「直挂」=两段免费托运 · "
@@ -2003,6 +2022,27 @@ def _user_scope(cfg, user=""):
     return (cfg.get("notifier") or {}), cfg.get("routes") or []
 
 
+def _enabled_routes(routes):
+    """启用航线过滤（「enabled is not False」口径单源）：出图遍历、日报
+    查价入口与 build_and_push 空图归因共用——停用态判定禁改一处漂一处。"""
+    return [r for r in (routes or []) if r.get("enabled") is not False]
+
+
+def _transfer_empty_note(lay_min, arrival_max):
+    """中转空组归因词面，按真实生效的约束成分拼装：衔接下限未配置
+    （lay_min=0）时不出「衔接≥0 分钟」负信息段（0 下限=无约束，读者
+    会对着词面找不存在的约束）；到达约束恒生效（_rounds 链 02:00 兜
+    底），缺省形态保持「次日 02:00」兜底词面；双约束皆缺省归因渠道
+    未回数。"""
+    if lay_min <= 0 and not arrival_max:
+        return "暂无数据（该轮渠道未回中转班次，下轮自动补上）"
+    parts = []
+    if lay_min > 0:
+        parts.append("衔接≥%d 分钟" % lay_min)
+    parts.append("%s 前到达" % (arrival_max or "次日 02:00"))
+    return "暂无满足约束的班次（%s）" % "·".join(parts)
+
+
 def _image_host_cfg(cfg: dict) -> dict:
     """图床配置：全局 notifier.image_host 为准，缺失时回落第一用户
     （多租户改造把 image_host 挪进了用户级，读全局导致走势图静默跳过）。"""
@@ -2027,7 +2067,7 @@ def _chart_routes(cfg):
         for r in (u.get("routes") or []):
             if r not in all_routes:
                 all_routes.append(r)
-    return [r for r in all_routes if r.get("enabled") is not False]
+    return _enabled_routes(all_routes)
 
 
 def prepare_round_charts(cfg, logger, route_override=None, user=""):
@@ -2042,8 +2082,7 @@ def prepare_round_charts(cfg, logger, route_override=None, user=""):
         return {}
     if user:
         _, user_routes = _user_scope(cfg, user)
-        all_routes = [r for r in user_routes
-                      if r.get("enabled") is not False]
+        all_routes = _enabled_routes(user_routes)
     else:
         all_routes = _chart_routes(cfg)
     db_path = _anchored_db(cfg)
@@ -2344,9 +2383,16 @@ def build_and_push(cfg, logger, notifier, user=""):
     mine = {(r["from"], r["to"], d) for r in routes_cfg for d in r.get("dates", [])}
     charts = {k: v for k, v in charts.items() if k in mine}
     if not charts:
-        logger.warning("[走势] 暂无可画数据或所选图床无可用通路"
-                       "（provider=%s），本报告未发",
-                       ((_image_host_cfg(cfg) or {}).get("provider") or "?"))
+        # 空图两因二分：零启用航线=配置面预期（停用态空转轮 INFO 归
+        # 静默——停摆类警报先核启停态判例的生产日志面投影，防 WARNING
+        # 每轮刷屏与「图床断路」误导向）；有启用航线而零图才是真异常
+        # （数据缺席/图床断路），保留告警词面
+        if not _enabled_routes(routes_cfg):
+            logger.info("[走势] 航线全部停用或未配置，跳过图文报告")
+        else:
+            logger.warning("[走势] 暂无可画数据或所选图床无可用通路"
+                           "（provider=%s），本报告未发",
+                           ((_image_host_cfg(cfg) or {}).get("provider") or "?"))
         return False
     db_path = _anchored_db(cfg)
     desp = "#### 📈 每日价格日报\n\n"
@@ -2430,8 +2476,11 @@ def build_and_push(cfg, logger, notifier, user=""):
             # 粘连病句与参照时刻被裁问题一并消除
             desp += (_fit_line(
                 f"> 该日期{_POOL_NOTE}无渠道明细，KPI 与明细表省略",
-                fallbacks=[f"> 该日期{_POOL_NOTE}无渠道明细"]) + "\n\n"
-                + _p7_quote_line()
+                fallbacks=[f"> 该日期{_POOL_NOTE}无渠道明细"])
+                # or 表达式（r269 观察级翻身）：p7 非空=「\n\n> 词面\n\n」
+                # 补偿行与引用行间单空段（旧恒拼 "\n\n" 曾产四连换行）；
+                # p7 空=单空段垫图前，双分支零回归
+                + (_p7_quote_line() or "\n\n")
                 + f"![走势]({url})\n\n")
             continue
         directs, mkt_t = _split_market_pool(fs, rc)
@@ -2442,8 +2491,8 @@ def build_and_push(cfg, logger, notifier, user=""):
             # 曾漏 restores 此档），裸档 33 宽恒落位地板
             desp += (_fit_line(
                 "> 该日期明细均不满足到达/衔接约束，KPI 与明细表省略",
-                fallbacks=["> 该日期明细均不满足到达/衔接约束"]) + "\n\n"
-                + _p7_quote_line()
+                fallbacks=["> 该日期明细均不满足到达/衔接约束"])
+                + (_p7_quote_line() or "\n\n")
                 + f"![走势]({url})\n\n")
             continue
         # KPI 图内化（定律收口）：行情数字撤文本、进明细表图
@@ -2511,9 +2560,15 @@ def build_and_push(cfg, logger, notifier, user=""):
             base = (f"**{core}**" if mark == TIER_EMOJI["qual"] + " "
                     else core)
             if not th:
-                # 未设线也给参照值（裸「（未设线）」无从判断贵贱）
-                return _fit_line(base + "（未设线）" + _p7_note(False),
-                                 fallbacks=[base + "（未设线）"])
+                # 未设线也给参照值（裸「（未设线）」无从判断贵贱）；
+                # 降级序：全形→保参照丢标注→保标注丢参照——5 位价
+                # 全形超宽时旧单档链把参照静默丢掉无留痕（r271 P3-2
+                # 翻身：中档「￥13576　近7天最低 ￥13576」量测 33/40
+                # 可落位）。参照词分支内绑一次（v225 计数钉语义：
+                # _p7_note 每分支求值一次，fallback 复用变量）
+                _p7n = _p7_note(False)
+                return _fit_line(base + "（未设线）" + _p7n,
+                                 fallbacks=[base + _p7n, base + "（未设线）"])
             mid = base + f"　线￥{th:.0f}　{gap}"
             # pct 三档链尾接旧链深档 [mid, base]（丢行情注→裸价）：
             # 只接 forms[1:] 时 pct 空三档同形=零降级超宽直出、pct
@@ -2679,8 +2734,8 @@ def build_and_push(cfg, logger, notifier, user=""):
     # 剥图轮曾整篇零可点链接）。section 只带 date（无 best 即走用户
     # 启用平台首位）；异常不阻断日报发送（查价入口是补偿件）
     try:
-        _fr = next((r for r in routes_cfg if r.get("enabled") is not False
-                    and r.get("dates")), None)
+        _fr = next((r for r in _enabled_routes(routes_cfg)
+                    if r.get("dates")), None)
         if _fr and _fr.get("dates"):
             from types import SimpleNamespace as _NS
             desp = _ensure_jump_link(
@@ -2807,6 +2862,11 @@ def maybe_daily_report(cfg, logger, notifier, user=""):
     now.hour != report_hour 的等值比较——服务整点未运行（宕机/重启/
     挂起恢复）时等值比较会静默丢掉当天日报。当天是否已推记在 data/report_state.json（按 user 分 key，值=
     已推日期 YYYY-MM-DD），推送成功后才写入——失败下次扫描自动重试。"""
+    if notifier is None:
+        # 配置面预期静默（推送通道未启用）打 INFO：NoneType 异常栈词面
+        # 会把「没配通道」误诊成「日报故障」（预期与异常共用告警词面家族）
+        logger.info("[%s] 推送通道未启用，日报跳过", user or "default")
+        return
     ncfg, routes_cfg = _user_scope(cfg, user)
     hour = ncfg.get("report_hour")
     if hour is None or hour == "" or not ncfg.get("digest"):
