@@ -4325,7 +4325,12 @@ async function loadCfg(){try{
    曾吞标签破排版；数据源是本机 config/自导入文件，硬收自伤面） */
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 let OPEN_USER=0;
+try{const _ou=JSON.parse(localStorage.getItem('jpcfguseropen'));
+ if(typeof _ou==='number')OPEN_USER=_ou;}catch(e){}
+function setOpenUser(v){OPEN_USER=v;
+ try{localStorage.setItem('jpcfguseropen',JSON.stringify(v))}catch(e){}}
 function buildForm(){if(!CFG)return;let h='',gh='';
+ if(OPEN_USER>=CFG.length)OPEN_USER=CFG.length-1;   /* 槽值恢复越界钳回有效域（删用户/换配置后） */
  const _fae=document.activeElement,_fkid=(_fae&&_fae.id)?_fae.id:null;   /* 重建不丢键盘焦点：回车加日期等承诺通道连续录入不坠 body（render/table data-k 先例的 id 版） */
  const glab=(no,zh,en,sum)=>'<div class="grouplab" data-sec="'+no+'" role="button" onclick="foldSec(this)" title="点击收起/展开该分区">'
   +'<span class="no">'+no+'</span>'
@@ -4558,10 +4563,15 @@ function applyFolds(){
   const fold=FOLD.ch[c.dataset.ch]!==false;
   _setFold(ch,_foldSibs(ch),fold);
   c.classList.toggle('expanded',!fold);});}
-function expandFolds(){/* 搜索态临时全开，清空后 applyFolds 还原 */
+function expandFolds(){/* 搜索态临时全开，清空后 cfgSearchClear 还原。
+   用户卡头也纳入：容器壳扫会按命中可见性强展折叠卡 body，头若不
+   随动即「头报收起、内容却显示」的状态分裂——aria/chev 由 _setFold
+   单源同步；显式单 body（手风琴卡结构，_foldSibs 会越过 ucard 边界）*/
  document.querySelectorAll('#cfgform .grouplab[data-sec],'
   +'#cfgform .rline .rhead,#cfgform .chcard .chhead').forEach(
-  h=>_setFold(h,_foldSibs(h),false));}
+  h=>_setFold(h,_foldSibs(h),false));
+ document.querySelectorAll('#cfgform .uhead2').forEach(h=>{
+  const b=h.nextElementSibling;if(b)_setFold(h,[b],false);});}
 function toggleUser(h){/* 用户卡收展：纯 display 翻转，不重建表单（不跳滚动位） */
  const u=+h.dataset.u,body=h.nextElementSibling;
  const willOpen=(body.style.display==='none');
@@ -4570,7 +4580,7 @@ function toggleUser(h){/* 用户卡收展：纯 display 翻转，不重建表单
   if(prev){const ph=prev.querySelector('.uhead2');
    if(ph&&ph.nextElementSibling)_setFold(ph,[ph.nextElementSibling],true);}}
  _setFold(h,[body],!willOpen);
- OPEN_USER=willOpen?u:-1;}
+ setOpenUser(willOpen?u:-1);}
 function setN(i,k,v){CFG[i].notifier=CFG[i].notifier||{};CFG[i].notifier[k]=v;}
 /* 无头开关文字联动 / 通道卡状态灯随启用联动 */
 function glbHlChk(el){GLB.headless=el.checked;
@@ -4739,12 +4749,12 @@ async function testPush(i,b){b=b||_evtT();
    :'❌ 推送失败：'+(j.err||'请检查 Webhook 与加签密钥');}
  catch(e){$('cfgmsg').textContent='❌ 请求失败: '+e;}
  b.classList.remove('busy');}
-function addUser(){OPEN_USER=CFG.length;CFG.push({name:'新用户',routes:[{from:'SHA',from_name:'上海',to:'SYX',to_name:'三亚',dates:[defDate()],alert_direct:0,alert_transfer:0,transfer_arrival_max:'02:00'}],platforms:['qunar','fliggy','tongcheng','tuniu'],notifier:{digest:true,storm_repeat:3,win_toast:true,dingtalk:{enabled:false,webhook:'',secret:'',at_mobile:''}}});buildForm();
+function addUser(){setOpenUser(CFG.length);CFG.push({name:'新用户',routes:[{from:'SHA',from_name:'上海',to:'SYX',to_name:'三亚',dates:[defDate()],alert_direct:0,alert_transfer:0,transfer_arrival_max:'02:00'}],platforms:['qunar','fliggy','tongcheng','tuniu'],notifier:{digest:true,storm_repeat:3,win_toast:true,dingtalk:{enabled:false,webhook:'',secret:'',at_mobile:''}}});buildForm();
  flashEl(document.querySelectorAll('#cfgform .ucard')[CFG.length-1]);}
 function delUser(i,b){armConfirm(b||_evtT(),()=>{CFG.splice(i,1);
  /* 展开态索引跟随前移：展开用户 2 时删用户 0，原 2 落索引 1——
     不调整则重建后错位卡片自动展开（展开的是没点过的用户） */
- if(OPEN_USER===i)OPEN_USER=-1;else if(OPEN_USER>i)OPEN_USER--;
+ if(OPEN_USER===i)setOpenUser(-1);else if(OPEN_USER>i)setOpenUser(OPEN_USER-1);
  buildForm();
  toast('已删除用户（保存后生效）','ok');});}
 function addRoute(i){CFG[i].routes.push({from:'SHA',from_name:'上海',to:'HAK',to_name:'海口',dates:[defDate()],alert_direct:0,alert_transfer:0,transfer_arrival_max:'02:00'});
@@ -4895,13 +4905,15 @@ function cfgSearchClear(){/* 搜索态复位单源：CFGQ/输入框/命中计数
   +'#cfgview .addrbtn,#cfgview .grouplab,#cfgview .uhead2,#cfgview .uhead,#cfgview .subsec,'
   +'#cfgview .cfpanel>.ucard,#cfgview #cfgform>.ucard,#cfgview #cfgform>.ucard>div')
   .forEach(el=>{el.style.display='';el.style.boxShadow='';});
- /* 用户卡手风琴态按 aria-expanded 单源重写：容器族复位把折叠卡的
-    body 包裹层一并 display=''，清空后手风琴被强制展开且 aria 仍报
-    false（头说收起内容却显示的状态分裂）——aria-expanded 由
-    toggleUser/_setFold 维护，是手风琴态唯一权威 */
- document.querySelectorAll('#cfgform .uhead2').forEach(h=>{
-  const b=h.nextElementSibling;
-  if(b)b.style.display=h.getAttribute('aria-expanded')==='true'?'':'none';});}
+ /* 用户卡手风琴态按 OPEN_USER 单源重写：容器族复位把折叠卡的
+    body 包裹层一并 display=''，清空后须还原进搜索前的手风琴态——
+    回写源不能是 aria-expanded：搜索态 expandFolds 已把全部卡头
+    aria 改 true（按它回写=清空后全卡展开），OPEN_USER 是搜索态
+    不触碰的开合权威；aria/chev/tabindex 由 _setFold 单源同步 */
+ document.querySelectorAll('#cfgform .ucard').forEach((c,i)=>{
+  const h=c.querySelector('.uhead2');if(!h)return;
+  const b=h.nextElementSibling;if(!b)return;
+  _setFold(h,[b],i!==OPEN_USER);});}
 function cfgFilter(qraw){const q=(qraw||'').trim().toLowerCase();
  const hits=$('cfgHits');if(!q){cfgSearchClear();
   showCfgPanel(CFGPANEL,true);applyFolds();return;}
@@ -4999,7 +5011,7 @@ function importCfg(inp){const f=inp.files&&inp.files[0];if(!f)return;
  rd.onload=()=>{try{
   const j=JSON.parse(rd.result);
   if(!Array.isArray(j.users)||!j.users.length)throw new Error('文件缺少 users 数组');
-  CFG=j.users;GLB=j.globals||GLB;OPEN_USER=0;
+  CFG=j.users;GLB=j.globals||GLB;setOpenUser(0);
   /* P2-1：导入文件是不归一路径——dates 过 addDate 同款
      _normDate 归一（10-08 补年/斜杠换谱），非法项丢弃 */
   CFG.forEach(u=>(u.routes||[]).forEach(r=>{r.dates=(r.dates||[]).map(_normDate).filter(Boolean);}));

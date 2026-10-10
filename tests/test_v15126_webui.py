@@ -101,7 +101,9 @@ def test_deluser_open_user_index_shift():
     m = re.search(r"function delUser\b.{0,900}", s, re.S)
     assert m, "delUser 不在源码"
     body = m.group(0)
-    assert "OPEN_USER===i" in body and "OPEN_USER--" in body, \
+    # r282 起写点走 setOpenUser 单源（localStorage 槽随写点同步），
+    # 索引前移语义不变：删本人收起、删前位者前移
+    assert "OPEN_USER===i" in body and "setOpenUser(OPEN_USER-1)" in body, \
         "删除用户未调整 OPEN_USER 索引（重建后错位卡片自动展开）"
 
 

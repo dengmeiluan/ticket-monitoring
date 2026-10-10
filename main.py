@@ -13,7 +13,7 @@
 """
 import argparse
 
-__version__ = "1.5.185"
+__version__ = "1.5.187"
 import os
 import subprocess
 import sys
@@ -311,6 +311,23 @@ def _xchan_ratios(xchan):
         for pl, v in lows.items():
             ratios.setdefault(pl, []).append(v / med)
     return ratios
+
+
+def _stable_pool(rows: list) -> list:
+    """采集池的确定性底序（同价并列班次身份漂移根治）。
+
+    as_completed 完成序进池使池序随渠道完成序逐轮浮动，下游一切
+    「同价取首」（min 稳定取首/TOP5 截断/比价组代表行）的首选班次
+    身份随轮次翻转（实录：￥1760 同价双班 9C8807/9C8815 行2/行3
+    对调——价格/差额/合规全同，漂移的只是行身份）。按纯身份键
+    （起降时刻/航班号/航司/渠道）稳定排序：与价格无关——价格排序
+    仍由下游各消费点自己的口径决定（_qual_price 与 page price 口径
+    不同，采集层不提前分叉），本序只承载同价 tie-break 的确定性。
+    池元素是 FlightPrice dataclass（safe_fetch 返回类型），属性访问
+    直取；五字段 str 默认 "" 无缺键面。返回新列表不污染进池序。"""
+    return sorted(rows, key=lambda f: (
+        f.depart_time or "", f.arrive_time or "",
+        f.flight_no or "", f.airline or "", f.platform))
 
 
 def _field_sentinel(all_prices, logger):
@@ -935,6 +952,7 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
                         continue
                     all_prices.extend(prices)
                     ch_rows[futs[fu]] = ch_rows.get(futs[fu], 0) + len(prices)
+            all_prices = _stable_pool(all_prices)
             storage.save_many(all_prices)
             _field_sentinel(all_prices, logger)
             # 走势图按用户各自生成（多租户同 OD 时各用户阈值/衔接

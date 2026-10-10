@@ -3473,6 +3473,60 @@ def main():
             # h1 内缩=header 卡内呼吸；裁决注释在 webui ≥1920 块，
             # 禁缩进反断言在 tests/test_v1555_webui.py）——钉位不另设
 
+            # ---- r282 WebUI 两案（搜索态折叠卡头 aria/chev 三同步 /
+            # OPEN_USER 持久化）：段在流程最末（统计落盘前）；
+            # addUser 注入第二卡不保存（reload 即逝）、localStorage 槽
+            # 测毕清空（共享 page 状态复位律） ----
+            step("r282 WebUI 两案")
+            pg.evaluate("switchView('cfg')"); pg.wait_for_timeout(600)
+            # 前序段（cfgglobals CTA 等）会把配置页面板留在非用户面
+            # ——显式回用户面板，#cfgform 的 uhead2 才在可视链上
+            pg.evaluate("showCfgPanel('users',true)")
+            pg.evaluate(
+                "try{localStorage.removeItem('jpcfguseropen')}catch(e){};"
+                "addUser()")
+            pg.wait_for_timeout(200)
+            pg.evaluate(
+                "toggleUser(document.querySelectorAll('#cfgform .uhead2')[0])")
+            pg.wait_for_timeout(200)
+            _hs = lambda: pg.evaluate("""()=>{
+              const vis=e=>{if(getComputedStyle(e).display==='none')return false;
+                let p=e.parentElement;
+                while(p){if(getComputedStyle(p).display==='none')return false;
+                 p=p.parentElement;}
+                return true;};
+              return [...document.querySelectorAll('#cfgform .uhead2')].map(
+                h=>({a:h.getAttribute('aria-expanded'),
+                     b:vis(h.nextElementSibling),
+                     c:h.querySelector('.chev').classList.contains('open')}));}""")
+            _b0 = _hs()
+            ck("r282 手风琴基线 aria/body/chev 三同步（0开1收）",
+               isinstance(_b0, list) and len(_b0) == 2
+               and _b0[0]["a"] == "true" and _b0[0]["b"] and _b0[0]["c"]
+               and _b0[1]["a"] == "false" and not _b0[1]["b"]
+               and not _b0[1]["c"])
+            pg.evaluate("(q)=>cfgFilter(q)", "新用户"); pg.wait_for_timeout(300)
+            _b1 = _hs()
+            ck("r282 搜索态折叠卡头 aria/chev 随 body 展开三同步",
+               isinstance(_b1, list) and len(_b1) == 2
+               and _b1[1]["a"] == "true" and _b1[1]["b"] and _b1[1]["c"])
+            pg.evaluate("cfgFilter('')"); pg.wait_for_timeout(300)
+            _b2 = _hs()
+            ck("r282 清空回手风琴（OPEN_USER 单源回写，非 aria 全开）",
+               isinstance(_b2, list) and len(_b2) == 2
+               and _b2[0]["a"] == "true" and _b2[0]["b"] and _b2[0]["c"]
+               and _b2[1]["a"] == "false" and not _b2[1]["b"]
+               and not _b2[1]["c"])
+            _slot0 = pg.evaluate("localStorage.getItem('jpcfguseropen')")
+            pg.evaluate(
+                "toggleUser(document.querySelectorAll('#cfgform .uhead2')[1])")
+            pg.wait_for_timeout(200)
+            _slot1 = pg.evaluate("localStorage.getItem('jpcfguseropen')")
+            ck("r282 OPEN_USER 持久化槽随开合写点",
+               _slot0 == "0" and _slot1 == "1")
+            pg.evaluate(
+                "try{localStorage.removeItem('jpcfguseropen')}catch(e){}")
+
             bad0 = [n for n, v in checks if not v]
             prog.write("JS 错误: %s\n" % (errors[:3] if errors else "无"))
             prog.write("=== %d/%d 通过 ===\n"
