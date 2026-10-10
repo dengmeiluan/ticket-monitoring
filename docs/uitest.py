@@ -1861,9 +1861,11 @@ def main():
                 "()=>document.querySelectorAll("
                 "'#cfgview .fgrid>div,#cfgview .qgrid>div,#cfgview .srow').length")
             ck("搜索字段级过滤", 0 < vis_f < tot_f)
-            ck("搜索态全分区可见", pg.is_visible("#sec-login")
-               and pg.is_visible("#sec-users")
-               and pg.is_visible("#sec-globals-card"))
+            # r281 容器壳收尾：命中集中于用户面板时非命中面板卡壳
+            # 退场（空白残影条收口），命中面板卡壳在位
+            ck("搜索态命中面板在位孤儿卡壳退场", pg.is_visible("#sec-users")
+               and not pg.is_visible("#sec-login")
+               and not pg.is_visible("#sec-globals-card"))
             pg.fill("#cfgSearch", ""); pg.wait_for_timeout(300)
             ck("清空还原单面板", pg.is_visible("#sec-globals-card")
                and not pg.is_visible("#sec-users"))
@@ -2151,14 +2153,14 @@ def main():
                 "const ok=!!k&&k.getBoundingClientRect().top"
                 "<p.getBoundingClientRect().top;"
                 "p.style.display=d;return ok;}"))
-            # 红帽徽标：最新轮有渠道失败时概览 tab 点亮红点（脉冲卡移入
-            # 概览后，渠道异常在其他 tab 仍全局可见——渠道健康可见定律）
+            # 红帽徽标：采集失败或推送连败（双源合成）点亮概览 tab
+            # 红点——渠道/推送异常在其他 tab 仍全局可见（可见性定律）
             ck("EN-1 红帽徽标随最新轮失败点亮/熄灭", pg.evaluate(
                 "()=>{if(typeof renderPulseAlert!=='function')return false;"
                 "renderPulseAlert(2);"
                 "const on=document.getElementById('ovAlert')"
                 ".style.display!=='none';"
-                "renderPulseAlert(0);"
+                "renderPushChannels({channels:{}});renderPulseAlert(0);"
                 "const off=document.getElementById('ovAlert')"
                 ".style.display==='none';return on&&off;}"))
             # EN-9（WebUI 审计）：徽标读屏语义——role+aria-label 静态
@@ -2168,7 +2170,7 @@ def main():
                 "()=>{const a=document.getElementById('ovAlert');"
                 "return !!a&&a.getAttribute('role')==='img'"
                 "&&(a.getAttribute('aria-label')||'')"
-                ".indexOf('渠道失败')>=0;}"))
+                ".indexOf('通道有异常')>=0;}"))
             # EN-2 桌面视图切换器吸顶：深滚切视图不回滚（≤540 同款能力）。
             # 几何行为钉（LESSONS：源码钉只证声明在场，几何钉是唯一真相）
             pg.set_viewport_size({"width": 1440, "height": 900})

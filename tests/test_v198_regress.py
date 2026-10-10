@@ -222,8 +222,9 @@ class TestKpiTierQualNamed:
 # ==================== E2: KPI 行2 地板档截断 ====================
 
 class TestL2FloorTruncation:
-    """行2 降级链地板档恒达标：长航班名超 40 半角时逐字截
-    （_ops_fallbacks 地板档同律），身份头保留。"""
+    """行2 降级链地板档恒达标：超预算时保尾截头（r281 P2-1 修法 B，
+    真实计宽网格选形：时刻/跨天锚定行尾=决策级辨识信息，头部名段
+    让位；旧「保头截尾」曾把到达时刻截成半截甚至整段消失）。"""
 
     def test_floor_truncated_to_budget(self):
         from core.alerter import _l2_fallbacks, _disp_dw
@@ -234,15 +235,25 @@ class TestL2FloorTruncation:
             f"地板档超宽原样吐（{ _disp_dw(fbs[-1]) }/40）"
 
     def test_floor_keeps_identity_head(self):
-        from core.alerter import _l2_fallbacks
+        # 旧钉锁「保头」（base.startswith(floor)）——修法 B 后地板
+        # 改保尾（尾部锚定 cross+时刻域，头部名段让位），钉随模型
+        # 改写：地板恒为 base+cross 的尾缀且预算内（恒达标律不变）
+        from core.alerter import _l2_fallbacks, _disp_dw
         base = "中国联合航空 KN9999 超长航司名超长航司名超长航司名"
         fbs = _l2_fallbacks(base, "", "")
-        assert fbs[-1] and base.startswith(fbs[-1][:4]), \
-            "地板档应保留身份头（逐字截非丢档）"
+        assert fbs[-1], "地板档缺失"
+        assert _disp_dw(fbs[-1]) <= 40, "地板档超预算"
+        assert base.endswith(fbs[-1]), (
+            "地板档应为 base 尾缀（保尾截头，尾部决策信息锚定）")
 
     def test_normal_input_order_unchanged(self):
         """档序语义不回退：跨天档先于地板档（涨跌档=恒宽死档已按
-        档序律删除，LESSONS 十九§9：辨识信息先于次要信号被丢）。"""
+        档序律删除，LESSONS 十九§9：辨识信息先于次要信号被丢）。
+        r281 修法 B 后 cross 真入地板链：短输入下地板=base+cross
+        整串（预算内恒达标），地板档不再缺席 cross。"""
         from core.alerter import _l2_fallbacks
-        assert _l2_fallbacks("MU 08:00→11:00", "+1天", "↑5%") == [
-            "MU 08:00→11:00+1天", "MU 08:00→11:00"]
+        fb = _l2_fallbacks("MU 08:00→11:00", "+1天", "↑5%")
+        assert fb[0] == "MU 08:00→11:00+1天", "跨天档不在首位"
+        assert fb[-1].endswith("+1天"), "地板档 cross 缺席（次生丢失）"
+        assert fb[-1] == "MU 08:00→11:00+1天", (
+            "短输入下地板=整串（预算内恒达标）")

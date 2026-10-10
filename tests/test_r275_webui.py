@@ -34,9 +34,10 @@ def test_p31_dead_danger_selector_retired():
 
 def test_p31_danger_selector_alive_both_sites():
     """删除钮收编改 .ucard button.danger（后代选择器）：清空复位清单
-    与过滤清单两处在案。"""
-    assert _WEBUI.count(".ucard button.danger") == 2, \
-        "删除钮收编选择器应恰在 cfgSearchClear+cfgFilter 两处"
+    与过滤清单两处在案。r281 容器壳收尾扫的 ROWS 口径合法新增第三处
+    （动作件命中时宿主容器不得被误隐）——计数钉随合法新写点 +1。"""
+    assert _WEBUI.count(".ucard button.danger") == 3, \
+        "删除钮收编选择器应恰在 cfgSearchClear+cfgFilter+容器收尾扫三处"
 
 
 def test_p31_add_route_btn_covered_both_sites():

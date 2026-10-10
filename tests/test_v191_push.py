@@ -64,7 +64,9 @@ def test_l2_fallbacks_cross_day_before_delta():
     fb = _l2_fallbacks("BASE", "+1天", " ｜ 较上轮 ↓￥133")
     assert fb[0] == "BASE+1天", "跨天档不在首位"
     assert not any("较上轮" in t for t in fb), "死档 d 未删净"
-    assert fb[-1] == "BASE", "地板档缺失"
+    # r281 修法 B：cross 真入地板链（修复地板档 cross 恒缺席的
+    # 次生丢失）——短输入下地板=base+cross 整串
+    assert fb[-1] == "BASE+1天", "地板档缺失或缺 cross"
 
 
 def test_kpi_l2_cross_day_survives_narrow_fit():

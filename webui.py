@@ -1699,7 +1699,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  <span class="muted" id="opsHint">数据变化才刷新（悬停/展开不打断）· 页面隐藏时暂停轮询</span></div></div>
 
 <div class="tabs" id="montabs" style="display:none" onkeydown="_roving(event,this);_rovingV(event,this)">
- <span class="mtab on" data-t="overview" data-rv tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showMonTab(this.dataset.t)}">🎯 概览<i id="ovAlert" role="img" aria-label="最新轮有渠道失败，详情见渠道健康" title="最新轮有渠道失败——详情见「渠道健康」" style="display:none;width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:5px;vertical-align:2px"></i></span>
+ <span class="mtab on" data-t="overview" data-rv tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showMonTab(this.dataset.t)}">🎯 概览<i id="ovAlert" role="img" aria-label="采集或推送通道有异常，详情见渠道健康" title="采集失败或推送连败——详情见「渠道健康」" style="display:none;width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:5px;vertical-align:2px"></i></span>
  <span class="mtab" data-t="trend" data-rv tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showMonTab(this.dataset.t)}">📈 走势 · 日历</span>
  <span class="mtab" data-t="details" data-rv tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showMonTab(this.dataset.t)}">📋 航班明细</span>
  <span class="mtab" data-t="health" data-rv tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showMonTab(this.dataset.t)}">🏥 渠道健康</span>
@@ -3445,6 +3445,10 @@ function renderHealth(j){
    _he.innerHTML=(j&&j.err)?'⚠ 健康数据读取失败（详见服务日志）'
     :'暂无扫描记录——完成一轮采集后，这里会出现 24h 渠道健康时间线';}
   $('healthcard').style.display='none';   // 空态/错误态回收旧卡：500 错误体曾点亮空态文案而旧 96 轮格带同屏并存
+  /* 推送连败源随健康数据一并清零（红帽双源合成，Soldier Minor-1）：
+     账本空窗后 _ovPushStreak 残留旧值会让红帽常亮而健康页推送通道
+     区已随 healthcard 回收，「详情见渠道健康」指引落空 */
+  renderPushChannels({channels:{}});
   return;}
  if(_he)_he.style.display='none';
  $('healthcard').style.display='';
@@ -3483,6 +3487,13 @@ const CH_CN={'dingtalk':'钉钉','serverchan':'ServerChan','email':'邮件','urg
 function renderPushChannels(pj){
  const el=$('pushhl');if(!el)return;
  const keys=Object.keys((pj&&pj.channels)||{});
+ /* 概览红帽第二点亮源：推送通道连败（红帽双源合成，见
+    renderPulseAlert）——每轮全量重算，空通道列表自然清零 */
+ let _streak=0;
+ for(const k of keys)_streak=Math.max(_streak,((pj.channels[k]||{}).fail_streak||0));
+ window._ovPushStreak=_streak;
+ const _al=$('ovAlert');
+ if(_al)_al.style.display=(_streak>0||(window._ovCollectFails||0)>0)?'':'none';
  if(!keys.length){el.innerHTML='<div class="muted" style="margin-top:10px">近 24h 无推送记录</div>';return;}
  el.innerHTML='<div class="pseclab">推送通道 · 近 24h</div>'+keys.map(k=>{const c=pj.channels[k];const att=c.ok+c.fail;
   const rate=att?Math.round(c.ok*100/att):null;
@@ -3549,10 +3560,14 @@ async function pulse(){try{const r=await fetch('/api/pulse');
 /* pulse 失败静默论证：脉冲区属「有则显示」性质——
    失败时保持 display:none 即「无脉冲数据」的正确落点，非假等待；
    LESSONS 二十三要求每个异步终点显式论证落点，此处即论证 */
-/* 红帽徽标：最新轮有渠道失败时点亮概览 tab 红点（脉冲卡收进概览
-   后，渠道异常在其他三个 tab 仍全局可见——渠道健康可见定律的守卫） */
-function renderPulseAlert(fails){const el=$('ovAlert');
- if(el)el.style.display=fails>0?'':'none';}
+/* 红帽徽标：双源合成点亮（概览 tab 红点）——采集失败（pulse 轮
+   写 _ovCollectFails）与推送通道连败（health 轮写 _ovPushStreak，
+   钉钉 -1 幽灵期采集面全绿而达标推送静默丢失，红帽只挂采集失败时
+   该故障零主动暴露）各写各的缓存、任一非零即亮：两轮询独立刷新
+   互不覆盖，一方清零不得熄灭另一方的非零源 */
+function renderPulseAlert(fails){window._ovCollectFails=fails||0;
+ const el=$('ovAlert');
+ if(el)el.style.display=((fails||0)>0||(window._ovPushStreak||0)>0)?'':'none';}
 function renderPulse(j){if(!(S&&S.users&&S.users.length))return;/* 空配置守卫：删光用户后 10s 轮询不得复明 pulsecard（P2-4 回收的另一半——render 分支只封一拍，轮询每拍都会再点亮） */
  const rs=(j&&j.rounds)||[];
  if(!rs.length)return;
@@ -4877,8 +4892,16 @@ function cfgSearchClear(){/* 搜索态复位单源：CFGQ/输入框/命中计数
   +'#cfgview .glgrid>div,#cfgview .srow,#cfgview .rline,#cfgview .chcard,'
   +'#cfgview .frow,#cfgview .row,#cfgview .lgcard,'
   +'#cfgview .chgrid>button,#cfgview .ucard button.danger,'
-  +'#cfgview .addrbtn,#cfgview .grouplab,#cfgview .uhead2,#cfgview .uhead,#cfgview .subsec')
-  .forEach(el=>{el.style.display='';el.style.boxShadow='';});}
+  +'#cfgview .addrbtn,#cfgview .grouplab,#cfgview .uhead2,#cfgview .uhead,#cfgview .subsec,'
+  +'#cfgview .cfpanel>.ucard,#cfgview #cfgform>.ucard,#cfgview #cfgform>.ucard>div')
+  .forEach(el=>{el.style.display='';el.style.boxShadow='';});
+ /* 用户卡手风琴态按 aria-expanded 单源重写：容器族复位把折叠卡的
+    body 包裹层一并 display=''，清空后手风琴被强制展开且 aria 仍报
+    false（头说收起内容却显示的状态分裂）——aria-expanded 由
+    toggleUser/_setFold 维护，是手风琴态唯一权威 */
+ document.querySelectorAll('#cfgform .uhead2').forEach(h=>{
+  const b=h.nextElementSibling;
+  if(b)b.style.display=h.getAttribute('aria-expanded')==='true'?'':'none';});}
 function cfgFilter(qraw){const q=(qraw||'').trim().toLowerCase();
  const hits=$('cfgHits');if(!q){cfgSearchClear();
   showCfgPanel(CFGPANEL,true);applyFolds();return;}
@@ -4944,6 +4967,18 @@ function cfgFilter(qraw){const q=(qraw||'').trim().toLowerCase();
    keep=rows.some(d=>getComputedStyle(d).display!=='none');
    sib=sib.nextElementSibling;}
   g.style.display=keep?'':'none';});
+ /* 孤儿容器壳收尾扫（头级扫的下层）：结构头隐藏后，宿主容器链
+    （面板卡壳/用户卡/用户卡 body 包裹层）子件全隐时 padding 独存
+    成空白残影条——按「容器内是否存在可见内容」隐藏容器本体
+    （头类与动作件计入 ROWS：头级 inline 已由孤儿头扫写对，动作件
+    命中时其宿主容器不得被误隐）；命中面板恒有可见行不受扰；无内
+    容结构的卡（空态引导）不参与防误杀。清空路径 cfgSearchClear
+    同清单对称复位 */
+ document.querySelectorAll('#cfgview .cfpanel>.ucard,#cfgview #cfgform>.ucard,#cfgview #cfgform>.ucard>div').forEach(c=>{
+  const ROWS='.srow,.glgrid>div,.frow,.row,.lgcard,.rline,.chcard,.grouplab,.uhead2,.uhead,.subsec,.chgrid>button,.ucard button.danger,.addrbtn';
+  const rows=Array.from(c.querySelectorAll(ROWS));
+  if(!rows.length)return;
+  c.style.display=rows.some(d=>getComputedStyle(d).display!=='none')?'':'none';});
  hits.textContent=n?('✓ '+n+' 项匹配'):'无匹配项';
 
 }

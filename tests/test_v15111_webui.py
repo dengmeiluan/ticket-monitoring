@@ -50,7 +50,8 @@ def test_pulse_alert_badge_a11y():
     """徽标读屏语义（WebUI 审计 EN-9）：role=img + aria-label 静态
     在位——display:none 天然从可访问性树移除，点亮即暴露。"""
     src = _src()
-    assert 'id="ovAlert" role="img" aria-label="最新轮有渠道失败' in src
+    # r281 红帽双源合成后语义扩为「采集或推送通道有异常」
+    assert 'id="ovAlert" role="img" aria-label="采集或推送通道有异常' in src
 
 
 def test_desktop_montabs_sticky_tail_block():

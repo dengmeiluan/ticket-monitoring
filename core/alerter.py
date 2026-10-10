@@ -695,6 +695,16 @@ def _l2_fallbacks(l2_base: str, cross: str, d: str) -> list:
     形态漏网）；档序在「｜」档之后（混合形态先剥营销名再剥联程
     首段，两段皆次要于时刻/跨天）。逐字截按 _dw_raw 浮点累计
     （ceil 后逐字累加放大 78%）。
+    地板档=保尾截头（r281 P2-1，修法选形经真实计宽网格实测
+    _scratch/r281_push_probe_l2fix）：时刻+跨天锚定行尾（cross 形参
+    由此真入链，修复地板档 cross 恒缺席的次生丢失），对 base+cross
+    整串从尾部反向浮点累计取 ≤40，头部名段让位——病理名形态（超长
+    名+括注/超长营销名）下旧「保头截尾」地板曾把到达时刻截成半截
+    甚至整段消失（miss/near 形态行 2 是时刻唯一载体，决策级误读）。
+    代价=病理形态丢航班号保括注尾部（悬垂半括注词面），与旧形态
+    「保航班号丢时刻」按十九§9 决策级定性取舍：时刻/跨天 > 航班号。
+    现实域（无括注/普通双名/联程）由剥名档承接零漂移，地板仅对
+    无档可剥的超宽形态可达。
     档序即语义优先级声明（十九§9）：涨跌注 d（≥16 半角）恒宽于
     cross（括注态 ≤7）＝「base+d」「short+d」恒为不可达死档且档序倒挂，
     已删——d 是次要信号，地板档前自然丢失；跨天辨识信息保序在前。
@@ -710,14 +720,15 @@ def _l2_fallbacks(l2_base: str, cross: str, d: str) -> list:
     j = l2_base.find("/")
     if j > 0:
         tiers += [l2_base[j + 1:] + cross]
-    floor, _w = [], 0.0
-    for _ch in l2_base:
-        _cw = _dw_raw(_ch)
+    floor_full = l2_base + cross
+    keep, _w = [], 0.0
+    for _k in range(len(floor_full) - 1, -1, -1):
+        _cw = _dw_raw(floor_full[_k])
         if _w + _cw > 40:
             break
-        floor.append(_ch)
+        keep.append(floor_full[_k])
         _w += _cw
-    tiers.append("".join(floor))
+    tiers.append("".join(reversed(keep)))
     return tiers
 
 
