@@ -1,0 +1,106 @@
+name: release-build
+
+# 四岗发行包构建（跨平台发行）：手动触发——恒态纪律下 tag 恒 v1.0
+# force 重指，不挂 tag 触发避免每次重指都烧四台 runner。产物=
+# dist_package 同构 zip（包根=TicketMonitor 可执行+_internal/），人审
+# 后经 API 挂到 v1.0 Release（1 Release·4 资产角）。
+#
+# chromium 不入包：应用首启自装内核（main.py「检查/安装 chromium 内
+# 核」跨平台路径），collect_all('playwright') 只捆驱动不捆浏览器。
+# WinToast 通道 os.name 门控（notifier.py），非 Windows 启停安全。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            asset: ticket-monitoring-win64.zip
+          - os: ubuntu-latest
+            asset: ticket-monitoring-linux-x64.zip
+          - os: macos-latest
+            asset: ticket-monitoring-macos-arm64.zip
+          # Intel 芯片 Mac（x86_64）——GitHub 末代 Intel 镜像（官方供至
+          # 2027-08，届时 Intel 资产角随官方下线一并退役）
+          - os: macos-15-intel
+            asset: ticket-monitoring-macos-x64.zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt pyinstaller
+      - name: PyInstaller 打包（TicketMonitor.spec 三平台同构）
+        run: pyinstaller TicketMonitor.spec --noconfirm
+      - name: 冒烟（可执行 --version 必须等于 main.py 版本）
+        shell: bash
+        run: |
+          V=$(python -c "import re;print(re.search(r'__version__ = \"([^\"]+)\"',open('main.py',encoding='utf-8').read()).group(1))")
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            OUT=$(./dist/TicketMonitor/TicketMonitor.exe --version)
+          else
+            chmod +x ./dist/TicketMonitor/TicketMonitor
+            OUT=$(./dist/TicketMonitor/TicketMonitor --version)
+          fi
+          echo "built version=$OUT source=$V"
+          test "$OUT" = "$V"
+      - name: 打 zip（包根=可执行+_internal，与 v1.0-win64 资产同构）+ sha256
+        shell: python
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          import hashlib, os, shutil, zipfile
+          os.makedirs("dist_package", exist_ok=True)
+          asset = "${{ matrix.asset }}"
+          base = os.path.join("dist_package", asset[:-4])
+          shutil.make_archive(base, "zip", os.path.join("dist", "TicketMonitor"))
+          z = zipfile.ZipFile(base + ".zip")
+          ns = z.namelist()
+          print("zip 条目:", len(ns), "| 头三:", ns[:3])
+          digest = hashlib.sha256(open(base + ".zip", "rb").read()).hexdigest()
+          print("sha256:", digest)
+          open(base + ".zip.sha256", "w").write(digest + "  " + asset + "\n")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: |
+            dist_package/${{ matrix.asset }}
+            dist_package/${{ matrix.asset }}.sha256
+          if-no-files-found: ignore
+
+  docker:
+    # 容器镜像岗：构建+起容器冒烟（/api/state 200）——发行随镜像走
+    # ghcr（发布时推），日常手动跑只验构建不推
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t ticket-monitoring:ci .
+      - name: 冒烟（容器起服→/api/state 200）
+        run: |
+          docker rm -f tm-smoke 2>/dev/null || true
+          if ! docker run -d --name tm-smoke -p 8765:8765 ticket-monitoring:ci; then
+            echo "--- docker run 失败：镜像与宿主诊断 ---"
+            docker images ticket-monitoring:ci
+            docker run --rm ticket-monitoring:ci python -c "import sys; print(sys.version)" || true
+            exit 1
+          fi
+          ok=0
+          for i in $(seq 1 45); do
+            sleep 2
+            if curl -fsS http://127.0.0.1:8765/api/state >/dev/null 2>&1; then ok=1; break; fi
+          done
+          if [ "$ok" != "1" ]; then
+            echo "--- 容器日志 ---"; docker logs tm-smoke
+            echo "--- 容器状态 ---"; docker ps -a | grep tm-smoke || true
+            docker rm -f tm-smoke || true
+            exit 1
+          fi
+          curl -fsS http://127.0.0.1:8765/api/state | head -c 200
+          docker rm -f tm-smoke
+      - name: 镜像体积
+        run: docker images ticket-monitoring:ci --format "{{.Size}}"
