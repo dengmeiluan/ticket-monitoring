@@ -1,0 +1,31 @@
+# 仓库只保留一种行尾形态：LF（存储与工作树一致）。
+#
+# 背景：曾同时存在 646 个 LF blob 与 3 个 CRLF blob（core/logger.py、
+# docs/demo_build.py、tests/test_v204_webui.py），工作树 470 个 CRLF /
+# 176 个 LF——同一份改动在不同机器上 diff 形态不同，`git diff` 与门禁
+# 读数互相矛盾，读 diff 的人先要分辨哪些是真改动。
+#
+# `eol=lf` 覆盖 core.autocrlf：Windows 上检出也是 LF，Linux CI 同样是 LF，
+# 结果与平台无关。PS1 的中文依赖 UTF-8 BOM（PS5.1 无 BOM 按 GBK 解析），
+# BOM 与行尾无关，LF 脚本在 PS5.1/7 均可执行。
+* text=auto eol=lf
+
+# 二进制显式声明，避免无 NUL 前缀的样本被 text=auto 误判后改写字节
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.zip binary
+*.gz binary
+*.7z binary
+*.exe binary
+*.dll binary
+*.so binary
+*.db binary
+*.sqlite binary
+*.pyc binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
