@@ -73,6 +73,37 @@ def test_app_zero_rows_is_empty_not_failure():
     assert rp.get("note"), "空结果也要有说明，不能留空"
 
 
+def test_app_navigation_failure_is_not_empty():
+    """没完成导航/选城市，不能说成「本轮无票」。"""
+    log = (_HEAD
+           + "2026-11-01 09:00:05 [INFO] ticket-monitor: "
+             "[app_qunar] 设出发城市失败：上海\n"
+           + "2026-11-01 09:00:06 [INFO] ticket-monitor: "
+             "[app_qunar] 抓取完成，得到 0 条记录\n"
+           + _TAIL)
+    rp = _round(log).get("app_qunar") or {}
+    assert rp.get("s") == "fail", (
+        "导航失败应记 fail，实测 %r：%s" % (rp.get("s"), rp))
+    assert "导航失败" in str(rp.get("note") or ""), rp
+
+
+def test_ok_round_does_not_keep_empty_note():
+    """同轮既有明细成功又有空结果时，整轮不能写「本轮无票」。
+
+    线上 19:56 qunar：国内 3 条明细 + 国际 3 条空，健康卡却挂
+    「本轮无票（得到 0 条）」，把出数轮说成没票。
+    """
+    log = (_HEAD
+           + "2026-11-01 09:00:05 [INFO] ticket-monitor: "
+             "[qunar] 2026-11-16 最低价 ￥500（航班明细 10 条：直飞 10）\n"
+           + "2026-11-01 09:00:06 [INFO] ticket-monitor: "
+             "[qunar] 抓取完成，得到 0 条记录\n"
+           + _TAIL)
+    rp = _round(log).get("qunar") or {}
+    assert rp.get("s") == "ok", rp
+    assert "无票" not in str(rp.get("note") or ""), rp
+
+
 def test_real_log_app_channels_are_not_reported_failed():
     """用生产日志最后一段真跑：App 两家不得被判 fail。
 

@@ -152,7 +152,10 @@ def test_rows_stay_aligned_in_every_status_combo(server):
                             right:ab?Math.round(ab.right):null};
                   });
                 }""", cls)
-                assert len(rows) == 7, "登录卡应为 7 张，实测 %d" % len(rows)
+                from core.channels import APP_CHANNELS, BROWSER_CHANNELS
+                n_login = len(BROWSER_CHANNELS) + len(APP_CHANNELS)
+                assert len(rows) == n_login, (
+                    "登录卡应为 %d 张，实测 %d" % (n_login, len(rows)))
                 hs = {r["h"] for r in rows}
                 rs = {r["right"] for r in rows if r["right"] is not None}
                 assert len(hs) == 1, "状态 %r 下行高分裂：%s" % (cls or "默认", hs)

@@ -49,8 +49,8 @@ def test_partial_round_trip_channels_declare_scope_and_note():
     partial = {p for p, cells in CHANNEL_DIMENSIONS.items()
                if cells.get("round_trip") == "y"
                and (p, "round_trip") in DIMENSION_SCOPE}
-    assert partial == {"fliggy", "tuniu", "tongcheng", "qunar",
-                      "app_qunar"}, (
+    assert partial == {"fliggy", "qunar", "app_qunar",
+                      "app_tongcheng"}, (
         "「只覆盖一端」的往返渠道集合变了：%s（改声明时同步改本判据）"
         % sorted(partial))
     for p in partial:
@@ -74,11 +74,14 @@ def test_frontend_does_not_hardcode_rt_scope():
     src = io.open(os.path.join(ROOT, "webui.py"), encoding="utf-8").read()
     assert "RT_SCOPE_NOTE" not in src, (
         "前端仍留着写死的往返范围表——声明改了它不会跟着改")
-    i = src.find('"channels": [')
+    assert "channel_dims_payload()" in src, "接口没走单一矩阵载荷"
+    payload = io.open(os.path.join(ROOT, "core", "channels.py"),
+                      encoding="utf-8").read()
+    i = payload.find('"channels": [')
     assert i > 0, "接口片段锚点失效"
-    seg = src[i:i + 900]
+    seg = payload[i:i + 1100]
     assert "dim_scopes" in seg, (
-        "接口没下发 dim_scopes，前端无从拼范围文案（只能退回写死）")
+        "载荷没下发 dim_scopes，前端无从拼范围文案（只能退回写死）")
 
 
 def test_rendered_scope_reaches_both_chip_and_matrix():
@@ -134,8 +137,24 @@ def test_rendered_scope_reaches_both_chip_and_matrix():
                     const cells=[...tr.querySelectorAll('td .cell')];
                     for(let i=0;i<cells.length;i++){
                       const t=cells[i].getAttribute('title')||'';
-                      if(/飞猪/.test(head[i+1]||''))out.fliggy=t;
-                      if(/途牛/.test(head[i+1]||''))out.tuniu=t;
+                      /* 精确匹配浏览器列：现网还有「飞猪 App」同名前缀列 */
+                      const hh=(head[i+1]||'').trim();
+                      if(hh==='飞猪')out.fliggy=t;
+                      if(hh==='途牛')out.tuniu=t;
+                      if(hh.indexOf('携程 App')>=0)out.ctrip_rt=t;
+                    }
+                  }
+                  /* 国际行：携程 App 国际单程明细、同程 App 国际日历的
+                     说明必须真的渲染到矩阵格，不能只活在源码里。 */
+                  for(const tr of rows){
+                    const th=(tr.querySelector('th')||{}).innerText||'';
+                    if(!/国际/.test(th))continue;
+                    const cells=[...tr.querySelectorAll('td .cell')];
+                    for(let i=0;i<cells.length;i++){
+                      const t=cells[i].getAttribute('title')||'';
+                      const hh=(head[i+1]||'').trim();
+                      if(hh.indexOf('携程 App')>=0)out.ctrip_intl=t;
+                      if(hh.indexOf('同程 App')>=0)out.tc_intl=t;
                     }
                   }
                   switchView('search');
@@ -150,10 +169,19 @@ def test_rendered_scope_reaches_both_chip_and_matrix():
             finally:
                 b.close()
         assert got.get("fliggy"), "找不到「往返 × 飞猪」格子"
+        assert "¥2146" in got.get("ctrip_rt", ""), (
+            "携程 App 往返格悬停没写真机往返总价：%r"
+            % got.get("ctrip_rt", "")[:120])
+        assert "国际单程明细" in got.get("ctrip_intl", ""), (
+            "携程 App 国际格悬停没写国际单程明细：%r"
+            % got.get("ctrip_intl", "")[:120])
+        assert "价格日历" in got.get("tc_intl", ""), (
+            "同程 App 国际格悬停没写价格日历：%r"
+            % got.get("tc_intl", "")[:120])
         from core.channels import DIMENSION_SCOPE
         # 范围词从声明取，不把说明的具体措辞钉进测试
         # （说明写「只有国际能出…」，短标签写「仅国际」，说的是同一件事）
-        for plat, key in (("fliggy", "fliggy"), ("tuniu", "tuniu")):
+        for plat, key in (("fliggy", "fliggy"),):
             word = DIMENSION_SCOPE[(plat, "round_trip")].strip("仅")
             assert word in got.get(key, ""), (
                 "矩阵格悬停没写 %s 的往返范围（缺 %r）：%r"
@@ -242,22 +270,31 @@ def test_scope_note_follows_the_route_type():
                 b.close()
         assert got["intl_sha_can"] is False and got["intl_sha_nrt"] is True, (
             "航线类型判定失效，本判据失去锚点：%s" % got)
-        assert "飞猪" in got["dom_miss"], (
+
+        def _names(s):
+            return {x.strip() for x in (s or "").split("、") if x.strip()}
+
+        dom_miss, intl_miss = _names(got["dom_miss"]), _names(got["intl_miss"])
+        # 按「渠道名 token」判，不按子串：现网还有「飞猪 App」，
+        # `"飞猪" not in "…飞猪 App"` 会被前缀误伤。
+        assert "飞猪" in dom_miss, (
             "国内航线上飞猪（仅国际）应算「这条航线没有往返」：%r"
             % got["dom_miss"])
-        assert "途牛" not in got["dom_miss"], (
+        assert "途牛" not in dom_miss, (
             "国内航线上途牛能出往返，不该列进「暂无」：%r" % got["dom_miss"])
-        assert "途牛" in got["intl_miss"], (
-            "国际航线上途牛（仅国内）应算没有：%r" % got["intl_miss"])
-        assert "飞猪" not in got["intl_miss"], (
+        assert "途牛" not in intl_miss, (
+            "国际航线上途牛已能出往返，不该列进「暂无」：%r" % got["intl_miss"])
+        assert "飞猪" not in intl_miss, (
             "国际航线上飞猪能出往返，不该列进「暂无」：%r" % got["intl_miss"])
-        assert "去哪儿 App" in got["intl_miss"], (
+        assert "飞猪 App" in intl_miss, (
+            "飞猪 App 未接往返，应如实列进「暂无」：%r" % got["intl_miss"])
+        assert "去哪儿 App" in intl_miss, (
             "国际航线上去哪儿 App（仅国内）应算没有：%r" % got["intl_miss"])
-        assert "去哪儿 App" not in got["dom_miss"], (
+        assert "去哪儿 App" not in dom_miss, (
             "国内航线上去哪儿 App 能出往返，不该列进「暂无」：%r"
             % got["dom_miss"])
-        assert "途牛仅国内" in got["dom_scope"], (
-            "国内航线应提示「途牛仅国内」：%r" % got["dom_scope"])
+        assert "途牛仅国内" not in got["dom_scope"], (
+            "国内航线不该再出现「途牛仅国内」：%r" % got["dom_scope"])
         assert "去哪儿 App仅国内" in got["dom_scope"], (
             "国内航线应提示「去哪儿 App仅国内」：%r" % got["dom_scope"])
         assert "飞猪仅国际" in got["intl_scope"], (

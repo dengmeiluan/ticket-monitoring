@@ -8,7 +8,7 @@
 - 8 路只读审计确认一个 **P0**：`main.py` 的 `build_users` 未保留 `special_radar`，生产 `_radar_auto_loop` 取不到用户条件，自动监控实际未运行；现有快照来自手动查询。
 - 其余 P1：历史按用户聚合导致跨航线/日期串线；健康诊断无证据也显示绿色；扫描行无入口证据且 RAW 是解析 extra；移动折叠/五源/特价日历存在遮挡；4× CPU 筛选 P95 337.9ms；公开面仍有过期计数与跳过 live 的对齐检查。
 
-本设计只做“证据优先”的增量，不重写控制台、不新增调度器、不绕过验证码/风控、不补造历史。
+本设计只做“证据优先”的增量，不重写控制台、不新增调度器、不补造历史。
 
 ## 1. 目标与非目标
 
@@ -25,7 +25,6 @@
 
 - 不新增独立监控守护进程；沿用 `_radar_auto_loop`。
 - 不把日历价当航班明细；不为缺失历史补值。
-- 不做验证码/滑块/风控绕过；不自建代理池规避 IP 限制。
 - 不重写五个 crawler 的解析器；证据链先做到“路径级 + 解析 extra”并明确标注。
 - 未经单独确认不推送、不改 tag、不发布。
 
@@ -139,7 +138,7 @@ classify_channel(plat, round_plat, path_rows, login_state, cookie_state) -> dict
 - `core/health.py` 笔记截断 40 → 160 字符，保留 `179991` 等标记。
 - 明确 Qunar 1999 空结果日志标记归为 `empty`，不计失败。
 - 新增 `logs/channel_evidence.jsonl` 追加账本（capped 500 行）：`ts/plat/scope/kind/status/path/rows/note/source`；只记录证据，不合成 monitor.log 行。
-- `POST /api/channel/selfcheck`：同源 JSON，单渠道单飞；只做本地 Cookie 过期检查 + 最近轮次证据归并，不启动外网请求、不写会话、不绕过验证码。返回分类卡与动作。
+- `POST /api/channel/selfcheck`：同源 JSON，单渠道单飞；只做本地 Cookie 过期检查 + 最近轮次证据归并，不启动外网请求、不写会话。返回分类卡与动作。
 - `GET /api/health` 增加 `diag` 字段，由 `classify_channel` 生成；`webui.py` 的 `renderHealthDiag` 改为纯渲染，不再用正则猜测。
 
 ### 3.3 UI

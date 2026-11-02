@@ -1,0 +1,7361 @@
+{
+ "code": 200,
+ "data": {
+  "done": 1,
+  "result": true,
+  "tid": "CN20261103034230O3SFWGRU7J",
+  "st": 0,
+  "res": [
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1463,
+     "avgPrice": 680,
+     "avgTax": 783,
+     "discount": {
+      "avg": 1463,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "HX231D20",
+    "dt": "07:40",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "10:40",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "香港航空",
+      "an": "HX231",
+      "ac": "HX",
+      "ft": 180,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "07:40"
+    ],
+    "ftimeGmt8": [
+     "07:40"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "10:40"
+    ],
+    "atimeGmt8": [
+     "10:40"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "Q",
+     "O"
+    ],
+    "avg": 1463,
+    "avgtax": 680,
+    "avgPrice": 680,
+    "tax": 783,
+    "p": 20,
+    "sp": 680,
+    "tp": 1463,
+    "fsp": 680,
+    "ftax": 783,
+    "fstp": 1463,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 180,
+    "rt": 8,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1443^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^HX0231_20261120|HX0234_20261123^NORMAL",
+    "sh": false,
+    "rType": "GW",
+    "eps": [
+     {
+      "cc": "320",
+      "cn": "空客A320",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 150,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "DBZJ",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "HX",
+    "merchantId": "939",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2020050",
+    "recommendCodes": [],
+    "lng": "HX0231_20261120|HX0234_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1531,
+     "avgPrice": 1269,
+     "avgTax": 262,
+     "discount": {
+      "avg": 1531,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "CX303D20",
+    "dt": "07:10",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "10:00",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "国泰航空",
+      "an": "CX303",
+      "ac": "CX",
+      "ft": 170,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "07:10"
+    ],
+    "ftimeGmt8": [
+     "07:10"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "10:00"
+    ],
+    "atimeGmt8": [
+     "10:00"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "O",
+     "Q"
+    ],
+    "avg": 1531,
+    "avgtax": 1269,
+    "avgPrice": 1269,
+    "tax": 262,
+    "p": 4,
+    "sp": 1269,
+    "tp": 1531,
+    "fsp": 1269,
+    "ftax": 262,
+    "fstp": 1531,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 170,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1511^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^CX0303_20261120|CX0302_20261123^NORMAL",
+    "sh": false,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "773",
+      "cn": "波音777-300",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 280,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "CX",
+    "merchantId": "1002",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "CX0303_20261120|CX0302_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1540,
+     "avgPrice": 757,
+     "avgTax": 783,
+     "discount": {
+      "avg": 1540,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "HX235D20",
+    "dt": "09:10",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "12:15",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "香港航空",
+      "an": "HX235",
+      "ac": "HX",
+      "ft": 185,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "09:10"
+    ],
+    "ftimeGmt8": [
+     "09:10"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "12:15"
+    ],
+    "atimeGmt8": [
+     "12:15"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "X",
+     "O"
+    ],
+    "avg": 1540,
+    "avgtax": 757,
+    "avgPrice": 757,
+    "tax": 783,
+    "p": 20,
+    "sp": 757,
+    "tp": 1540,
+    "fsp": 757,
+    "ftax": 783,
+    "fstp": 1540,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 185,
+    "rt": 8,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1520^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^HX0235_20261120|HX0234_20261123^NORMAL",
+    "sh": false,
+    "rType": "GW",
+    "eps": [
+     {
+      "cc": "320",
+      "cn": "空客A320",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 150,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "DBZJ",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "HX",
+    "merchantId": "939",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2020050",
+    "recommendCodes": [],
+    "lng": "HX0235_20261120|HX0234_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1540,
+     "avgPrice": 757,
+     "avgTax": 783,
+     "discount": {
+      "avg": 1540,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "HX237D20",
+    "dt": "12:25",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "15:30",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "香港航空",
+      "an": "HX237",
+      "ac": "HX",
+      "ft": 185,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "12:25"
+    ],
+    "ftimeGmt8": [
+     "12:25"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "15:30"
+    ],
+    "atimeGmt8": [
+     "15:30"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "X",
+     "O"
+    ],
+    "avg": 1540,
+    "avgtax": 757,
+    "avgPrice": 757,
+    "tax": 783,
+    "p": 20,
+    "sp": 757,
+    "tp": 1540,
+    "fsp": 757,
+    "ftax": 783,
+    "fstp": 1540,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 185,
+    "rt": 1,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1520^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^HX0237_20261120|HX0234_20261123^NORMAL",
+    "sh": false,
+    "rType": "GW",
+    "eps": [
+     {
+      "cc": "320",
+      "cn": "空客A320",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 150,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "DBZJ",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "HX",
+    "merchantId": "939",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2020050",
+    "recommendCodes": [],
+    "lng": "HX0237_20261120|HX0234_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1614,
+     "avgPrice": 951,
+     "avgTax": 663,
+     "discount": {
+      "avg": 1614,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "HO1305D20",
+    "dt": "07:55",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "10:55",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "吉祥航空",
+      "an": "HO1305",
+      "ac": "HO",
+      "ft": 180,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "07:55"
+    ],
+    "ftimeGmt8": [
+     "07:55"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "10:55"
+    ],
+    "atimeGmt8": [
+     "10:55"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "V",
+     "Z"
+    ],
+    "avg": 1614,
+    "avgtax": 951,
+    "avgPrice": 951,
+    "tax": 663,
+    "p": 20,
+    "sp": 951,
+    "tp": 1614,
+    "fsp": 951,
+    "ftax": 663,
+    "fstp": 1614,
+    "ctp": 1265,
+    "csp": 862,
+    "cfsp": 862,
+    "cftax": 403,
+    "cfstp": 1265,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 180,
+    "rt": 10,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1593^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^HO1305_20261120|HO1292_20261123^NORMAL",
+    "sh": false,
+    "rType": "1T",
+    "eps": [
+     {
+      "cc": "32N",
+      "cn": "空客 A320-200 NEO",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 180,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "DBZJ",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "HO",
+    "merchantId": "176",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2020070",
+    "recommendCodes": [],
+    "lng": "HO1305_20261120|HO1292_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1801,
+     "avgPrice": 1138,
+     "avgTax": 663,
+     "discount": {
+      "avg": 1801,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "HO1291D20",
+    "dt": "16:35",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "19:35",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "吉祥航空",
+      "an": "HO1291",
+      "ac": "HO",
+      "ft": 180,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "16:35"
+    ],
+    "ftimeGmt8": [
+     "16:35"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "19:35"
+    ],
+    "atimeGmt8": [
+     "19:35"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "H",
+     "Z"
+    ],
+    "avg": 1801,
+    "avgtax": 1138,
+    "avgPrice": 1138,
+    "tax": 663,
+    "p": 20,
+    "sp": 1138,
+    "tp": 1801,
+    "fsp": 1138,
+    "ftax": 663,
+    "fstp": 1801,
+    "ctp": 1419,
+    "csp": 1016,
+    "cfsp": 1016,
+    "cftax": 403,
+    "cfstp": 1419,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 180,
+    "rt": 10,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1773^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^HO1291_20261120|HO1292_20261123^NORMAL",
+    "sh": false,
+    "rType": "1T",
+    "eps": [
+     {
+      "cc": "32A",
+      "cn": "空客A320",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 170,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "DBZJ",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "HO",
+    "merchantId": "405",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2020050",
+    "recommendCodes": [],
+    "lng": "HO1291_20261120|HO1292_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1803,
+     "avgPrice": 1020,
+     "avgTax": 783,
+     "discount": {
+      "avg": 1803,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "HX239D20",
+    "dt": "18:10",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海虹桥国际机场",
+      "at": "T1",
+      "ac": "SHA",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "虹桥"
+     }
+    ],
+    "at": "20:55",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "香港航空",
+      "an": "HX239",
+      "ac": "HX",
+      "ft": 165,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "18:10"
+    ],
+    "ftimeGmt8": [
+     "18:10"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "20:55"
+    ],
+    "atimeGmt8": [
+     "20:55"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "N",
+     "O"
+    ],
+    "avg": 1803,
+    "avgtax": 1020,
+    "avgPrice": 1020,
+    "tax": 783,
+    "p": 20,
+    "sp": 1020,
+    "tp": 1803,
+    "fsp": 1020,
+    "ftax": 783,
+    "fstp": 1803,
+    "ctp": 1313,
+    "csp": 790,
+    "cfsp": 790,
+    "cftax": 523,
+    "cfstp": 1313,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 165,
+    "rt": 3,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1783^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^HX0239_20261120|HX0234_20261123^NORMAL",
+    "sh": false,
+    "rType": "1T",
+    "eps": [
+     {
+      "cc": "333",
+      "cn": "空客A330-300",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 260,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "DBZJ",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "HX",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2020020",
+    "recommendCodes": [],
+    "lng": "HX0239_20261120|HX0234_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1830,
+     "avgPrice": 1627,
+     "avgTax": 203,
+     "discount": {
+      "avg": 1830,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "MU509D20",
+    "dt": "13:35",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "16:20",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "东方航空",
+      "an": "MU509",
+      "ac": "MU",
+      "ft": 165,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "13:35"
+    ],
+    "ftimeGmt8": [
+     "13:35"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "16:20"
+    ],
+    "atimeGmt8": [
+     "16:20"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "R",
+     "Q"
+    ],
+    "avg": 1830,
+    "avgtax": 1627,
+    "avgPrice": 1627,
+    "tax": 203,
+    "p": 60,
+    "sp": 1627,
+    "tp": 1830,
+    "fsp": 1627,
+    "ftax": 203,
+    "fstp": 1830,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 165,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1790^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^MU0509_20261120|CX0362_20261123^NORMAL",
+    "sh": false,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "325",
+      "cn": "空客A321-200",
+      "dp": null,
+      "mt": 2,
+      "mwt": "N",
+      "st": 200,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "MU",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "MU0509_20261120|CX0362_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1830,
+     "avgPrice": 1627,
+     "avgTax": 203,
+     "discount": {
+      "avg": 1830,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "FM3023D20",
+    "dt": "13:35",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "16:20",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "上海航空",
+      "an": "FM3023",
+      "ac": "FM",
+      "ft": 165,
+      "sh": true,
+      "ofn": "MU509",
+      "oacc": "MU",
+      "oacn": "东方航空",
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "13:35"
+    ],
+    "ftimeGmt8": [
+     "13:35"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "16:20"
+    ],
+    "atimeGmt8": [
+     "16:20"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "R",
+     "Q"
+    ],
+    "avg": 1830,
+    "avgtax": 1627,
+    "avgPrice": 1627,
+    "tax": 203,
+    "p": 60,
+    "sp": 1627,
+    "tp": 1830,
+    "fsp": 1627,
+    "ftax": 203,
+    "fstp": 1830,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 165,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1790^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^FM3023_20261120|CX0362_20261123^NORMAL",
+    "sh": true,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "325",
+      "cn": "空客A321-200",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 200,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "FM",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "FM3023_20261120|CX0362_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1830,
+     "avgPrice": 1627,
+     "avgTax": 203,
+     "discount": {
+      "avg": 1830,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "FM811D20",
+    "dt": "09:50",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "12:40",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "上海航空",
+      "an": "FM811",
+      "ac": "FM",
+      "ft": 170,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "09:50"
+    ],
+    "ftimeGmt8": [
+     "09:50"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "12:40"
+    ],
+    "atimeGmt8": [
+     "12:40"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "R",
+     "Q"
+    ],
+    "avg": 1830,
+    "avgtax": 1627,
+    "avgPrice": 1627,
+    "tax": 203,
+    "p": 60,
+    "sp": 1627,
+    "tp": 1830,
+    "fsp": 1627,
+    "ftax": 203,
+    "fstp": 1830,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 170,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1790^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^FM0811_20261120|CX0362_20261123^NORMAL",
+    "sh": false,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "73M",
+      "cn": "波音737-200",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 105,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "FM",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "FM0811_20261120|CX0362_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1830,
+     "avgPrice": 1627,
+     "avgTax": 203,
+     "discount": {
+      "avg": 1830,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "MU721D20",
+    "dt": "08:00",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海虹桥国际机场",
+      "at": "T1",
+      "ac": "SHA",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "虹桥"
+     }
+    ],
+    "at": "10:50",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "东方航空",
+      "an": "MU721",
+      "ac": "MU",
+      "ft": 170,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "08:00"
+    ],
+    "ftimeGmt8": [
+     "08:00"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "10:50"
+    ],
+    "atimeGmt8": [
+     "10:50"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "R",
+     "Q"
+    ],
+    "avg": 1830,
+    "avgtax": 1627,
+    "avgPrice": 1627,
+    "tax": 203,
+    "p": 60,
+    "sp": 1627,
+    "tp": 1830,
+    "fsp": 1627,
+    "ftax": 203,
+    "fstp": 1830,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 170,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1790^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^MU0721_20261120|CX0362_20261123^NORMAL",
+    "sh": false,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "327",
+      "cn": "空客 A321 NEO",
+      "dp": null,
+      "mt": 2,
+      "mwt": "N",
+      "st": 198,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "MU",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "MU0721_20261120|CX0362_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1830,
+     "avgPrice": 1627,
+     "avgTax": 203,
+     "discount": {
+      "avg": 1830,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "MU507D20",
+    "dt": "11:35",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "14:25",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "东方航空",
+      "an": "MU507",
+      "ac": "MU",
+      "ft": 170,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "11:35"
+    ],
+    "ftimeGmt8": [
+     "11:35"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "14:25"
+    ],
+    "atimeGmt8": [
+     "14:25"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "R",
+     "Q"
+    ],
+    "avg": 1830,
+    "avgtax": 1627,
+    "avgPrice": 1627,
+    "tax": 203,
+    "p": 60,
+    "sp": 1627,
+    "tp": 1830,
+    "fsp": 1627,
+    "ftax": 203,
+    "fstp": 1830,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 170,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1790^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^MU0507_20261120|CX0302_20261123^NORMAL",
+    "sh": false,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "321",
+      "cn": "空客A321",
+      "dp": null,
+      "mt": 2,
+      "mwt": "N",
+      "st": 170,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "MU",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "MU0507_20261120|CX0302_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1830,
+     "avgPrice": 1627,
+     "avgTax": 203,
+     "discount": {
+      "avg": 1830,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "FM3013D20",
+    "dt": "08:00",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海虹桥国际机场",
+      "at": "T1",
+      "ac": "SHA",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "虹桥"
+     }
+    ],
+    "at": "10:50",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "上海航空",
+      "an": "FM3013",
+      "ac": "FM",
+      "ft": 170,
+      "sh": true,
+      "ofn": "MU721",
+      "oacc": "MU",
+      "oacn": "东方航空",
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "08:00"
+    ],
+    "ftimeGmt8": [
+     "08:00"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "10:50"
+    ],
+    "atimeGmt8": [
+     "10:50"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "R",
+     "Q"
+    ],
+    "avg": 1830,
+    "avgtax": 1627,
+    "avgPrice": 1627,
+    "tax": 203,
+    "p": 60,
+    "sp": 1627,
+    "tp": 1830,
+    "fsp": 1627,
+    "ftax": 203,
+    "fstp": 1830,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 170,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1790^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^FM3013_20261120|CX0302_20261123^NORMAL",
+    "sh": true,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "327",
+      "cn": "空客 A321 NEO",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 198,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "FM",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "FM3013_20261120|CX0302_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1830,
+     "avgPrice": 1627,
+     "avgTax": 203,
+     "discount": {
+      "avg": 1830,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "FM3021D20",
+    "dt": "11:35",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "14:25",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "上海航空",
+      "an": "FM3021",
+      "ac": "FM",
+      "ft": 170,
+      "sh": true,
+      "ofn": "MU507",
+      "oacc": "MU",
+      "oacn": "东方航空",
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "11:35"
+    ],
+    "ftimeGmt8": [
+     "11:35"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "14:25"
+    ],
+    "atimeGmt8": [
+     "14:25"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "R",
+     "Q"
+    ],
+    "avg": 1830,
+    "avgtax": 1627,
+    "avgPrice": 1627,
+    "tax": 203,
+    "p": 60,
+    "sp": 1627,
+    "tp": 1830,
+    "fsp": 1627,
+    "ftax": 203,
+    "fstp": 1830,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 170,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1790^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^FM3021_20261120|CX0302_20261123^NORMAL",
+    "sh": true,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "321",
+      "cn": "空客A321",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 170,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "FM",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "FM3021_20261120|CX0302_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1830,
+     "avgPrice": 1627,
+     "avgTax": 203,
+     "discount": {
+      "avg": 1830,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "MU8595D20",
+    "dt": "09:50",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "12:40",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "东方航空",
+      "an": "MU8595",
+      "ac": "MU",
+      "ft": 170,
+      "sh": true,
+      "ofn": "FM811",
+      "oacc": "FM",
+      "oacn": "上海航空",
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "09:50"
+    ],
+    "ftimeGmt8": [
+     "09:50"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "12:40"
+    ],
+    "atimeGmt8": [
+     "12:40"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "R",
+     "Q"
+    ],
+    "avg": 1830,
+    "avgtax": 1627,
+    "avgPrice": 1627,
+    "tax": 203,
+    "p": 60,
+    "sp": 1627,
+    "tp": 1830,
+    "fsp": 1627,
+    "ftax": 203,
+    "fstp": 1830,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 170,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1790^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^MU8595_20261120|CX0302_20261123^NORMAL",
+    "sh": true,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "73M",
+      "cn": "波音737-200",
+      "dp": null,
+      "mt": 2,
+      "mwt": "N",
+      "st": 105,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "MU",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "MU8595_20261120|CX0302_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1830,
+     "avgPrice": 1627,
+     "avgTax": 203,
+     "discount": {
+      "avg": 1830,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "MU595D20",
+    "dt": "08:30",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "11:30",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "东方航空",
+      "an": "MU595",
+      "ac": "MU",
+      "ft": 180,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "08:30"
+    ],
+    "ftimeGmt8": [
+     "08:30"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "11:30"
+    ],
+    "atimeGmt8": [
+     "11:30"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "R",
+     "Q"
+    ],
+    "avg": 1830,
+    "avgtax": 1627,
+    "avgPrice": 1627,
+    "tax": 203,
+    "p": 60,
+    "sp": 1627,
+    "tp": 1830,
+    "fsp": 1627,
+    "ftax": 203,
+    "fstp": 1830,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 180,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1790^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^MU0595_20261120|CX0362_20261123^NORMAL",
+    "sh": false,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "919",
+      "cn": "中国商飞 C919",
+      "dp": null,
+      "mt": 2,
+      "mwt": "W",
+      "st": 192,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "MU",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "MU0595_20261120|CX0362_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1830,
+     "avgPrice": 1627,
+     "avgTax": 203,
+     "discount": {
+      "avg": 1830,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "FM3015D20",
+    "dt": "08:30",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "11:30",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "上海航空",
+      "an": "FM3015",
+      "ac": "FM",
+      "ft": 180,
+      "sh": true,
+      "ofn": "MU595",
+      "oacc": "MU",
+      "oacn": "东方航空",
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "08:30"
+    ],
+    "ftimeGmt8": [
+     "08:30"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "11:30"
+    ],
+    "atimeGmt8": [
+     "11:30"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "R",
+     "Q"
+    ],
+    "avg": 1830,
+    "avgtax": 1627,
+    "avgPrice": 1627,
+    "tax": 203,
+    "p": 60,
+    "sp": 1627,
+    "tp": 1830,
+    "fsp": 1627,
+    "ftax": 203,
+    "fstp": 1830,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 180,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1790^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^FM3015_20261120|CX0362_20261123^NORMAL",
+    "sh": true,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "919",
+      "cn": "中国商飞 C919",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 192,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "FM",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "FM3015_20261120|CX0362_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1830,
+     "avgPrice": 1627,
+     "avgTax": 203,
+     "discount": {
+      "avg": 1830,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "MU505D20",
+    "dt": "15:10",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "18:15",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "东方航空",
+      "an": "MU505",
+      "ac": "MU",
+      "ft": 185,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "15:10"
+    ],
+    "ftimeGmt8": [
+     "15:10"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "18:15"
+    ],
+    "atimeGmt8": [
+     "18:15"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "R",
+     "Q"
+    ],
+    "avg": 1830,
+    "avgtax": 1627,
+    "avgPrice": 1627,
+    "tax": 203,
+    "p": 60,
+    "sp": 1627,
+    "tp": 1830,
+    "fsp": 1627,
+    "ftax": 203,
+    "fstp": 1830,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 185,
+    "rt": 5,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1790^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^MU0505_20261120|CX0302_20261123^NORMAL",
+    "sh": false,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "321",
+      "cn": "空客A321",
+      "dp": null,
+      "mt": 2,
+      "mwt": "N",
+      "st": 170,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "MU",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "MU0505_20261120|CX0302_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1830,
+     "avgPrice": 1627,
+     "avgTax": 203,
+     "discount": {
+      "avg": 1830,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "FM3019D20",
+    "dt": "15:10",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "18:15",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "上海航空",
+      "an": "FM3019",
+      "ac": "FM",
+      "ft": 185,
+      "sh": true,
+      "ofn": "MU505",
+      "oacc": "MU",
+      "oacn": "东方航空",
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "15:10"
+    ],
+    "ftimeGmt8": [
+     "15:10"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "18:15"
+    ],
+    "atimeGmt8": [
+     "18:15"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "R",
+     "Q"
+    ],
+    "avg": 1830,
+    "avgtax": 1627,
+    "avgPrice": 1627,
+    "tax": 203,
+    "p": 60,
+    "sp": 1627,
+    "tp": 1830,
+    "fsp": 1627,
+    "ftax": 203,
+    "fstp": 1830,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 185,
+    "rt": 5,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1790^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^FM3019_20261120|CX0302_20261123^NORMAL",
+    "sh": true,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "321",
+      "cn": "空客A321",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 170,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "FM",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "FM3019_20261120|CX0302_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1941,
+     "avgPrice": 1218,
+     "avgTax": 723,
+     "discount": {
+      "avg": 1941,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "CX361D20",
+    "dt": "08:30",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "11:30",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "国泰航空",
+      "an": "CX361",
+      "ac": "CX",
+      "ft": 180,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "08:30"
+    ],
+    "ftimeGmt8": [
+     "08:30"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "11:30"
+    ],
+    "atimeGmt8": [
+     "11:30"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "S",
+     "Q"
+    ],
+    "avg": 1941,
+    "avgtax": 1218,
+    "avgPrice": 1218,
+    "tax": 723,
+    "p": -42,
+    "sp": 1218,
+    "tp": 1941,
+    "fsp": 1218,
+    "ftax": 723,
+    "fstp": 1941,
+    "ctp": 1383,
+    "csp": 920,
+    "cfsp": 920,
+    "cftax": 463,
+    "cfstp": 1383,
+    "itp": 0,
+    "reduced": true,
+    "tdt": 180,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1922^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^CX0361_20261120|CX0302_20261123^NORMAL",
+    "sh": false,
+    "rType": "GW",
+    "eps": [
+     {
+      "cc": "773",
+      "cn": "波音777-300",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 280,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "HSQJD",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "CX",
+    "merchantId": "1002",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2020020",
+    "recommendCodes": [],
+    "lng": "CX0361_20261120|CX0302_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1941,
+     "avgPrice": 1218,
+     "avgTax": 723,
+     "discount": {
+      "avg": 1941,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "CX367D20",
+    "dt": "13:45",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "16:45",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "国泰航空",
+      "an": "CX367",
+      "ac": "CX",
+      "ft": 180,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "13:45"
+    ],
+    "ftimeGmt8": [
+     "13:45"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "16:45"
+    ],
+    "atimeGmt8": [
+     "16:45"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "S",
+     "Q"
+    ],
+    "avg": 1941,
+    "avgtax": 1218,
+    "avgPrice": 1218,
+    "tax": 723,
+    "p": -42,
+    "sp": 1218,
+    "tp": 1941,
+    "fsp": 1218,
+    "ftax": 723,
+    "fstp": 1941,
+    "ctp": 1383,
+    "csp": 920,
+    "cfsp": 920,
+    "cftax": 463,
+    "cfstp": 1383,
+    "itp": 0,
+    "reduced": true,
+    "tdt": 180,
+    "rt": 5,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1922^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^CX0367_20261120|CX0376_20261123^NORMAL",
+    "sh": false,
+    "rType": "GW",
+    "eps": [
+     {
+      "cc": "351",
+      "cn": "空客A350-1000",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 369,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "HSQJD",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "CX",
+    "merchantId": "1002",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2020020",
+    "recommendCodes": [],
+    "lng": "CX0367_20261120|CX0376_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1941,
+     "avgPrice": 1218,
+     "avgTax": 723,
+     "discount": {
+      "avg": 1941,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "CX317D20",
+    "dt": "12:50",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "15:50",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "国泰航空",
+      "an": "CX317",
+      "ac": "CX",
+      "ft": 180,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "12:50"
+    ],
+    "ftimeGmt8": [
+     "12:50"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "15:50"
+    ],
+    "atimeGmt8": [
+     "15:50"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "S",
+     "Q"
+    ],
+    "avg": 1941,
+    "avgtax": 1218,
+    "avgPrice": 1218,
+    "tax": 723,
+    "p": -42,
+    "sp": 1218,
+    "tp": 1941,
+    "fsp": 1218,
+    "ftax": 723,
+    "fstp": 1941,
+    "ctp": 1383,
+    "csp": 920,
+    "cfsp": 920,
+    "cftax": 463,
+    "cfstp": 1383,
+    "itp": 0,
+    "reduced": true,
+    "tdt": 180,
+    "rt": 1,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1922^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^CX0317_20261120|CX0368_20261123^NORMAL",
+    "sh": false,
+    "rType": "GW",
+    "eps": [
+     {
+      "cc": "359",
+      "cn": "空客A350-900",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 310,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "HSQJD",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "CX",
+    "merchantId": "1002",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2020020",
+    "recommendCodes": [],
+    "lng": "CX0317_20261120|CX0368_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1941,
+     "avgPrice": 1218,
+     "avgTax": 723,
+     "discount": {
+      "avg": 1941,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "CX369D20",
+    "dt": "17:30",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "20:35",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "国泰航空",
+      "an": "CX369",
+      "ac": "CX",
+      "ft": 185,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "17:30"
+    ],
+    "ftimeGmt8": [
+     "17:30"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "20:35"
+    ],
+    "atimeGmt8": [
+     "20:35"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "S",
+     "Q"
+    ],
+    "avg": 1941,
+    "avgtax": 1218,
+    "avgPrice": 1218,
+    "tax": 723,
+    "p": -42,
+    "sp": 1218,
+    "tp": 1941,
+    "fsp": 1218,
+    "ftax": 723,
+    "fstp": 1941,
+    "ctp": 1383,
+    "csp": 920,
+    "cfsp": 920,
+    "cftax": 463,
+    "cfstp": 1383,
+    "itp": 0,
+    "reduced": true,
+    "tdt": 185,
+    "rt": 5,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1922^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^CX0369_20261120|CX0376_20261123^NORMAL",
+    "sh": false,
+    "rType": "GW",
+    "eps": [
+     {
+      "cc": "333",
+      "cn": "空客A330-300",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 260,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "HSQJD",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "CX",
+    "merchantId": "1002",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2020020",
+    "recommendCodes": [],
+    "lng": "CX0369_20261120|CX0376_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 1941,
+     "avgPrice": 1218,
+     "avgTax": 723,
+     "discount": {
+      "avg": 1941,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "CX377D20",
+    "dt": "14:45",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "17:50",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "国泰航空",
+      "an": "CX377",
+      "ac": "CX",
+      "ft": 185,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "14:45"
+    ],
+    "ftimeGmt8": [
+     "14:45"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "17:50"
+    ],
+    "atimeGmt8": [
+     "17:50"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "S",
+     "Q"
+    ],
+    "avg": 1941,
+    "avgtax": 1218,
+    "avgPrice": 1218,
+    "tax": 723,
+    "p": -42,
+    "sp": 1218,
+    "tp": 1941,
+    "fsp": 1218,
+    "ftax": 723,
+    "fstp": 1941,
+    "ctp": 1383,
+    "csp": 920,
+    "cfsp": 920,
+    "cftax": 463,
+    "cfstp": 1383,
+    "itp": 0,
+    "reduced": true,
+    "tdt": 185,
+    "rt": 5,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1922^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^CX0377_20261120|CX0376_20261123^NORMAL",
+    "sh": false,
+    "rType": "GW",
+    "eps": [
+     {
+      "cc": "77W",
+      "cn": "波音777-300ER",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 340,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "HSQJD",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "CX",
+    "merchantId": "1002",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2020020",
+    "recommendCodes": [],
+    "lng": "CX0377_20261120|CX0376_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2036,
+     "avgPrice": 1833,
+     "avgTax": 203,
+     "discount": {
+      "avg": 2036,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "FM809D20",
+    "dt": "16:50",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海虹桥国际机场",
+      "at": "T1",
+      "ac": "SHA",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "虹桥"
+     }
+    ],
+    "at": "19:20",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "上海航空",
+      "an": "FM809",
+      "ac": "FM",
+      "ft": 150,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "16:50"
+    ],
+    "ftimeGmt8": [
+     "16:50"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "19:20"
+    ],
+    "atimeGmt8": [
+     "19:20"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "N",
+     "Q"
+    ],
+    "avg": 2036,
+    "avgtax": 1833,
+    "avgPrice": 1833,
+    "tax": 203,
+    "p": 60,
+    "sp": 1833,
+    "tp": 2036,
+    "fsp": 1833,
+    "ftax": 203,
+    "fstp": 2036,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 150,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1996^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^FM0809_20261120|CX0302_20261123^NORMAL",
+    "sh": false,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "73L",
+      "cn": "波音737-800",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 140,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "FM",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "FM0809_20261120|CX0302_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2036,
+     "avgPrice": 1833,
+     "avgTax": 203,
+     "discount": {
+      "avg": 2036,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "MU8629D20",
+    "dt": "16:50",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海虹桥国际机场",
+      "at": "T1",
+      "ac": "SHA",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "虹桥"
+     }
+    ],
+    "at": "19:20",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "东方航空",
+      "an": "MU8629",
+      "ac": "MU",
+      "ft": 150,
+      "sh": true,
+      "ofn": "FM809",
+      "oacc": "FM",
+      "oacn": "上海航空",
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "16:50"
+    ],
+    "ftimeGmt8": [
+     "16:50"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "19:20"
+    ],
+    "atimeGmt8": [
+     "19:20"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "N",
+     "Q"
+    ],
+    "avg": 2036,
+    "avgtax": 1833,
+    "avgPrice": 1833,
+    "tax": 203,
+    "p": 60,
+    "sp": 1833,
+    "tp": 2036,
+    "fsp": 1833,
+    "ftax": 203,
+    "fstp": 2036,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 150,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1996^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^MU8629_20261120|CX0362_20261123^NORMAL",
+    "sh": true,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "73L",
+      "cn": "波音737-800",
+      "dp": null,
+      "mt": 2,
+      "mwt": "N",
+      "st": 140,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "MU",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "MU8629_20261120|CX0362_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2036,
+     "avgPrice": 1833,
+     "avgTax": 203,
+     "discount": {
+      "avg": 2036,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "MU5017D20",
+    "dt": "09:15",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海虹桥国际机场",
+      "at": "T1",
+      "ac": "SHA",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "虹桥"
+     }
+    ],
+    "at": "12:05",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "东方航空",
+      "an": "MU5017",
+      "ac": "MU",
+      "ft": 170,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "09:15"
+    ],
+    "ftimeGmt8": [
+     "09:15"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "12:05"
+    ],
+    "atimeGmt8": [
+     "12:05"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "N",
+     "Q"
+    ],
+    "avg": 2036,
+    "avgtax": 1833,
+    "avgPrice": 1833,
+    "tax": 203,
+    "p": 60,
+    "sp": 1833,
+    "tp": 2036,
+    "fsp": 1833,
+    "ftax": 203,
+    "fstp": 2036,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 170,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1996^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^MU5017_20261120|CX0302_20261123^NORMAL",
+    "sh": false,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "333",
+      "cn": "空客A330-300",
+      "dp": null,
+      "mt": 3,
+      "mwt": "W",
+      "st": 260,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "MU",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "MU5017_20261120|CX0302_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2036,
+     "avgPrice": 1833,
+     "avgTax": 203,
+     "discount": {
+      "avg": 2036,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "FM3011D20",
+    "dt": "09:15",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海虹桥国际机场",
+      "at": "T1",
+      "ac": "SHA",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "虹桥"
+     }
+    ],
+    "at": "12:05",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "上海航空",
+      "an": "FM3011",
+      "ac": "FM",
+      "ft": 170,
+      "sh": true,
+      "ofn": "MU5017",
+      "oacc": "MU",
+      "oacn": "东方航空",
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "09:15"
+    ],
+    "ftimeGmt8": [
+     "09:15"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "12:05"
+    ],
+    "atimeGmt8": [
+     "12:05"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "N",
+     "Q"
+    ],
+    "avg": 2036,
+    "avgtax": 1833,
+    "avgPrice": 1833,
+    "tax": 203,
+    "p": 60,
+    "sp": 1833,
+    "tp": 2036,
+    "fsp": 1833,
+    "ftax": 203,
+    "fstp": 2036,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 170,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|1996^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^FM3011_20261120|CX0362_20261123^NORMAL",
+    "sh": true,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "333",
+      "cn": "空客A330-300",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 260,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "FM",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "FM3011_20261120|CX0362_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2143,
+     "avgPrice": 1420,
+     "avgTax": 723,
+     "discount": {
+      "avg": 2143,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "CX381D20",
+    "dt": "19:05",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "22:05",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "国泰航空",
+      "an": "CX381",
+      "ac": "CX",
+      "ft": 180,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "19:05"
+    ],
+    "ftimeGmt8": [
+     "19:05"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "22:05"
+    ],
+    "atimeGmt8": [
+     "22:05"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "V",
+     "Q"
+    ],
+    "avg": 2143,
+    "avgtax": 1420,
+    "avgPrice": 1420,
+    "tax": 723,
+    "p": -30,
+    "sp": 1420,
+    "tp": 2143,
+    "fsp": 1420,
+    "ftax": 723,
+    "fstp": 2143,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": true,
+    "tdt": 180,
+    "rt": 5,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|2143^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^CX0381_20261120|CX0376_20261123^NORMAL",
+    "sh": false,
+    "rType": "1T",
+    "eps": [
+     {
+      "cc": "351",
+      "cn": "空客A350-1000",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 369,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "LXSP",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "CX",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2001020",
+    "recommendCodes": [],
+    "lng": "CX0381_20261120|CX0376_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": "留学生预订",
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2143,
+     "avgPrice": 1420,
+     "avgTax": 723,
+     "discount": {
+      "avg": 2143,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "CX365D20",
+    "dt": "09:30",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "12:40",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "国泰航空",
+      "an": "CX365",
+      "ac": "CX",
+      "ft": 190,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "09:30"
+    ],
+    "ftimeGmt8": [
+     "09:30"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "12:40"
+    ],
+    "atimeGmt8": [
+     "12:40"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "V",
+     "Q"
+    ],
+    "avg": 2143,
+    "avgtax": 1420,
+    "avgPrice": 1420,
+    "tax": 723,
+    "p": -30,
+    "sp": 1420,
+    "tp": 2143,
+    "fsp": 1420,
+    "ftax": 723,
+    "fstp": 2143,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": true,
+    "tdt": 190,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|2143^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^CX0365_20261120|CX0362_20261123^NORMAL",
+    "sh": false,
+    "rType": "1T",
+    "eps": [
+     {
+      "cc": "333",
+      "cn": "空客A330-300",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 260,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "LXSP",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "CX",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2001020",
+    "recommendCodes": [],
+    "lng": "CX0365_20261120|CX0362_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": "留学生预订",
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2197,
+     "avgPrice": 1598,
+     "avgTax": 599,
+     "discount": {
+      "avg": 2197,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "MU723D20",
+    "dt": "18:10",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "21:05",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "东方航空",
+      "an": "MU723",
+      "ac": "MU",
+      "ft": 175,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "18:10"
+    ],
+    "ftimeGmt8": [
+     "18:10"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "21:05"
+    ],
+    "atimeGmt8": [
+     "21:05"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "L",
+     "V"
+    ],
+    "avg": 2197,
+    "avgtax": 1598,
+    "avgPrice": 1598,
+    "tax": 599,
+    "p": 0,
+    "sp": 1598,
+    "tp": 2197,
+    "fsp": 1598,
+    "ftax": 599,
+    "fstp": 2197,
+    "ctp": 1545,
+    "csp": 1206,
+    "cfsp": 1206,
+    "cftax": 339,
+    "cfstp": 1545,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 175,
+    "rt": 10,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|2197^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^MU0723_20261120|MU0510_20261123^NORMAL",
+    "sh": false,
+    "rType": "1T",
+    "eps": [
+     {
+      "cc": "321",
+      "cn": "空客A321",
+      "dp": null,
+      "mt": 2,
+      "mwt": "N",
+      "st": 170,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "HSQJD",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "MU",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2001020",
+    "recommendCodes": [],
+    "lng": "MU0723_20261120|MU0510_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2197,
+     "avgPrice": 1598,
+     "avgTax": 599,
+     "discount": {
+      "avg": 2197,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "FM3027D20",
+    "dt": "18:10",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "21:05",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "上海航空",
+      "an": "FM3027",
+      "ac": "FM",
+      "ft": 175,
+      "sh": true,
+      "ofn": "MU723",
+      "oacc": "MU",
+      "oacn": "东方航空",
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "18:10"
+    ],
+    "ftimeGmt8": [
+     "18:10"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "21:05"
+    ],
+    "atimeGmt8": [
+     "21:05"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "L",
+     "V"
+    ],
+    "avg": 2197,
+    "avgtax": 1598,
+    "avgPrice": 1598,
+    "tax": 599,
+    "p": 0,
+    "sp": 1598,
+    "tp": 2197,
+    "fsp": 1598,
+    "ftax": 599,
+    "fstp": 2197,
+    "ctp": 1545,
+    "csp": 1206,
+    "cfsp": 1206,
+    "cftax": 339,
+    "cfstp": 1545,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 175,
+    "rt": 10,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|2197^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^FM3027_20261120|FM3020_20261123^NORMAL",
+    "sh": true,
+    "rType": "1T",
+    "eps": [
+     {
+      "cc": "321",
+      "cn": "空客A321",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 170,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "HSQJD",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "FM",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2001020",
+    "recommendCodes": [],
+    "lng": "FM3027_20261120|FM3020_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2299,
+     "avgPrice": 2254,
+     "avgTax": 45,
+     "discount": {
+      "avg": 2299,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "MU3951D20",
+    "dt": "16:35",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "19:35",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "东方航空",
+      "an": "MU3951",
+      "ac": "MU",
+      "ft": 180,
+      "sh": true,
+      "ofn": "HO1291",
+      "oacc": "HO",
+      "oacn": "吉祥航空",
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "16:35"
+    ],
+    "ftimeGmt8": [
+     "16:35"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "19:35"
+    ],
+    "atimeGmt8": [
+     "19:35"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "T",
+     "Q"
+    ],
+    "avg": 2299,
+    "avgtax": 2254,
+    "avgPrice": 2254,
+    "tax": 45,
+    "p": 160,
+    "sp": 2254,
+    "tp": 2299,
+    "fsp": 2254,
+    "ftax": 45,
+    "fstp": 2299,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 180,
+    "rt": 1,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|2259^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^MU3951_20261120|CX0362_20261123^NORMAL",
+    "sh": true,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "32A",
+      "cn": "空客A320",
+      "dp": null,
+      "mt": 2,
+      "mwt": "N",
+      "st": 170,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "HO",
+    "merchantId": "602",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "MU3951_20261120|CX0362_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2373,
+     "avgPrice": 1774,
+     "avgTax": 599,
+     "discount": {
+      "avg": 2373,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "MU3953D20",
+    "dt": "07:55",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "10:55",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "东方航空",
+      "an": "MU3953",
+      "ac": "MU",
+      "ft": 180,
+      "sh": true,
+      "ofn": "HO1305",
+      "oacc": "HO",
+      "oacn": "吉祥航空",
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "07:55"
+    ],
+    "ftimeGmt8": [
+     "07:55"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "10:55"
+    ],
+    "atimeGmt8": [
+     "10:55"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "R",
+     "V"
+    ],
+    "avg": 2373,
+    "avgtax": 1774,
+    "avgPrice": 1774,
+    "tax": 599,
+    "p": 0,
+    "sp": 1774,
+    "tp": 2373,
+    "fsp": 1774,
+    "ftax": 599,
+    "fstp": 2373,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 180,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|2373^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^MU3953_20261120|FM0812_20261123^NORMAL",
+    "sh": true,
+    "rType": "1E",
+    "eps": [
+     {
+      "cc": "32N",
+      "cn": "空客 A320-200 NEO",
+      "dp": null,
+      "mt": 2,
+      "mwt": "N",
+      "st": 180,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "HSQJD",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "MU",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2001020",
+    "recommendCodes": [],
+    "lng": "MU3953_20261120|FM0812_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 0,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2383,
+     "avgPrice": 1660,
+     "avgTax": 723,
+     "discount": {
+      "avg": 2383,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "CX349D20",
+    "dt": "13:35",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海虹桥国际机场",
+      "at": "T1",
+      "ac": "SHA",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "虹桥"
+     }
+    ],
+    "at": "16:20",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "国泰航空",
+      "an": "CX349",
+      "ac": "CX",
+      "ft": 165,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "13:35"
+    ],
+    "ftimeGmt8": [
+     "13:35"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "16:20"
+    ],
+    "atimeGmt8": [
+     "16:20"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "L",
+     "Q"
+    ],
+    "avg": 2383,
+    "avgtax": 1660,
+    "avgPrice": 1660,
+    "tax": 723,
+    "p": -30,
+    "sp": 1660,
+    "tp": 2383,
+    "fsp": 1660,
+    "ftax": 723,
+    "fstp": 2383,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": true,
+    "tdt": 165,
+    "rt": 5,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|2333^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^CX0349_20261120|CX0376_20261123^NORMAL",
+    "sh": false,
+    "rType": "1T",
+    "eps": [
+     {
+      "cc": "333",
+      "cn": "空客A330-300",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 260,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "LXSP",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "CX",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2001020",
+    "recommendCodes": [],
+    "lng": "CX0349_20261120|CX0376_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": "留学生预订",
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2383,
+     "avgPrice": 1660,
+     "avgTax": 723,
+     "discount": {
+      "avg": 2383,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "CX341D20",
+    "dt": "16:35",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海虹桥国际机场",
+      "at": "T1",
+      "ac": "SHA",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "虹桥"
+     }
+    ],
+    "at": "19:35",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "国泰航空",
+      "an": "CX341",
+      "ac": "CX",
+      "ft": 180,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "16:35"
+    ],
+    "ftimeGmt8": [
+     "16:35"
+    ],
+    "adate": [
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20"
+    ],
+    "atime": [
+     "19:35"
+    ],
+    "atimeGmt8": [
+     "19:35"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "L",
+     "Q"
+    ],
+    "avg": 2383,
+    "avgtax": 1660,
+    "avgPrice": 1660,
+    "tax": 723,
+    "p": -30,
+    "sp": 1660,
+    "tp": 2383,
+    "fsp": 1660,
+    "ftax": 723,
+    "fstp": 2383,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": true,
+    "tdt": 180,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|2333^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^CX0341_20261120|CX0302_20261123^NORMAL",
+    "sh": false,
+    "rType": "1T",
+    "eps": [
+     {
+      "cc": "333",
+      "cn": "空客A330-300",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 260,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "LXSP",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "CX",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2001020",
+    "recommendCodes": [],
+    "lng": "CX0341_20261120|CX0302_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": "留学生预订",
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2540,
+     "avgPrice": 1941,
+     "avgTax": 599,
+     "discount": {
+      "avg": 2540,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "MU725D20",
+    "dt": "21:15",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "00:15",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "东方航空",
+      "an": "MU725",
+      "ac": "MU",
+      "ft": 180,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "21:15"
+    ],
+    "ftimeGmt8": [
+     "21:15"
+    ],
+    "adate": [
+     "2026-11-21"
+    ],
+    "adateGmt8": [
+     "2026-11-21"
+    ],
+    "atime": [
+     "00:15"
+    ],
+    "atimeGmt8": [
+     "00:15"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "H",
+     "V"
+    ],
+    "avg": 2540,
+    "avgtax": 1941,
+    "avgPrice": 1941,
+    "tax": 599,
+    "p": 0,
+    "sp": 1941,
+    "tp": 2540,
+    "fsp": 1941,
+    "ftax": 599,
+    "fstp": 2540,
+    "ctp": 1810,
+    "csp": 1471,
+    "cfsp": 1471,
+    "cftax": 339,
+    "cfstp": 1810,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 180,
+    "rt": 10,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 1,
+    "og": "CORE~20261103034221|2540^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^MU0725_20261120|FM3022_20261123^NORMAL",
+    "sh": false,
+    "rType": "1T",
+    "eps": [
+     {
+      "cc": "325",
+      "cn": "空客A321-200",
+      "dp": null,
+      "mt": 2,
+      "mwt": "N",
+      "st": 200,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "HSQJD",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "MU",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2001020",
+    "recommendCodes": [],
+    "lng": "MU0725_20261120|FM3022_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2540,
+     "avgPrice": 1941,
+     "avgTax": 599,
+     "discount": {
+      "avg": 2540,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 0,
+    "flightKey": "FM3029D20",
+    "dt": "21:15",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     }
+    ],
+    "at": "00:15",
+    "aants": [
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [],
+    "sps": [],
+    "stps": [],
+    "acs": [
+     {
+      "acn": "上海航空",
+      "an": "FM3029",
+      "ac": "FM",
+      "ft": 180,
+      "sh": true,
+      "ofn": "MU725",
+      "oacc": "MU",
+      "oacn": "东方航空",
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20"
+    ],
+    "ftime": [
+     "21:15"
+    ],
+    "ftimeGmt8": [
+     "21:15"
+    ],
+    "adate": [
+     "2026-11-21"
+    ],
+    "adateGmt8": [
+     "2026-11-21"
+    ],
+    "atime": [
+     "00:15"
+    ],
+    "atimeGmt8": [
+     "00:15"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "H",
+     "V"
+    ],
+    "avg": 2540,
+    "avgtax": 1941,
+    "avgPrice": 1941,
+    "tax": 599,
+    "p": 0,
+    "sp": 1941,
+    "tp": 2540,
+    "fsp": 1941,
+    "ftax": 599,
+    "fstp": 2540,
+    "ctp": 1810,
+    "csp": 1471,
+    "cfsp": 1471,
+    "cftax": 339,
+    "cfstp": 1810,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 180,
+    "rt": 10,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 1,
+    "og": "CORE~20261103034221|2540^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^FM3029_20261120|MU0726_20261123^NORMAL",
+    "sh": true,
+    "rType": "1T",
+    "eps": [
+     {
+      "cc": "325",
+      "cn": "空客A321-200",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 200,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "HSQJD",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "MU",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "2001020",
+    "recommendCodes": [],
+    "lng": "FM3029_20261120|MU0726_20261123",
+    "stts": [
+     0
+    ],
+    "sts": [
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2197,
+     "avgPrice": 1976,
+     "avgTax": 221,
+     "discount": {
+      "avg": 2197,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 2,
+    "flightKey": "SC4608D20SC4631D21",
+    "dt": "20:10",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     },
+     {
+      "cn": "青岛",
+      "cc": "TAO",
+      "an": "青岛胶东国际机场",
+      "at": "",
+      "ac": "TAO",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "胶东"
+     }
+    ],
+    "at": "16:25",
+    "aants": [
+     {
+      "cn": "青岛",
+      "cc": "TAO",
+      "an": "青岛胶东国际机场",
+      "at": "",
+      "ac": "TAO",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "胶东"
+     },
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [
+     "青岛"
+    ],
+    "sps": [],
+    "stps": [
+     {
+      "type": "t",
+      "name": "青岛",
+      "code": "TAO",
+      "acode": "TAO",
+      "pCode": "TAO",
+      "pAcode": "TAO",
+      "dt": "13:00",
+      "at": "21:40",
+      "asd": 0,
+      "tsd": 1,
+      "wt": 920,
+      "sp": 0,
+      "tv": 0,
+      "tvWarning": 0,
+      "tvNotice": ""
+     }
+    ],
+    "acs": [
+     {
+      "acn": "山东航空",
+      "an": "SC4608",
+      "ac": "SC",
+      "ft": 90,
+      "sh": false,
+      "transport": "FLIGHT"
+     },
+     {
+      "acn": "山东航空",
+      "an": "SC4631",
+      "ac": "SC",
+      "ft": 205,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20",
+     "2026-11-21"
+    ],
+    "fdateGmt8": [
+     "2026-11-20",
+     "2026-11-21"
+    ],
+    "ftime": [
+     "20:10",
+     "13:00"
+    ],
+    "ftimeGmt8": [
+     "20:10",
+     "13:00"
+    ],
+    "adate": [
+     "2026-11-20",
+     "2026-11-21"
+    ],
+    "adateGmt8": [
+     "2026-11-20",
+     "2026-11-21"
+    ],
+    "atime": [
+     "21:40",
+     "16:25"
+    ],
+    "atimeGmt8": [
+     "21:40",
+     "16:25"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "P",
+     "V",
+     "Q"
+    ],
+    "avg": 2197,
+    "avgtax": 1976,
+    "avgPrice": 1976,
+    "tax": 221,
+    "p": 60,
+    "sp": 1976,
+    "tp": 2197,
+    "fsp": 1976,
+    "ftax": 221,
+    "fstp": 2197,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 1215,
+    "rt": 5,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 1,
+    "og": "CORE~20261103034221|2157^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^SC4608_20261120/SC4631_20261121|CX0362_20261123^NORMAL",
+    "sh": false,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "7M8",
+      "cn": "波音737-MAX8",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 178,
+      "ot": false
+     },
+     {
+      "cc": "738",
+      "cn": "波音737-800",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 140,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "SC",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "SC4608_20261120/SC4631_20261121|CX0362_20261123",
+    "stts": [
+     0,
+     0
+    ],
+    "sts": [
+     [],
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 2933,
+     "avgPrice": 2172,
+     "avgTax": 761,
+     "discount": {
+      "avg": 2933,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 2,
+    "flightKey": "OZ368D20OZ745D20",
+    "dt": "01:30",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T1",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     },
+     {
+      "cn": "首尔",
+      "cc": "SEL",
+      "an": "仁川国际机场",
+      "at": "T2",
+      "ac": "ICN",
+      "t": "a",
+      "color": "",
+      "coc": "KR",
+      "ssnm": "仁川"
+     }
+    ],
+    "at": "22:40",
+    "aants": [
+     {
+      "cn": "首尔",
+      "cc": "SEL",
+      "an": "仁川国际机场",
+      "at": "T2",
+      "ac": "ICN",
+      "t": "a",
+      "color": "",
+      "coc": "KR",
+      "ssnm": "仁川"
+     },
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [
+     "首尔"
+    ],
+    "sps": [],
+    "stps": [
+     {
+      "type": "t",
+      "name": "首尔",
+      "code": "SEL",
+      "acode": "ICN",
+      "pCode": "SEL",
+      "pAcode": "ICN",
+      "dt": "19:25",
+      "at": "04:30",
+      "asd": 0,
+      "tsd": 0,
+      "wt": 895,
+      "sp": 0,
+      "tv": 0,
+      "tvWarning": 0,
+      "tvNotice": ""
+     }
+    ],
+    "acs": [
+     {
+      "acn": "韩亚航空",
+      "an": "OZ368",
+      "ac": "OZ",
+      "ft": 120,
+      "sh": false,
+      "transport": "FLIGHT"
+     },
+     {
+      "acn": "韩亚航空",
+      "an": "OZ745",
+      "ac": "OZ",
+      "ft": 255,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20",
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20",
+     "2026-11-20"
+    ],
+    "ftime": [
+     "01:30",
+     "19:25"
+    ],
+    "ftimeGmt8": [
+     "01:30",
+     "18:25"
+    ],
+    "adate": [
+     "2026-11-20",
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20",
+     "2026-11-20"
+    ],
+    "atime": [
+     "04:30",
+     "22:40"
+    ],
+    "atimeGmt8": [
+     "03:30",
+     "22:40"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "A",
+     "Q"
+    ],
+    "avg": 2933,
+    "avgtax": 2172,
+    "avgPrice": 2172,
+    "tax": 761,
+    "p": 78,
+    "sp": 2172,
+    "tp": 2933,
+    "fsp": 2172,
+    "ftax": 761,
+    "fstp": 2933,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 1270,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|2893^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^OZ0368_20261120/OZ0745_20261120|CX0302_20261123^NORMAL",
+    "sh": false,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "77L",
+      "cn": "波音777-200LR",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 240,
+      "ot": false
+     },
+     {
+      "cc": "333",
+      "cn": "空客A330-300",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 260,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "OZ",
+    "merchantId": "144",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "OZ0368_20261120/OZ0745_20261120|CX0302_20261123",
+    "stts": [
+     0,
+     0
+    ],
+    "sts": [
+     [],
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 3138,
+     "avgPrice": 1950,
+     "avgTax": 1188,
+     "discount": {
+      "avg": 3138,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 2,
+    "flightKey": "PR343D20PR300D20",
+    "dt": "01:45",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     },
+     {
+      "cn": "马尼拉",
+      "cc": "MNL",
+      "an": "尼诺伊阿基诺国际机场",
+      "at": "T1",
+      "ac": "MNL",
+      "t": "a",
+      "color": "",
+      "coc": "PH",
+      "ssnm": "尼诺伊阿基诺机场"
+     }
+    ],
+    "at": "10:05",
+    "aants": [
+     {
+      "cn": "马尼拉",
+      "cc": "MNL",
+      "an": "尼诺伊阿基诺国际机场",
+      "at": "T1",
+      "ac": "MNL",
+      "t": "a",
+      "color": "",
+      "coc": "PH",
+      "ssnm": "尼诺伊阿基诺机场"
+     },
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [
+     "马尼拉"
+    ],
+    "sps": [],
+    "stps": [
+     {
+      "type": "t",
+      "name": "马尼拉",
+      "code": "MNL",
+      "acode": "MNL",
+      "pCode": "MNL",
+      "pAcode": "MNL",
+      "dt": "07:50",
+      "at": "05:35",
+      "asd": 0,
+      "tsd": 0,
+      "wt": 135,
+      "sp": 0,
+      "tv": 0,
+      "tvWarning": 0,
+      "tvNotice": ""
+     }
+    ],
+    "acs": [
+     {
+      "acn": "菲律宾航空",
+      "an": "PR343",
+      "ac": "PR",
+      "ft": 230,
+      "sh": false,
+      "transport": "FLIGHT"
+     },
+     {
+      "acn": "菲律宾航空",
+      "an": "PR300",
+      "ac": "PR",
+      "ft": 135,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20",
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20",
+     "2026-11-20"
+    ],
+    "ftime": [
+     "01:45",
+     "07:50"
+    ],
+    "ftimeGmt8": [
+     "01:45",
+     "07:50"
+    ],
+    "adate": [
+     "2026-11-20",
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20",
+     "2026-11-20"
+    ],
+    "atime": [
+     "05:35",
+     "10:05"
+    ],
+    "atimeGmt8": [
+     "05:35",
+     "10:05"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "T",
+     "E",
+     "Q"
+    ],
+    "avg": 3138,
+    "avgtax": 1950,
+    "avgPrice": 1950,
+    "tax": 1188,
+    "p": 63,
+    "sp": 1950,
+    "tp": 3138,
+    "fsp": 1950,
+    "ftax": 1188,
+    "fstp": 3138,
+    "ctp": 0,
+    "csp": 0,
+    "cfsp": 0,
+    "cftax": 0,
+    "cfstp": 0,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 500,
+    "rt": 9,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|3098^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^PR0343_20261120/PR0300_20261120|CX0362_20261123^NORMAL",
+    "sh": false,
+    "rType": "SPLIT",
+    "eps": [
+     {
+      "cc": "321",
+      "cn": "空客A321",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 170,
+      "ot": false
+     },
+     {
+      "cc": "321",
+      "cn": "空客A321",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 170,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "feature": "同程组合",
+    "productCode": "ZHDB",
+    "mtg": "1",
+    "gwCouponAmount": 0,
+    "tcc": "PR",
+    "merchantId": "74",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "",
+    "refundLevel": "9999999",
+    "recommendCodes": [],
+    "lng": "PR0343_20261120/PR0300_20261120|CX0362_20261123",
+    "stts": [
+     0,
+     0
+    ],
+    "sts": [
+     [],
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": null,
+    "limitTag": null
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 3410,
+     "avgPrice": 2377,
+     "avgTax": 1033,
+     "discount": {
+      "avg": 3410,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 1,
+    "flightKey": "CA4536D20CA411D21",
+    "dt": "22:00",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     },
+     {
+      "cn": "成都",
+      "cc": "CTU",
+      "an": "成都天府国际机场",
+      "at": "T1",
+      "ac": "TFU",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "天府"
+     }
+    ],
+    "at": "12:05",
+    "aants": [
+     {
+      "cn": "成都",
+      "cc": "CTU",
+      "an": "成都双流国际机场",
+      "at": "T2",
+      "ac": "CTU",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "双流"
+     },
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [
+     "成都"
+    ],
+    "sps": [],
+    "stps": [
+     {
+      "type": "t",
+      "name": "成都",
+      "code": "CTU",
+      "acode": "TFU",
+      "pCode": "CTU",
+      "pAcode": "CTU",
+      "dt": "09:20",
+      "at": "01:20",
+      "asd": 1,
+      "tsd": 0,
+      "wt": 480,
+      "sp": 0,
+      "tv": 0,
+      "tvWarning": 0,
+      "tvNotice": ""
+     }
+    ],
+    "acs": [
+     {
+      "acn": "中国国航",
+      "an": "CA4536",
+      "ac": "CA",
+      "ft": 200,
+      "sh": false,
+      "transport": "FLIGHT"
+     },
+     {
+      "acn": "中国国航",
+      "an": "CA411",
+      "ac": "CA",
+      "ft": 165,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20",
+     "2026-11-21"
+    ],
+    "fdateGmt8": [
+     "2026-11-20",
+     "2026-11-21"
+    ],
+    "ftime": [
+     "22:00",
+     "09:20"
+    ],
+    "ftimeGmt8": [
+     "22:00",
+     "09:20"
+    ],
+    "adate": [
+     "2026-11-21",
+     "2026-11-21"
+    ],
+    "adateGmt8": [
+     "2026-11-21",
+     "2026-11-21"
+    ],
+    "atime": [
+     "01:20",
+     "12:05"
+    ],
+    "atimeGmt8": [
+     "01:20",
+     "12:05"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "W"
+    ],
+    "avg": 3410,
+    "avgtax": 2377,
+    "avgPrice": 2377,
+    "tax": 1033,
+    "p": -93,
+    "sp": 2377,
+    "tp": 3410,
+    "fsp": 2377,
+    "ftax": 1033,
+    "fstp": 3410,
+    "ctp": 2364,
+    "csp": 1791,
+    "cfsp": 1791,
+    "cftax": 573,
+    "cfstp": 2364,
+    "itp": 0,
+    "reduced": true,
+    "tdt": 845,
+    "rt": 10,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 1,
+    "og": "CORE~20261103034221|3410^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^CA4536_20261120/CA0411_20261121|CA0420_20261123/CA4543_20261124^NORMAL",
+    "sh": false,
+    "rType": "1T",
+    "eps": [
+     {
+      "cc": "32N",
+      "cn": "空客 A320-200 NEO",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 180,
+      "ot": false
+     },
+     {
+      "cc": "321",
+      "cn": "空客A321",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 170,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "RSXZ",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "CA",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "3000080",
+    "recommendCodes": [],
+    "lng": "CA4536_20261120/CA0411_20261121|CA0420_20261123/CA4543_20261124",
+    "stts": [
+     0,
+     0
+    ],
+    "sts": [
+     [],
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": {
+     "type": [
+      1
+     ],
+     "refund": "2小时免费退"
+    },
+    "limitTag": "4-9人预订",
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 3410,
+     "avgPrice": 2377,
+     "avgTax": 1033,
+     "discount": {
+      "avg": 3410,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 1,
+    "flightKey": "CA4536D20CA427D21",
+    "dt": "22:00",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海浦东国际机场",
+      "at": "T2",
+      "ac": "PVG",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "浦东"
+     },
+     {
+      "cn": "成都",
+      "cc": "CTU",
+      "an": "成都双流国际机场",
+      "at": "T1",
+      "ac": "CTU",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "双流"
+     }
+    ],
+    "at": "15:55",
+    "aants": [
+     {
+      "cn": "成都",
+      "cc": "CTU",
+      "an": "成都双流国际机场",
+      "at": "T2",
+      "ac": "CTU",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "双流"
+     },
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [
+     "成都"
+    ],
+    "sps": [],
+    "stps": [
+     {
+      "type": "t",
+      "name": "成都",
+      "code": "CTU",
+      "acode": "CTU",
+      "pCode": "CTU",
+      "pAcode": "CTU",
+      "dt": "13:10",
+      "at": "01:20",
+      "asd": 1,
+      "tsd": 0,
+      "wt": 710,
+      "sp": 0,
+      "tv": 0,
+      "tvWarning": 0,
+      "tvNotice": ""
+     }
+    ],
+    "acs": [
+     {
+      "acn": "中国国航",
+      "an": "CA4536",
+      "ac": "CA",
+      "ft": 200,
+      "sh": false,
+      "transport": "FLIGHT"
+     },
+     {
+      "acn": "中国国航",
+      "an": "CA427",
+      "ac": "CA",
+      "ft": 165,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20",
+     "2026-11-21"
+    ],
+    "fdateGmt8": [
+     "2026-11-20",
+     "2026-11-21"
+    ],
+    "ftime": [
+     "22:00",
+     "13:10"
+    ],
+    "ftimeGmt8": [
+     "22:00",
+     "13:10"
+    ],
+    "adate": [
+     "2026-11-21",
+     "2026-11-21"
+    ],
+    "adateGmt8": [
+     "2026-11-21",
+     "2026-11-21"
+    ],
+    "atime": [
+     "01:20",
+     "15:55"
+    ],
+    "atimeGmt8": [
+     "01:20",
+     "15:55"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "W"
+    ],
+    "avg": 3410,
+    "avgtax": 2377,
+    "avgPrice": 2377,
+    "tax": 1033,
+    "p": -93,
+    "sp": 2377,
+    "tp": 3410,
+    "fsp": 2377,
+    "ftax": 1033,
+    "fstp": 3410,
+    "ctp": 2364,
+    "csp": 1791,
+    "cfsp": 1791,
+    "cftax": 573,
+    "cfstp": 2364,
+    "itp": 0,
+    "reduced": true,
+    "tdt": 1075,
+    "rt": 8,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 1,
+    "og": "CORE~20261103034221|3410^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^CA4536_20261120/CA0427_20261121|CA0420_20261123/CA4575_20261124^NORMAL",
+    "sh": false,
+    "rType": "1T",
+    "eps": [
+     {
+      "cc": "32N",
+      "cn": "空客 A320-200 NEO",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 180,
+      "ot": false
+     },
+     {
+      "cc": "32N",
+      "cn": "空客 A320-200 NEO",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 180,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "RSXZ",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "CA",
+    "merchantId": "64",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "3000080",
+    "recommendCodes": [],
+    "lng": "CA4536_20261120/CA0427_20261121|CA0420_20261123/CA4575_20261124",
+    "stts": [
+     0,
+     0
+    ],
+    "sts": [
+     [],
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": {
+     "type": [
+      1
+     ],
+     "refund": "2小时免费退"
+    },
+    "limitTag": "4-9人预订",
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   },
+   {
+    "ext": {
+     "sbd": false
+    },
+    "np": {
+     "avg": 4482,
+     "avgPrice": 3449,
+     "avgTax": 1033,
+     "discount": {
+      "avg": 4482,
+      "total": 0,
+      "marketTotal": 0,
+      "searchTotal": 0
+     }
+    },
+    "it": 1,
+    "flightKey": "CA1528D20CA115D20",
+    "dt": "10:30",
+    "dants": [
+     {
+      "cn": "上海",
+      "cc": "SHA",
+      "an": "上海虹桥国际机场",
+      "at": "T2",
+      "ac": "SHA",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "虹桥"
+     },
+     {
+      "cn": "北京",
+      "cc": "BJS",
+      "an": "北京首都国际机场",
+      "at": "T3",
+      "ac": "PEK",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "首都"
+     }
+    ],
+    "at": "19:00",
+    "aants": [
+     {
+      "cn": "北京",
+      "cc": "BJS",
+      "an": "北京首都国际机场",
+      "at": "T3",
+      "ac": "PEK",
+      "t": "a",
+      "color": "",
+      "coc": "CN",
+      "ssnm": "首都"
+     },
+     {
+      "cn": "中国香港",
+      "cc": "HKG",
+      "an": "香港国际机场",
+      "at": "T1",
+      "ac": "HKG",
+      "t": "a",
+      "color": "",
+      "coc": "HK",
+      "ssnm": "香港"
+     }
+    ],
+    "tps": [
+     "北京"
+    ],
+    "sps": [],
+    "stps": [
+     {
+      "type": "t",
+      "name": "北京",
+      "code": "BJS",
+      "acode": "PEK",
+      "pCode": "BJS",
+      "pAcode": "PEK",
+      "dt": "15:15",
+      "at": "12:55",
+      "asd": 0,
+      "tsd": 0,
+      "wt": 140,
+      "sp": 0,
+      "tv": 0,
+      "tvWarning": 0,
+      "tvNotice": ""
+     }
+    ],
+    "acs": [
+     {
+      "acn": "中国国航",
+      "an": "CA1528",
+      "ac": "CA",
+      "ft": 145,
+      "sh": false,
+      "transport": "FLIGHT"
+     },
+     {
+      "acn": "中国国航",
+      "an": "CA115",
+      "ac": "CA",
+      "ft": 225,
+      "sh": false,
+      "transport": "FLIGHT"
+     }
+    ],
+    "fdate": [
+     "2026-11-20",
+     "2026-11-20"
+    ],
+    "fdateGmt8": [
+     "2026-11-20",
+     "2026-11-20"
+    ],
+    "ftime": [
+     "10:30",
+     "15:15"
+    ],
+    "ftimeGmt8": [
+     "10:30",
+     "15:15"
+    ],
+    "adate": [
+     "2026-11-20",
+     "2026-11-20"
+    ],
+    "adateGmt8": [
+     "2026-11-20",
+     "2026-11-20"
+    ],
+    "atime": [
+     "12:55",
+     "19:00"
+    ],
+    "atimeGmt8": [
+     "12:55",
+     "19:00"
+    ],
+    "cb": "Y",
+    "cbs": [
+     "Y"
+    ],
+    "ccs": [
+     "H",
+     "W"
+    ],
+    "avg": 4482,
+    "avgtax": 3449,
+    "avgPrice": 3449,
+    "tax": 1033,
+    "p": 67,
+    "sp": 3449,
+    "tp": 4482,
+    "fsp": 3449,
+    "ftax": 1033,
+    "fstp": 4482,
+    "ctp": 3251,
+    "csp": 2678,
+    "cfsp": 2678,
+    "cftax": 573,
+    "cfstp": 3251,
+    "itp": 0,
+    "reduced": false,
+    "tdt": 510,
+    "rt": 8,
+    "t": null,
+    "wTags": null,
+    "services": null,
+    "asd": 0,
+    "og": "CORE~20261103034221|4412^RT_SHA/HKG/20261120;HKG/SHA/20261123_ADT-1|CHD-0|INF-0_Y|S|F|C_-5825862128554316948_SIMPLE_-507256260@1134702079_V12^CA1528_20261120/CA0115_20261120|CA0420_20261123/CA4575_20261124^NORMAL",
+    "sh": false,
+    "rType": "1T",
+    "eps": [
+     {
+      "cc": "738",
+      "cn": "波音737-800",
+      "dp": null,
+      "mt": 2,
+      "mwt": null,
+      "st": 140,
+      "ot": false
+     },
+     {
+      "cc": "333",
+      "cn": "空客A330-300",
+      "dp": null,
+      "mt": 3,
+      "mwt": null,
+      "st": 260,
+      "ot": false
+     }
+    ],
+    "isAHHD": false,
+    "gwTag": "",
+    "nTakeoff": false,
+    "productCode": "DBZJ",
+    "mtg": "",
+    "gwCouponAmount": 0,
+    "tcc": "CA",
+    "merchantId": "811",
+    "discountPrice": 0,
+    "discountType": 0,
+    "yxShowName": "",
+    "baggageLevel": "6",
+    "refundLevel": "3000080",
+    "recommendCodes": [],
+    "lng": "CA1528_20261120/CA0115_20261120|CA0420_20261123/CA4575_20261124",
+    "stts": [
+     0,
+     0
+    ],
+    "sts": [
+     [],
+     []
+    ],
+    "limitAcDiscount": null,
+    "discountTotalPrice": 0,
+    "limitFree": {
+     "type": [
+      1
+     ],
+     "refund": "2小时免费退"
+    },
+    "limitTag": null,
+    "bgr": {
+     "ap": 1,
+     "aw": 23,
+     "wt": 0
+    }
+   }
+  ],
+  "lowp": 1463,
+  "aLowp": 1463,
+  "tPrice": 4482,
+  "ext": {
+   "USER_RATE": "1",
+   "REQUEST_UUID": "cc07aeac-025a-4754-b702-a793a68a6dcf",
+   "SHOW_MERCHANT": "false",
+   "MULTI_DATA_ANALYZE_STRING": "",
+   "BUDDHA_USER_TAG": "[\"user_group_gjjp_normal\"]",
+   "HIDDEN_MERCHANT": true
+  },
+  "filter": 0,
+  "times": 1,
+  "directLowp": 1463,
+  "dcf": false,
+  "acf": false
+ },
+ "g": "1793648550704-12539"
+}

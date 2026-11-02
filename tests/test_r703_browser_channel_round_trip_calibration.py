@@ -98,8 +98,8 @@ def test_tuniu_round_trip_is_native_not_fake():
     src = _src("tuniu")
     assert "back_date" in src and "segmentList" in src, \
         "声明 y 却没有两段 segment 构造"
-    assert "国际往返暂不支持" in src, \
-        "国际分支必须仍显式拒绝（它的 productList 是单段结构）"
+    assert "_fetch_intl_rt" in src and "avgTotalPrice" in src, (
+        "国际往返已接，但代码里没有 H5 queryFlight/avgTotalPrice 通路")
 
 
 def test_browser_supported_round_trip_reflects_reality():

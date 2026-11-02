@@ -120,7 +120,8 @@ def test_busy_profile_is_rejected_without_blocking_other_platforms(
 def test_login_exports_state_only_after_close_and_marks_explicit_save(
         tmp_path, monkeypatch, browser_stub):
     c = crawler(tmp_path)
-    ctx = FakeContext({"cookies": [cookie()], "origins": []})
+    auth = cookie("ssoUser")  # tuniu 的真登录凭证；普通 session 不算
+    ctx = FakeContext({"cookies": [auth], "origins": []})
     browser_stub.next_context[0] = ctx
     replace = os.replace
     published = []
@@ -137,7 +138,7 @@ def test_login_exports_state_only_after_close_and_marks_explicit_save(
     c._login_window(done)
     assert Path(c.session_state_path).is_file()
     assert published == [c.session_state_path]
-    assert c.load_session_cookies(["tuniu.com"]) == [cookie()]
+    assert c.load_session_cookies(["tuniu.com"]) == [auth]
     assert started <= c.session_saved_at <= time.time()
 
 
@@ -150,7 +151,7 @@ def test_failed_login_does_not_publish_a_new_saved_session(
     original = {"cookies": [], "origins": [], "saved_at": 123.0}
     path.write_text(json.dumps(original), encoding="utf-8")
     browser_stub.next_context[0] = FakeContext(
-        {"cookies": [cookie()], "origins": []},
+        {"cookies": [cookie("ssoUser")], "origins": []},
         close_error=failure == "close", export_error=failure == "export")
     if failure == "replace":
         def fail_replace(*args):

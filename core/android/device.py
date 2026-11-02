@@ -52,6 +52,8 @@ class AdbDevice:
         self.serial = serial
         self.timeout = int(timeout or 60)
         self.last_error = ""
+        # CLI dump 撞上 u2 已注册的 UiAutomation 后，本进程改用 u2
+        self._prefer_u2 = False
 
     # ---------- 基础 ----------
     def _base(self):
@@ -105,6 +107,15 @@ class AdbDevice:
         就重启 uiautomator 再试一次。
         """
         for attempt in range(retries + 1):
+            # u2 的 UiAutomation 服务已注册时，CLI 每次都会以
+            # 「already registered」崩掉；继续跑 CLI 只会在 logcat 里刷
+            # FATAL，还可能把 u2 服务一起 pkill 掉。一旦确认这种状态，
+            # 本进程后续直接走 u2。
+            if self._prefer_u2:
+                xml = self.dump_u2()
+                if xml:
+                    return xml
+                self._prefer_u2 = False
             self._sh("shell", "rm", "-f", _DUMP_TMP_PATH)
             out = self._sh("shell", "uiautomator", "dump", _DUMP_TMP_PATH,
                            timeout=max(self.timeout, 60)) or ""
@@ -112,13 +123,48 @@ class AdbDevice:
                 xml = self._sh("shell", "cat", _DUMP_TMP_PATH) or ""
                 if "<hierarchy" in xml:
                     return xml
+            # 动画页（WebView）的 CLI dump 会直接报 idle 状态拿不到；立刻走
+            # u2 回退，别再重试/pkill（实测重试+等待要 37s，u2 只要 0.3s）。
+            low = ((out or "") + " " + (self.last_error or "")).lower()
+            if "idle state" in low or "already registered" in low:
+                xml = self.dump_u2()
+                if xml:
+                    if "already registered" in low:
+                        self._prefer_u2 = True
+                    return xml
+                if "already registered" in low:
+                    # 注册者可能就是 u2 自己的服务：pkill 会把回退也杀掉
+                    break
             # 卡死自愈：pkill 掉僵住的 uiautomator，下一轮重新拉服务
             if attempt < retries:
                 self._sh("shell", "pkill", "-f", "uiautomator")
                 time.sleep(1.0)
+        # CLI dump 在「持续动画的 WebView」上会报 could not get idle state；
+        # uiautomator2 的 dump 不等 idle，能读到同程结果页的完整文本。
+        # 它是**可选回退**：未安装时静默返回空，不改变既有依赖。
+        xml = self.dump_u2()
+        if xml:
+            return xml
         if not self.last_error:
             self.last_error = "dump failed"
         return ""
+
+    def dump_u2(self) -> str:
+        """可选：用 uiautomator2 取层级（WebView 动画页的 CLI dump 会卡 idle）。"""
+        try:
+            import uiautomator2 as u2  # type: ignore
+        except Exception:
+            return ""
+        try:
+            dev = u2.connect(self.serial)
+            xml = dev.dump_hierarchy() or ""
+        except Exception as e:
+            self.last_error = "u2 dump: %s" % str(e)[:120]
+            return ""
+        if "<hierarchy" not in xml:
+            self.last_error = "u2 dump: no hierarchy"
+            return ""
+        return xml
 
     def screencap(self) -> bytes:
         """PNG 字节流；失败返回 b""。"""
@@ -238,6 +284,21 @@ class AdbDevice:
         """
         out = self._sh("shell", "am", "start", "-a",
                        "android.intent.action.VIEW", "-d", uri,
+                       timeout=max(self.timeout, 60))
+        if out is None:
+            return False
+        low = out.lower()
+        return "error" not in low and "unable to resolve" not in low
+
+    def start_component(self, component: str) -> bool:
+        """用显式 `pkg/activity` 启动页面（App 没有可用深链时的入口）。
+
+        携程 App 实测：`ctrip.business.planthome.CtripPlantHomeActivity`
+        可以显式拉起机票查询页；没有可解析的 scheme 深链。
+        """
+        if not component or "/" not in component:
+            return False
+        out = self._sh("shell", "am", "start", "-n", component,
                        timeout=max(self.timeout, 60))
         if out is None:
             return False

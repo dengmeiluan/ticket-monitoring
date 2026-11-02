@@ -18,7 +18,9 @@ import tempfile
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import webui  # noqa: E402
-from core.demo import build_demo_db, demo_cfg, demo_health, demo_routes  # noqa: E402
+from core.channel_links import channel_links  # noqa: E402
+from core.channels import channel_dims_payload  # noqa: E402
+from core.demo import build_demo_db, demo_cfg, demo_pulse, demo_routes  # noqa: E402
 from core.models import Route  # noqa: E402
 from wizard import CITY as _wCITY  # noqa: E402
 
@@ -43,6 +45,18 @@ window.__BAKED__=%s;
      err:'在线演示为静态站：保存仅在本机真实控制台可用'}));
    return Promise.resolve(J(B.config));}
   if(u.indexOf('/api/login-state')===0)   return Promise.resolve(J(B.login||{ok:true,plats:{}}));
+  /* 能力矩阵：接口与静态站共用 core.channels.channel_dims_payload()。
+     不烘这条时，公开演示站配置页一直显示「能力矩阵加载失败」。 */
+  if(u.indexOf('/api/channel-dims')===0)  return Promise.resolve(J(B.dims));
+  /* 渠道入口/官方特价频道：静态站也要能直达，不能显示「未提供接口」。 */
+  if(u.indexOf('/api/channel-links')===0) return Promise.resolve(J(B.channelLinks));
+  if(u.indexOf('/api/pulse')===0)  return Promise.resolve(J(B.pulse));
+  if(u.indexOf('/api/paths')===0)  return Promise.resolve(J(B.paths));
+  /* 只读面板：静态站没有账本，给「演示空榜」而不是通用失败。 */
+  if(u.indexOf('/api/specials')===0)
+   return Promise.resolve(J({ok:true,deals:[],demo:true}));
+  if(u.indexOf('/api/trace')===0)
+   return Promise.resolve(J({ok:true,platform:'',rows:[],demo:true}));
   /* 节流面板快照：演示站健康页 loadPacing() 打的就是这条。缺了它会渲染
      「读取失败」——面板是渠道成功率/干预/溯源的主观测面，公开演示必须可看。 */
   if(u.indexOf('/api/pacing')===0){
@@ -203,7 +217,11 @@ def build():
         "trend": trend,
         "watch": watch,
         "watchTrends": watch_trends,
-        "health": demo_health(),
+        "health": webui._demo_health_payload(),
+        "pulse": demo_pulse(),
+        "paths": webui._paths_payload(24, demo=True),
+        "dims": channel_dims_payload(),
+        "channelLinks": channel_links(),
         "radarHistory": radar_history,
         "radarFlights": radar_flights,
         "calendar": calendar,

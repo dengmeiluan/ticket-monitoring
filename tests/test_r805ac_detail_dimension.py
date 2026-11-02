@@ -46,7 +46,14 @@ def test_every_channel_declares_detail():
     反向守卫：若哪天某家真的只剩日历（无时刻无航班号），这条会红，
     提醒把它降级——但现在没有这种情况。
     """
+    # 2026-11-02 携程 App 修复「选择目的地」城市页判据后已连续两次 32/33
+    # 行复验，现已写 y；保留集合给将来新增但尚未复验的可选渠道。
+    unverified = set()
     for p in tuple(BROWSER_CHANNELS) + tuple(APP_CHANNELS):
+        if p in unverified:
+            assert CHANNEL_DIMENSIONS[p].get("detail") != "y", (
+                "%s 已有连续复验后应移除 unverified 名单" % p)
+            continue
         assert CHANNEL_DIMENSIONS[p].get("detail") == "y", (
             "%s 的 detail 不是 y（当前 %r）——账本里它有真实航班级明细"
             % (p, CHANNEL_DIMENSIONS[p].get("detail")))

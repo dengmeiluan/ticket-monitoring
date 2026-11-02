@@ -45,6 +45,11 @@ users:
   - tongcheng
   - tuniu
   - ctrip
+  # App 渠道（可选，默认不列）：需 android.enabled=true 且本机 MuMu + adb。
+  # 可选 id：app_zhixing / app_qunar / app_fliggy / app_ctrip / app_tongcheng。
+  # 例如：
+  # - app_zhixing
+  # - app_qunar
   notifier:
     digest: true             # 每轮行情心跳推送（关闭后日报也不发）
     storm_repeat: 3          # 新达标风暴连推条数（1=关闭）
@@ -159,12 +164,13 @@ crawler:
   health_slowest_factor: 3.0
   # ── 首页预热（L1/L3）：每轮每渠道先打一次首页再查深链 ──────────
   # 深链直入是最强的机器指纹（无 referer、无风控下发的 cookie）。
-  # 只对声明了 warmup_url 的渠道生效；ctrip 与同程在 fetch 内部自带预热。
+  # 只对声明了 warmup_url 的浏览器渠道生效；ctrip 与同程在 fetch 内部自带预热；
+  # App 渠道走设备 prepare_device，不在此列。
   warmup:
     enabled: true
     platforms: [qunar, fliggy, tuniu]
   # 指纹一致性（L3）：抹掉 navigator.webdriver 等「自动化浏览器」标记。
-  # 只让页面看到一个普通 Chrome——不伪造账号、不破解验证、不改 IP。
+  # 只让页面看到一个普通 Chrome。
   stealth: true
   # HTTP 出口的 TLS/JA3 指纹（core/net.py）：有 curl_cffi 时按此指纹发起请求，
   # 缺依赖自动退回 httpx。设为空串可整渠道强制走 httpx（排障用）。
@@ -191,7 +197,7 @@ crawler:
     tuniu: 0
   # 会话年龄看门狗：profile 超过 N 天没更新就强制预热续期（0=关）
   session_max_days: 14
-  # 命中人机验证时自动弹出验证窗口（同一采集会话；不代答验证）。
+  # 命中人机验证时自动弹出验证窗口（同一采集会话）。
   # 同渠道 10 分钟只开一次，默认关——上班时间被弹窗打断的人可以关掉。
   auto_verify: false
   # 浏览器内核目录（可选，留空=默认装系统盘用户目录约 500MB）：配置后

@@ -16,6 +16,9 @@ from .tuniu import TuniuCrawler
 from .app_base import AppCrawler
 from .app_zhixing import AppZhixingCrawler
 from .app_qunar import AppQunarCrawler
+from .app_ctrip import AppCtripCrawler
+from .app_tongcheng import AppTongchengCrawler
+from .app_fliggy import AppFliggyCrawler
 
 REGISTRY = {
     "ctrip": CtripCrawler,
@@ -26,6 +29,9 @@ REGISTRY = {
     # App 渠道（可选）：需 android.enabled 且用户 platforms 里显式列出
     "app_zhixing": AppZhixingCrawler,
     "app_qunar": AppQunarCrawler,
+    "app_ctrip": AppCtripCrawler,
+    "app_tongcheng": AppTongchengCrawler,
+    "app_fliggy": AppFliggyCrawler,
 }
 
 # App 渠道 id 集合只认 core/channels.py 这一份：曾在此另写一份，
@@ -35,4 +41,5 @@ from core.channels import APP_CHANNELS  # noqa: E402
 __all__ = ["BaseCrawler", "CtripCrawler", "FliggyCrawler", "FliggyH5Login",
            "TongchengCrawler", "QunarCrawler", "TuniuCrawler",
            "AppCrawler", "AppZhixingCrawler", "AppQunarCrawler",
+           "AppCtripCrawler", "AppTongchengCrawler", "AppFliggyCrawler",
            "APP_CHANNELS", "REGISTRY"]

@@ -141,7 +141,8 @@ def _measure(width):
         srv.server_close()
 
 
-@pytest.mark.parametrize("width,cap", [(1440, 48), (700, 96), (390, 128)])
+@pytest.mark.parametrize("width,cap", [(1440, 48), (700, 96), (390, 128),
+                                       (320, 128)])
 def test_path_degraded_row_keeps_its_height(width, cap):
     """e1 的文本行数与整行高度都要受控。
 

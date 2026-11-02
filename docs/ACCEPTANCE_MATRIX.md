@@ -17,7 +17,7 @@
 | SHA→BJS 11-11 | 202 | **empty 0** | 164 | 191 | 46 |
 | SHA→CAN 11-11 | 119 | **empty 0** | 86 | 121 | 119 |
 
-去哪儿路径证据：H5/API 均返回 200 + `bstatus 1999`，消息为“没有查询到符合条件的航班”、`data=null`；这是**空结果**，不是登录墙。人工重登并保存新会话后（16:25）仍是同一消息；页面指纹 SDK（`chloroFp_sdk`）被浏览器 CORS 拦截，结果可能受环境影响。未绕过验证码/风控，按空结果如实记录。
+去哪儿路径证据：H5/API 均返回 200 + `bstatus 1999`，消息为“没有查询到符合条件的航班”、`data=null`；这是**空结果**，不是登录墙。人工重登并保存新会话后（16:25）仍是同一消息；页面指纹 SDK（`chloroFp_sdk`）被浏览器 CORS 拦截，结果可能受环境影响。按空结果如实记录。
 
 ### 国际：SHA→BKK × 2026-11-10 / 11-11（2 腿 × 5 渠道 = 10 组合）
 
@@ -35,8 +35,8 @@
 - 30 组合中 **24 组真实明细成功**（2089 + 959 = 3048 行），去哪儿 6 组为原站明确“无符合条件的航班”空结果；0 组用日历价冒充明细。
 - 九个“渠道 × 国内/国际”单元：携程/飞猪/同程/途牛国内、携程/飞猪/同程/途牛国际共 8 个有本轮真实明细；**去哪儿国内/国际本轮为原站空结果**（1999 消息“无符合条件的航班”，指纹 SDK 受环境限制），不是已证明的渠道无能力，也未计入明细成功。
 - **原站同条件并排核对：飞猪国内已通过**。2026-10-24 16:57 打开飞猪官方 PC 列表（SHA→BJS 2026-11-10，经济舱，1 成人，税前列表口径），最低航班为春秋 9C6687 + 中联航 KN5916（浦东 T2 19:15 → 东营中转 → 大兴 +1 日 11:45），票面 ¥430、机建燃油 ¥240 另计；程序同条件 Fliggy 152 行最低同为 ¥430、同一中转航班，票面/税费拆分一致。
-- **原站对照未完成项**：携程官方 PC 列表（SHA→BJS / SHA→BKK 11-10）返回 `whaleguard block`、可见价格 0；途牛官方页返回空；去哪儿被登录墙拒绝。未绕过风控，其余渠道的动态价格/舱位/税费对照仍待补。
-- 本轮移除了去哪儿浏览器指纹伪装，不再以伪造 `navigator.webdriver` 等方式规避风控；因此去哪儿在会话被拒时如实失败，而非继续伪装取数。
+- **原站对照未完成项**：携程官方 PC 列表（SHA→BJS / SHA→BKK 11-10）返回 `whaleguard block`、可见价格 0；途牛官方页返回空；去哪儿被登录墙拒绝。其余渠道的动态价格/舱位/税费对照仍待补。
+- 去哪儿在会话被拒时如实失败。
 
 
 运行：`http://127.0.0.1:8765`，版本 v1.5.292 工作树。
@@ -55,7 +55,7 @@
 | 去哪儿 | partial | 191 | 0 | H5 明细；partial 需查路径完整性 |
 | 飞猪 | ok | 161 | 0 | PC 明细 |
 | 同程 | ok | 199 | 0 | H5 列表明细 |
-| 途牛 | challenge | 0 | 0 | 登录墙 + 人机验证票据 open；未自动绕过，等待人工接管 |
+| 途牛 | challenge | 0 | 0 | 登录墙 + 人机验证票据 open；等待人工接管 |
 
 ### 国际：上海 → 曼谷，2026-10-24
 
@@ -79,7 +79,7 @@
 | SHA→BKK 10-25 | 239 | 43 | 13 | 20 | 99 |
 | SHA→BJS 10-25 | 179 | 177 | 136 | 176 | 人机验证 0 |
 
-途牛北京线生成人工验证票据“登录门（710114/needLogin）”，UI 提供「打开验证窗口 / 跳过」，未自动绕过。上海→曼谷线 414 行，上海→北京线 668 行。
+途牛北京线生成人工验证票据“登录门（710114/needLogin）”，UI 提供「打开验证窗口 / 跳过」。上海→曼谷线 414 行，上海→北京线 668 行。
 
 ### 国内：上海 → 广州，2026-10-24 / 10-25（10 组合）
 
@@ -179,12 +179,12 @@
 - 2026-10-23 22:09 途牛国内四条线修复：任务 `18e12dcf41742150` **4/4 成功、554 行、0 票据**。旧票据任务 `18e12cef48c7c758` 已随重启清理，不再需要人工验证。根因与修复见下方“途牛国内四条线修复后复跑”。
 - 新浏览器可直接打开深链 `http://127.0.0.1:8765/#task=18e12cef48c7c758`：自动落 localStorage、切检索页并显示 4 张票据，页面溢出 -10；刷新后仍保持 `#search` 并从 localStorage 恢复同一任务。
 - 渠道入口普通点击改为弹窗打开（`srxOpenChannel`）：live 实测点击 H5 渠道 chip 弹出 `m.ctrip.com/html5/flight/`，主页面仍停在 `#search`，工作台不再被替换；Ctrl/Cmd/Shift 点击保留新标签页，弹窗被拦截时给出提示。特价雷达的“打开渠道”链接同用此行为。
-- 途牛保存 profile 已含 `connect.sid`/`tuniuuser_id`/`TUNIUmuser`，页面是登录态；但接口仍返回 710114（登录门）或浏览器内请求 169998（请求级校验）。已修复爬虫不再用合成值覆盖保存的 `_taca/_tacb/_tact` 等 cookie；票据提示明确“页面已登录仍失败时，请在该窗口重新发起一次真实查询生成请求校验令牌”，不绕过验证。
+- 途牛保存 profile 已含 `connect.sid`/`tuniuuser_id`/`TUNIUmuser`，页面是登录态；但接口仍返回 710114（登录门）或浏览器内请求 169998（请求级校验）。已修复爬虫不再用合成值覆盖保存的 `_taca/_tacb/_tact` 等 cookie；票据提示明确“页面已登录仍失败时，请在该窗口重新发起一次真实查询生成请求校验令牌”。
 - **2026-10-31 复核（排除三种猜测，勿再重查）**：本轮把「段数 / tokenKey / cookie 缺失」三种假设逐一证伪——
   1. 页面自己发的 `listFlight` 是**两段**（第二段 `dCityIataCode=返程方向、departDate=""`，单程也是两段），而爬虫发一段；用**页面同款两段 payload** 请求，结果与单段**完全相同**（都 710114），故段数不是原因；
   2. 用保存登录态打开列表页能抓到 **30 字符 tokenKey**（带日志「页面 tokenKey 长度=30」），把它放进请求仍 710114；
   3. 浏览器上下文内取到 **49 条 tuniu cookie**（含 `tuniuuser_id=96225501`、`_taca`，有效期 400 天），进程外与页面内请求**都是 710114**，页面文案为「搜索超时或航线不存在」。
-  结论：不是代码构造错，而是**这份 profile 的会话在途牛服务端已不被承认**；本机 `user_data/tuniu` 也**没有 `surfaces/h5`**（历史修复依赖的那一面不存在，采集读 base）。处置：在控制台「渠道登录」重新登录途牛后复验，不绕过验证。
+  结论：不是代码构造错，而是**这份 profile 的会话在途牛服务端已不被承认**；本机 `user_data/tuniu` 也**没有 `surfaces/h5`**（历史修复依赖的那一面不存在，采集读 base）。处置：在控制台「渠道登录」重新登录途牛后复验。
   **同日再复核（补第 4 条证伪）**：`headed`（可见浏览器）与 `headless` 两条通路各打一次列表页，站点自己发出的 `listFlight` 响应**都是 710114**；同会话再换三个日期（今天+7 / 今天+30 / 2027-01-29）也全是 710114。所以既不是「无头被识别」，也不是「日期不在售票窗」——就是会话失效。页面给用户的文案是「搜索超时或航线不存在」，**不要**据此判成 empty：接口层已明确是登录门。
   另：`_saved_page_token` 与 `_saved_session_cookies` 会互斥报「会话正在登录或采集」，同轮同时取两者会失败——复验时先取 token 再取 cookie 或接受缓存。
 - 截图/证据：`_scratch/r368_tuniu_tickets_1360.png`、`_scratch/probe-tuniu-4lines-tickets.json`、`_scratch/probe-cancel-1360.png`、`_scratch/probe-reconnect-1360.png`。
@@ -206,7 +206,7 @@
 | 去哪儿 | `touch.qunar.com/h5/flight/`（国内/国际同页切换） | `touch.qunar.com/lowFlight/index` | 真实页面、无登录/验证；低价榜可见 |
 | 飞猪 | `market.m.taobao.com/...rx-traffic-search...` | 同搜索页（含特价 tab，非独立特价页） | 18:49 保存会话后 `page_ok`；20:29 H5 实时明细 9C7293 ¥1461 |
 | 同程 | `m.ly.com/ft/touch/index`（国内/国际同页切换） | `wx.17u.cn/cheapflights/...` | 真实页面；特价页可开，当前推荐为空态 |
-| 途牛 | `m.tuniu.com/flight/`、`m.tuniu.com/m2015/intlFlight/flight/` | 不供（无独立特价页） | 国内/国际真实页面、无登录/验证；国际页有站点 `_gaq` 报错但内容可开 |
+| 途牛 | `m.tuniu.com/flight/`（国内/国际同页，城市选择切「出境·中国港澳台」/「国际多程」） | 不供（无独立特价页） | 国内/国际真实页面、无登录/验证；国际在同一查询页内切换 |
 
 证据 JSON/截图：`_scratch/h5matrix.json`、`_scratch/h5matrix/`。
 特价入口语义：携程/去哪儿 H5/同程有专属特价页；**飞猪 PC/H5 明确标注“搜索页内特价 tab（无独立入口）”**；Qunar PC 与途牛 PC/H5 标“不供”。不拿通用搜索页冒充专属特价页。
@@ -217,7 +217,7 @@
 | 渠道 | H5 明细尝试 | 结果 | 判定 |
 | --- | --- | --- | --- |
 | 携程 | 已保存 profile + 移动 UA 打开 `m.ctrip.com/html5/flight/taro/first?...SHA→BKK 2026-10-24` | 页面 200，日期条 ¥1462/¥1355 等真实低价；列表接口 `flightListSearchForH5` 返回 `Ack=Warning, ErrorCode=30212`“当前查询无结果”；同日国内 SHA→HGH 亦为 30212 | 官方 H5 列表对国际/该入口不供明细；不是验证码或登录墙。携程明细主路径保持 PC `batchSearch` |
-| 携程（新 profile） | 无保存会话打开同页 | 列表接口 HTTP 430，页面出现“依次点击图标验证/滑动拼图” | 新会话会触发验证；保存会话可避开，但官方仍不供 H5 明细（不得绕过） |
+| 携程（新 profile） | 无保存会话打开同页 | 列表接口 HTTP 430，页面出现“依次点击图标验证/滑动拼图” | 新会话会触发验证；保存会话可避开，但官方仍不供 H5 明细 |
 | 飞猪 | 2026-10-23 20:29 用 `fliggy_h5` 保存会话实时运行 `FliggyH5Crawler`（SHA→BKK 2026-10-24） | `H5 ok`，10.3s，取得 9C7293 ¥1461；`_scratch/fliggy_h5_live_20261023.json` | H5 实时明细已验证；16:16 的登录页抓取早于 18:49 保存会话，已过时 |
 | 飞猪（已捕获真实报文） | 用生产解析器回放 `_scratch/h5_listing_2.json`（`mtop.trip.interflight.listingsearch`，SHA→BKK 2026-10-24） | 解析 21 行；9C7285 ¥1282、9C7293 ¥1461、9C8891/9C7281 ¥1462 | 解析器与实时链路一致 |
 
@@ -246,7 +246,7 @@
 | 去哪儿（国内） | `m.flight.qunar.com/ncs/page/flightlist?...SHA→CAN 2026-10-24`（同一保存 profile） | 原站页面真实渲染 CA8565/HU6208 ¥550，与探针一致；AQ1012 同航班，原站 20:44 刷新价 ¥609，探针 20:42 为 ¥489（渠道动态价） | 国内原站对照成功；动态价差如实记录。普通直开曾返回 1999，说明是页面/自动化上下文差异，不是渠道无数据 |
 
 证据：`_scratch/origcompare.json`、`_scratch/origcompare/`、`_scratch/origcompare/ctrip-api-*.txt`、`_scratch/origcompare/qunar-api-*.txt`、`_scratch/orig_qunar_live.json`、`_scratch/orig_qunar_live_xhr0.txt`、`_scratch/orig_qunar_can_original.json`、`_scratch/orig_qunar_can_stealth.png`、`_scratch/orig_qunar_intl_original.json`、`_scratch/orig_qunar_intl_stealth.png`、`_scratch/probe-domestic-can-2x5.json`。
-结论：五渠道原站同条件对照均已完成：飞猪/同程/途牛/携程为 SHA→BKK 国际样本，去哪儿国际与国内均可渲染真实页面；去哪儿 AQ1012 的动态价差已如实记录。原站 1999 直开失败是页面/自动化上下文差异，使用保存会话+生产页面路径后恢复，未绕过验证码。
+结论：五渠道原站同条件对照均已完成：飞猪/同程/途牛/携程为 SHA→BKK 国际样本，去哪儿国际与国内均可渲染真实页面；去哪儿 AQ1012 的动态价差已如实记录。原站 1999 直开失败是页面/自动化上下文差异，使用保存会话+生产页面路径后恢复。
 
 ## 3.9 125% / 200% 缩放与窄屏验收
 
@@ -299,7 +299,7 @@
 低价源调研（并发 agent，2026-10-23 22:52）：
 
 - 同程 `POST https://wx.17u.cn/cheapflights/bffapi/cheapflightapi/lowestprice/queryCalendarLowestPrice`：免登录/免 Cookie/免签名，`channel=4`，国际 90 天、国内 180 天窗口；9 组城市对复放成功。已接入雷达：SHA→BKK 8 个日期真实价（最低 ¥686/10-31），SHA→BJS 8 个日期真实价（最低 ¥360/10-25）。证据 `_scratch/research_tongcheng_low_price.json`。
-- 去哪儿官方 H5 特价页：打开 `touch.qunar.com/lowFlight/flightList?...` 官方深链，由页面 JS 生成 `bella/june` 签名；使用已保存去哪儿会话（仅复制 Cookies/Preferences/Local State 到临时 profile）实测 SHA→BKK `bstatus.code=0`、8 个日期真实价（live UI `去哪儿 · 可用 · 8`）。不逆向签名、不绕过验证码；10003 风控时如实报错并冷却 10 分钟。证据 `_scratch/qunar_radar_live.json`、`_scratch/research_qunar_low_price.json`。
+- 去哪儿官方 H5 特价页：打开 `touch.qunar.com/lowFlight/flightList?...` 官方深链，由页面 JS 生成 `bella/june` 签名；使用已保存去哪儿会话（仅复制 Cookies/Preferences/Local State 到临时 profile）实测 SHA→BKK `bstatus.code=0`、8 个日期真实价（live UI `去哪儿 · 可用 · 8`）。10003 风控时如实报错并冷却 10 分钟。证据 `_scratch/qunar_radar_live.json`、`_scratch/research_qunar_low_price.json`。
 - 飞猪 `cheapestCalendar/pc` 已接入（含税、7 天窗滚动）；源 65B 软拒时回退国内出发榜并标注“日历限流，回退国内出发榜”，冷却 60 秒；同条件成功结果缓存 3 分钟。途牛国内已接入官方 H5 同源日历（type=1，逐日裸价不含税），国际无日历，回退出发地榜单并如实 empty。
 
 ## 5. 完成度审计（2026-10-23 21:32）

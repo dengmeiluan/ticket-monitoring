@@ -40,7 +40,9 @@ def test_dump_returns_xml(monkeypatch):
 def test_dump_returns_empty_when_offline(monkeypatch):
     monkeypatch.setattr(subprocess, "run",
                         lambda *a, **k: R(err=b"adb: device offline", rc=1))
-    assert _dev().dump() == ""
+    dev = _dev()
+    dev.dump_u2 = lambda: ""      # 单测不连真机
+    assert dev.dump() == ""
 
 
 def test_screencap_returns_png_bytes(monkeypatch):
@@ -119,6 +121,75 @@ def test_app_start_uses_monkey(monkeypatch):
     assert "monkey" in seen["cmd"]
 
 
+def test_dump_falls_back_to_u2_when_cli_cannot_get_idle(monkeypatch):
+    """WebView 动画页：CLI 报 idle，直接走 u2，不再重试/pkill。"""
+    seen = []
+
+    def fake(cmd, **k):
+        seen.append(list(cmd))
+        if "uiautomator" in cmd:
+            return R(out=b"ERROR: could not get idle state.\n", rc=1)
+        return R()
+
+    monkeypatch.setattr(subprocess, "run", fake)
+    dev = _dev()
+    dev.dump_u2 = lambda: '<hierarchy rotation="0"></hierarchy>'
+    assert "<hierarchy" in dev.dump()
+    assert not any("pkill" in c for c in seen), seen
+
+
+def test_dump_prefers_u2_after_service_already_registered(monkeypatch):
+    """CLI 撞上 u2 已注册的 UiAutomation：走 u2、不 pkill，后续直接用 u2。
+
+    实测（2026-11-02）：u2 服务注册后 CLI `uiautomator dump` 每次都抛
+    「already registered」FATAL；旧逻辑还会 pkill，可能把 u2 服务一起杀，
+    导致携程第二次采集整轮读不到页面。注册者就是回退路径本身，不能杀。
+    """
+    seen = []
+    u2_calls = []
+
+    def fake(cmd, **k):
+        seen.append(list(cmd))
+        if "uiautomator" in cmd:
+            return R(out=b"java.lang.IllegalStateException: "
+                         b"UiAutomationService already registered!", rc=1)
+        return R()
+
+    monkeypatch.setattr(subprocess, "run", fake)
+    dev = _dev()
+    dev.dump_u2 = lambda: (u2_calls.append(1) or
+                           '<hierarchy rotation="0"></hierarchy>')
+    assert "<hierarchy" in dev.dump()
+    assert not any("pkill" in c for c in seen), seen
+    cli_calls = sum(1 for c in seen if "uiautomator" in c)
+    assert "<hierarchy" in dev.dump()
+    assert sum(1 for c in seen if "uiautomator" in c) == cli_calls, \
+        "确认 u2 可用后仍在反复调用 CLI"
+    assert len(u2_calls) == 2, u2_calls
+
+
+def test_start_component_uses_am_start_n(monkeypatch):
+    seen = {}
+
+    class Ok:
+        returncode = 0
+        stdout = b"Starting: Intent"
+        stderr = b""
+
+    def fake(cmd, **k):
+        seen["cmd"] = list(cmd)
+        return Ok()
+
+    monkeypatch.setattr(subprocess, "run", fake)
+    comp = ("ctrip.android.view/"
+            "ctrip.business.planthome.CtripPlantHomeActivity")
+    assert _dev().start_component(comp) is True
+    assert "am" in seen["cmd"] and "-n" in seen["cmd"]
+    assert comp in seen["cmd"]
+    assert _dev().start_component("") is False
+    assert _dev().start_component("nopkg") is False
+
+
 # ---- r630：dump 必须拿「这一屏」，不能拿旧文件冒充 ----
 def test_dump_writes_to_shell_writable_path(monkeypatch):
     """/sdcard 是 media_rw 挂载，shell 删不掉旧文件；必须写 /data/local/tmp。"""
@@ -164,7 +235,9 @@ def test_dump_returns_empty_when_file_is_stale(monkeypatch):
         return R(out=b"UI hierchary dumped to: x")
 
     monkeypatch.setattr(subprocess, "run", fake)
-    assert _dev().dump(retries=1) == ""
+    dev = _dev()
+    dev.dump_u2 = lambda: ""      # 单测不连真机
+    assert dev.dump(retries=1) == ""
 
 
 def test_dump_kills_stuck_uiautomator(monkeypatch):

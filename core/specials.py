@@ -40,17 +40,22 @@ SRC_FLIGGY = "fliggy"
 # 浏览器渠道发现源（r3xx 补齐）：去哪儿官方 H5 低价日历、同程 H5 低价日历
 SRC_QUNAR = "qunar"
 SRC_TONGCHENG = "tongcheng"
-# App 渠道发现源：去哪儿 App「低价机票」、智行 App「特价」
-# （均为真机，每次读该航线逐天一条最低价）
+# App 渠道发现源：去哪儿 App「低价机票」、智行 App「特价」、
+# 同程 App「价格日历」、携程 App「价格日历」（均为真机，逐天一条最低价）
 SRC_APP_QUNAR = "app_qunar"
 SRC_APP_ZHIXING = "app_zhixing"
+SRC_APP_TONGCHENG = "app_tongcheng"
+SRC_APP_CTRIP = "app_ctrip"
 _KNOWN_SOURCES = (SRC_TUNIU, SRC_CTRIP, SRC_CTRIP_BD, SRC_FLIGGY,
-                  SRC_QUNAR, SRC_TONGCHENG, SRC_APP_QUNAR, SRC_APP_ZHIXING)
+                  SRC_QUNAR, SRC_TONGCHENG, SRC_APP_QUNAR, SRC_APP_ZHIXING,
+                  SRC_APP_TONGCHENG, SRC_APP_CTRIP)
 # 推送词面：源价口径标注（tuniu/ctripbd/fliggy=榜单裸价 / ctrip=日历价）
 _SRC_LABEL = {SRC_TUNIU: "榜单", SRC_CTRIP: "日历",
               SRC_CTRIP_BD: "主题榜", SRC_FLIGGY: "飞猪榜",
               SRC_QUNAR: "去哪日历", SRC_TONGCHENG: "同程日历",
-              SRC_APP_QUNAR: "App低价", SRC_APP_ZHIXING: "智行特价"}
+              SRC_APP_QUNAR: "App低价", SRC_APP_ZHIXING: "智行特价",
+              SRC_APP_TONGCHENG: "同程App日历",
+              SRC_APP_CTRIP: "携程App日历"}
 
 # 特价雷达渠道能力（只陈述现役发现源，不把未接入写成可用）。
 SPECIAL_CAPABILITY = {
@@ -80,6 +85,18 @@ SPECIAL_CAPABILITY = {
     # 所以 radar 行标「口径未标注」。
     "app_zhixing": {"sources": [SRC_APP_ZHIXING],
                     "note": "真机·逐天最低价·口径未标注"},
+    # 验证中的可选 App 渠道：尚无经核实的低价发现源，显式登记为空，
+    # 雷达渠道入口能说清「为什么不参与」，而不是从页面上消失。
+    "app_fliggy": {"sources": [], "note": "暂无可用低价发现源（App 明细已接）"},
+    # 携程 App 价格日历（2026-11-02 真机 OCR，连续两次）：SHA→PEK 61 天
+    # ¥380–420，雷达行沿用「口径未标注」，不假设含税。
+    "app_ctrip": {"sources": [SRC_APP_CTRIP],
+                  "note": "真机·价格日历逐日价·口径未标注"},
+    # 同程 App 的日期弹层是原生「价格日历」（日格 content-desc 带 ¥）。
+    # 2026-11-02 真机 SHA→PEK 打开即读到 2026-11/12 两个月逐日价；
+    # 与浏览器同程 H5 日历同一契约，页面未标口径 → radar 行标「口径未标注」。
+    "app_tongcheng": {"sources": [SRC_APP_TONGCHENG],
+                      "note": "真机·价格日历逐日最低价·口径未标注"},
 }
 
 # 核实容忍带：核实价 > 源价 ×1.15 判「榜单价虚高/口径差」丢弃

@@ -1,9 +1,30 @@
-# 交接指导书 · 7 渠道全维度能力一致性（r900–r902 专项）
+# 交接指导书 · 10 渠道全维度能力一致性（r900–r903 专项）
+
+> 2026-11-02 新增 `app_tongcheng` / `app_ctrip` / `app_fliggy` 三个**额外可选** App 渠道：
+> 同程 App 国内单程已冷启连续两次 + 双日期复验（6 行/26.0s/16.8s/23.8s）；
+> 另接原生「价格日历」为逐日低价源（2026-11-02 SHA→PEK 14 天 ¥450/350/…/15.8s，
+> 雷达 `app-calendar ok`），`calendar/low_fare` 升 y；
+> 飞猪 App 固定竖屏 + Windows OCR，国内单程连续两次两条航线跑通（各 4 行，44.8s/48.5s）；
+> 连续自动化会触发「访问被拒绝」，采集端记 blocked 停手、需人工恢复；
+> 携程 App 修复「选择目的地」城市页判据后，SHA→CAN 连续两次 32/33 行（11-18 ¥480 / 11-19 ¥490），`domestic/detail` 升 y；
+> 价格日历 OCR 真机连续两次 61 天（国内 SHA→PEK）且国际档 SHA→NRT
+> 连续两次 54/53 天（¥864–1530，11-10 查价；两月视野），`calendar/low_fare/intl` 升 y，国际单程明细 38 条 ¥935 已复验。
+> 国际/国内往返均已真机端到端（国际 SHA→NRT 8 条 ¥2146；国内 SHA→PEK
+> 5 条 ¥760，返程 14:00→16:30 +¥0），`round_trip=y`；返程栏晚一帧时
+> 解析前最多等 10s。
+> 不再另立「7 家稳定基线」：10 家状态以 `docs/APP_CHANNELS.md` 与
+> `core/channels.py` 为准；当前能力矩阵与 11 轴契约按 **10 家**
+> （5 浏览器 + 5 App）统计。
+> 同程 App 国际价格日历也已连续两次 SHA→NRT 14 天 ¥882–1495
+> （`app-calendar ok`），`intl=y`（国际日历 + 单程明细 6 条 ¥875，实付价取最低）。
+> 同程 App 国际往返 2026-11-03 真机打通（上海⇌东京 11-16/19，7 条去程、
+> 最低 9C8515 ¥2209 含税总价，返程 9C6218 +¥0；`+¥N` 是加价不相加），
+> `round_trip=y`（仅国际）；旧「查询落营销/示例页」结论是首访教学浮层遮挡误判。
 
 > **这份文档写给**：接手继续这项工作的下一个会话。
 > **三份交接文档的阅读顺序**：① `docs/HANDOFF_FULL_SESSION.md`（全会话总览，先读）→ ② 本文（能力一致性专项）→ ③ `docs/HANDOFF_GUIDE.md`（发版与文档门禁体系）。
 > **与另一份文档的分工**：`docs/HANDOFF_GUIDE.md` 讲**通用**（发版流程、文档门禁体系、操作纪律）；
-> 本文讲**本轮这条线**——「7 渠道全维度能力一致 + 特色能力可独立识别/聚合 + 后续可拓展」，
+> 本文讲**本轮这条线**——「10 渠道（5 浏览器 + 5 App）全维度能力一致 + 特色能力可独立识别/聚合 + 后续可拓展」，
 > 包括为什么这么改、哪些坑是真的、还剩什么、怎么验证。两份都要读，**本文优先看 §2 的现场核验**。
 > **编写时间**：2026-10-31 20:00。文中每个数字都来自实测，但**开工前必须自己再核一遍**。
 
@@ -11,14 +32,19 @@
 
 ## 0. 一句话现状
 
-7 家渠道（5 浏览器 + 2 App）× 7 个维度的能力矩阵**已从「只活在源码里」变成「界面上一张表」**，
-并修掉了一处「单程价冒充往返价」的诚实性缺陷、一处「同一件事两张表结论相反」的漂移。
-**2026-11-02 01:33 本地已全绿**：全量 pytest **5869 passed / 16 skipped / 0 failed**、
-UI **670/670**、站点戳 `1.5.307 code:4564d69bf4cf`、`release_align_check --local` **25/25**；
-live 8765 已重启加载 r813g；真实账本上途牛 PC 的滑块在 01:33 显示为 `challenge`，
-随后打开验证窗口转为 `active`（状态流转符合设计）。
-**在线 tag/正文/Pages 仍不同源**（tag `02766a3` vs 发布源 `5cff7f5`、线上站点戳旧树；
-该 SHA 的 CI 21 failed），在线发布待用户明确授权。
+10 家渠道（5 浏览器 + 5 App）× 7 个维度的能力矩阵**已从「只活在源码里」变成「界面上一张表」**，
+并修掉了「单程价冒充往返价」「同一件事两张表结论相反」「同一键写两遍、后者静默覆盖前值」三类诚实性缺陷。
+**2026-11-03 06:31 工作树实测**：全量非 UI **6139 passed / 19 skipped / 0 failed**（workers 8，产品代码指纹前后一致；含 r926 同程 PC 国际往返与 r927 途牛 H5 国际往返）；
+能力线 9 文件 **63 passed**（含 r903/r905）、`python -m core.channel_contract --strict` **10 家 × 11 轴无缺口**、
+UI **670/670**（2026-11-03 05:54 全量复跑，零 JS 错误；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、同程 App round_trip=国际；含 r905 行内自检按钮，另由 r905 真渲染 + r640 四档行高覆盖）、
+`release_align_check.py --local` **25/25 PASS**、站点戳 `code:b7b27668ea4d` = 当前 `webui.py`。
+**2026-11-03 在线复核（发布树 0d4b058 / v1.5.307）**：tag `v1.0` → `0d4b058`；Release 正文
+v1.5.307 + 源码 0d4b058；四资产 updated 2026-11-02T08:07Z，SHA256SUMS 与 API digest **4/4 相等**；
+CI/release-build/Pages 均在 0d4b058 success；ghcr `latest` == `sha-0d4b058`（同 digest，匿名 manifest 200）；
+0 open issues / 0 open PRs。**在线已同源**。
+**未发布的部分**：工作树 10 渠道改动（含 r903–r926）尚未提交；live 8765 仍跑 7 渠道旧副本。
+
+### 历史记录（2026-11-02 01:52 预发布；数字非当前）
 **发布提交前**：README/EN 的跟踪计数要改成 **5885**、UI 自检 **670**（当前 5443/668 是
 HEAD 的 tracked 口径；提交后 `release_align_check --local` 读的是新口径）。单根提交彩排
 （临时 index，未动真实 index/HEAD）为 1012 文件 / 807 测试文件、无敏感产物，
@@ -54,7 +80,7 @@ README/EN/release notes 同步；候选 `6302bde` 需重建。
 
 > **2026-11-01 r813 增量**：新增 `core/channel_contract.py`——把用户点名的
 > 11 条平台质量轴（可配置/可观测/可干预/可见性/可溯源/可识别/可区分/可幂等/
-> 语义清晰/可指导/可判断）做成**对真实登记点的求值**，7 家 × 11 轴当前 0 缺口；
+> 语义清晰/可指导/可判断）做成**对真实登记点的求值**，10 家 × 11 轴当前 0 缺口；
 > 同时修掉「智行低价雷达入口被旧白名单挡住」——r732 已接入源，但 `_CHANNELS`
 > 与前端 `SRX_RADAR_APP_KEYS` 没跟上，请求里的智行被静默丢弃。见 §9b。
 > **r813d 再收口**：演示诊断卡丢两家 App、App 卡「自检」报未知渠道、批量自检
@@ -92,7 +118,12 @@ out = c.safe_fetch('SHA','BKK',['2026-11-01'], ret_date='2026-11-05')
 **连带**：`core/channels.py` 里 `tuniu.round_trip` 从 `""`（未验证）改成 `"n"`（明确不支持）。
 不要改回 `""`——`""` 在界面上显示为「未验证」，会让用户以为「再试试可能行」。
 **r769 后续更正**：国内 `listFlight` 两段 segment 的返回价即往返总价，国内已改 `y`
-（见 §4 与 `DIMENSION_SCOPE`「仅国内」）；国际产品结构仍是单段，保持 `n`。
+（见 §4 与 `DIMENSION_SCOPE`「仅国内」）；当时判断国际产品结构仍是单段、保持 `n`。
+**r927 订正（2026-11-03）**：国际 H5 `queryFlight` 两段 segment 的
+`productList.avgTotalPrice` 已实测接通（SHA→NRT 35 条、最低 ¥3010），
+`tuniu.round_trip` 已覆盖国内/国际、`DIMENSION_SCOPE` 不再写「仅国内」；
+上面 `safe_fetch` 期望的 `('TRIP','unsupported')` 只适用于 r769 当时，
+现在应走 `_fetch_intl_rt`。
 
 ### 1.2 【P0】low_fare 两张表互相矛盾
 
@@ -164,6 +195,49 @@ out = c.safe_fetch('SHA','BKK',['2026-11-01'], ret_date='2026-11-05')
 （n 只留给渠道真没有的能力/停服）。
 `DIM_TIP.multi_city` 写明「App 有入口，采集未接」。
 
+### 1.6 多程要接，先做数据模型（未实现；设计草案，防「加个解析器就上」）
+
+2026-11-03 真机补充：**渠道侧确实有多程结果面**——去哪儿 App 两段多程
+「选择航班」双栏（第一程/第二程，列项标「优惠前含税均价」+ 第二程加价），
+同程 App 多程查询只落第一段单程列表。但本产品的 `Route`/`FlightPrice` 是
+**单 O-D** 模型，存储/推送/走势/明细都按 `(platform, from, to, date)` 组织，
+多段行程没有落库形状。因此多程不是「再写一个 parser」，按依赖顺序至少：
+
+1. **行程形状**：`Route` 增加 `segments=[{from,to,date},…]`（2–4 段）并由它
+   派生多程态；行级 `extra` 写 `tripType="MC"`、`legs=[{flight_no,from,to,
+   date,dep,arr}]`、`totalBasis="page_multicity_total"`。只有渠道页面自报的
+   **整单总价**能进 `price`；各段相加一律禁止。
+2. **存储**：不能把多段塞进单 O-D 的 `flight_daily` 主键。新增
+   `itinerary_daily`（platform, route_id, segments_key, depart_date,
+   total_price, legs_json）或给 `flight_daily` 加 `leg_index`；推送/走势只按
+   `total_price` 同比，明细按 `legs_json` 展开。
+3. **采集契约**：`supports_multi_city=True` + `fetch_multi(segments)`；段选择
+   /第二程加价单独存；等不到整单总价标 `totalLoaded=false`，不落价；营销/示例
+   页不落价。
+4. **界面**：矩阵 `multi_city` 格解锁前，先有多程结果面（每段时刻 + 一条
+   总价 + 溯源每段），不把单段价混进单程列表；hover 写「多程总价」口径。
+5. **门禁**：真实夹具 + `tripType="MC"`/legs 断言 + 单程/往返不得带 MC 标记；
+   口径文字进矩阵说明（r780/r805ae 同款思路）。
+
+**口径已坐实第一家（2026-11-03 05:47/06:21 订正）**：去哪儿 App 两程页脚明确
+「**两程含税总价**」——左列第一程价是**默认第二程（+¥0）组合的整单基准总价**
+（¥5069，换 +¥150 的第二程后左列**不变**）；页脚 CountUpPrice 才是**当前选择
+组合总价**（+¥150 后 ¥5219；另有 +¥270/+¥1820 档）；第二程 `+¥N` 只存加价、
+不落票价。第二程确为海口→东京（羽田/成田，经上海中转；资源 id `HAK-SHA`
+只是中转第一段，此前误读为目的地）。同程 App 多程查询仍只出第一段。
+**唯一阻塞是本产品的单 O-D 模型/配置**，3+ 段流程未验；矩阵保持 `""`。
+解析器已落地 `crawlers/app_qunar_multi.py`（两程；基准价/页脚总价/+¥加价；
+真实夹具 + 6 tests），但**未接 fetch/存储/配置**，等模型落地再接。
+
+**2026-11-03 06:08 携程 PC 多程实测（第二条口径坐实）**：用受信 profile 在
+`flights.ctrip.com` 列表页切「多程(含缺口程)」，两段 SHA→TYO 11-20 /
+TYO→OSA 11-23 提交后落到
+`/online/list/multi-sha-tyo-tyo-osa?depdate=2026-11-20_2026-11-23&cabin=y_s&adult=1&child=0&infant=0`。
+「多程超低价」组合卡同时列两段（9C8515 + MM304），右侧价 **¥1298** 明写
+**「多程含税价」**；下方第一程候选同样逐条写「¥1298 起…¥1869 起 · 多程含税价」。
+即携程多程页面自报整单总价，不需要两段相加。采集端仍未接，原因同上（单 O-D
+模型/多段配置/结果面）；3+ 段与缺口程（open-jaw）未验，矩阵保持 `""`。
+
 ---
 
 ## 2. 开工第一件事：核验现场（不要跳过）
@@ -179,7 +253,7 @@ for p,row in M.items(): print('%-13s'%p,' '.join('%s=%s'%(d[:4],repr(row[d])) fo
 print('gaps zhixing:',app_alignment_gaps('app_zhixing'),' qunar:',app_alignment_gaps('app_qunar'))
 "
 ```
-**当前应看到的矩阵（7×7）**：
+**当前应看到的矩阵（10 渠道：5 浏览器 + 5 App；7 个维度 × 10 列）**：
 ```
 ctrip        domestic=y intl=y calendar=y detail=y round_trip=y  multi_city="" low_fare=y
 qunar        domestic=y intl=y calendar=y detail=y round_trip=y  multi_city="" low_fare=y
@@ -188,7 +262,10 @@ tongcheng    domestic=y intl=y calendar=y detail=y round_trip=y  multi_city="" l
 tuniu        domestic=y intl=y calendar=n detail=y round_trip=y multi_city="" low_fare=y
 app_zhixing  domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
 app_qunar    domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
-gaps: app_zhixing=()   app_qunar=()
+app_fliggy  domestic=y intl="" calendar="" detail=y round_trip="" multi_city="" low_fare=""
+app_ctrip    domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
+app_tongcheng domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
+gaps: app_zhixing=()   app_qunar=()   app_fliggy=(intl,calendar,round_trip,low_fare)   app_ctrip=()   app_tongcheng=()
 ```
 矩阵变了 → 先查是谁改的、为什么，**不要直接改门禁迁就**（见 §7.2）。
 
@@ -209,6 +286,13 @@ gaps: app_zhixing=()   app_qunar=()
    `app_alignment_gaps()`。
 5. **用户可见文案不得写死渠道/源的数量**，由 `test_r902` 守（注释不算）。
 6. **渠道集合要由数据决定，顺序才用固定表**。反例：`SRX_PLAT_ORDER.filter(...)`。
+7. **声明字典不得有重复键，说明不得与值矛盾**：Python 字面量允许重复键且后者
+   静默覆盖，运行时与载荷只看到最后一条。`app_ctrip.low_fare` 曾因此出现
+   「矩阵 ✓ / 悬停说没接」。由 `test_r903` 守（AST 重复键 + 非 y 必解释 +
+   scope 只挂 y + y 格不得自称未接 + 载荷逐格同文）。
+8. **建议里承诺的按钮必须真的存在**：`advise()` 的 hint 写「可点『自检』」
+   时，行内必须有自检按钮。`path_degraded/route` 曾被漏掉（只认 probe）。
+   由 `test_r905` 守（行为复现 + hint/action 覆盖 + 真渲染按钮）。
 
 ---
 
@@ -216,8 +300,8 @@ gaps: app_zhixing=()   app_qunar=()
 
 | 能力 | 谁支持 | 正确表述 | 不要写成 |
 |---|---|---|---|
-| 往返 | 携程（国内/国际）/ 去哪儿网页（仅国内）/ 飞猪（仅国际）/ 同程（仅国内）/ 途牛（仅国内）/ 智行 App / 去哪儿 App（仅国内） | 携程取页面自算总价（国际「往返含税价」¥2404 起 / 国内「往返总价」¥1002 起，2026-11-02 真跑）；去哪儿 touch 去程卡「往返总价」（BJS→SHA ¥808 起，71 条；返程「补 ¥N」不混入）；同程国内走 `book1/roundtrips` 的 atp 组合总价（2026-11-02 真报文 210/210），国际仍需页面两步流；飞猪的 y 只在国际低价日历（国内列表页只有单程），途牛的 y 只在国内容量接口，去哪儿 App 的 y 只在国内（国际档设了返程日仍出单程列表，2026-11-01 实测） | 「五家都支持且已实现」「同程国际也已往返」「途牛不支持往返」「携程/去哪儿网页只支持单程」「去哪儿 App 国际也能往返」或「App 都不支持」 |
-| 低价机票 | 携程 / 去哪儿 / 飞猪 / 同程 / 途牛 / 智行 App / 去哪儿 App | 七家都有发现源（`SPECIAL_CAPABILITY`）；两个 App 都是「设航线 + 日期窗 → 逐天一条最低价」，页面未标口径 → 标「口径未标注」，不假设含税 | 「智行没有特价入口」（它有）或「智行特价是目的地榜」（认错入口，已更正） |
+| 往返 | 携程（国内/国际）/ 去哪儿网页（仅国内）/ 飞猪（仅国际）/ 同程（国内/国际）/ 途牛（国内/国际）/ 智行 App / 去哪儿 App（仅国内）/ 携程 App（国内/国际：去程卡价即页脚「往返总价」，返程小卡差价不相加；国际 ¥2146、国内 ¥760）/ 同程 App（仅国际：去程行「含税总价」即往返总价，上海⇌东京 7 条、最低 ¥2209；端到端 11-17/22 9 条 ¥2420、返程 MM877 +¥0） | 携程取页面自算总价（国际「往返含税价」¥2404 起 / 国内「往返总价」¥1002 起，2026-11-02 真跑）；去哪儿 touch 去程卡「往返总价」（BJS→SHA ¥808 起，71 条；返程「补 ¥N」不混入），国际匿名 `touchDoubleInnerList` 返回 1999 软拒（2026-11-03），带档案表单（国际+往返）落 `touchInterList` 仍 1999、页面「查询超时」（测不出，非不支持）；同程国内走 `book1/roundtrips` 的 atp 组合总价（2026-11-02 真报文 210/210）；国际登录后 PC RT 页 `ts/list` 的 `tp` 含税总价（2026-11-03 SHA→HKG 41 条、最低 ¥1463；SHA→NRT 77 条、最低 ¥2393），匿名才跳 passport；飞猪的 y 只在国际低价日历（国内列表页只有单程），途牛国内 `listFlight` 两段、国际 H5 `queryFlight` 两段 `productList.avgTotalPrice`（2026-11-03 SHA→NRT 35 条、最低 ¥3010），都只采渠道总价；去哪儿 App 的 y 只在国内（国际档设了返程日仍出单程列表，2026-11-01 实测）；同程 App 的 y 只在国际（去程行含税总价=往返总价，返程 `+¥N` 是加价不相加；2026-11-03 真机上海⇌东京 11-16/19 7 条、最低 9C8515 ¥2209；端到端 fetch 11-17/22 9 条、最低 ¥2420，返程 MM877 +¥0，retLoaded=true） | 「五家都支持且已实现」「同程国际免登录也能出」「途牛不支持往返」「携程/去哪儿网页只支持单程」「去哪儿 App 国际也能往返」或「App 都不支持」 |
+| 低价机票 | 携程 / 去哪儿 / 飞猪 / 同程 / 途牛 / 智行 App / 去哪儿 App / 携程 App / 同程 App（9/10；飞猪 App 未接） | 九家有发现源（`SPECIAL_CAPABILITY`）；App 都是「设航线 + 日期窗 → 逐天一条最低价」，页面未标口径 → 标「口径未标注」，不假设含税；携程 App 用价格日历作源、同程 App 用原生价格弹层，均为同一数据面 | 「智行没有特价入口」（它有）、「智行特价是目的地榜」（认错入口，已更正）或「只有七家有低价源」（漏了携程/同程 App） |
 | 多程 | 无 | 采集未实现；去哪儿 App 有入口但未接 | 「所有渠道客观不支持」（App 有入口） |
 
 ---
@@ -231,16 +315,17 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONIOENCODING=utf-8 python -m pytest \
   tests/test_r674_app_channel_unified.py tests/test_r700_zhixing_round_trip.py \
   tests/test_r701_qunar_round_trip.py tests/test_r900_low_fare_single_truth.py \
   tests/test_r901_capability_matrix_rendered.py tests/test_r902_no_hardcoded_channel_count.py \
+  tests/test_r903_dimension_note_contract.py \
   -q -p no:cacheprovider
 ```
-**当前实测：54 passed**（2026-10-31 20:05，8 个文件）。若这里红了，先修这里。
+**当前实测：63 passed**（2026-11-02 23:39，9 个文件，10 渠道）。若这里红了，先修这里。
 
 **B. 界面真渲染（不要只看源码字符串）**
 ```bash
 python webui.py --demo --port 8858
 # 浏览器打开 http://127.0.0.1:8858/#cfg → 「渠道登录」tab → 滚到「能力对照」
 ```
-必须满足：7 列、7 行、无 JS 报错、三态都有出现、底部缺口行有内容。
+必须满足：10 个渠道列 × 7 个维度行、无 JS 报错、三态都有出现、底部缺口行有内容。
 `test_r901` 就是把这一套自动化了。
 
 **C. 全量（约 25–31 分钟）**
@@ -370,6 +455,26 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONIOENCODING=utf-8 python -m pytest tests -
 ② 若它是「声明式能力」，需要像 `supports_round_trip` 一样有个**执行点**，
    否则新维度只是一行字、不改变行为。
 
+**新增/扩展往返能力**（r924 同程 App 接入时踩过的点，接下一家照此核对）：
+1. **执行点**：`supports_round_trip=True` 只解除 `safe_fetch` 的拦截；
+   `fetch(..., ret_date=...)` 必须真的分支到往返流程，绝不能在单程页
+   静默丢掉 `ret_date`（那会把单程价当往返价）。单程请求也要先清掉上轮
+   留存的返程日，否则会落双栏页。
+2. **价格口径**：`price` 必须是渠道页面自己报出的**往返总价**（页脚
+   「已选…·¥Z」/去程行「含税总价」/去程卡「往返总价」）。返程栏的
+   `+¥N`、`补 ¥N` 是加价，**不相加、不当票价**；两段单程相加一律禁止。
+3. **行级可区分**：`extra` 每条写 `tripType="RT"` + `backDate`，并写
+   `totalBasis`（如 `page_roundtrip_total`）；单程行不得带 RT 标记。
+   r780 门禁管「声明 y 的渠道源码里真有标记 + 单程不泛化」。
+4. **覆盖范围**：只验证一端时，矩阵仍写 `y`，但必须在
+   `DIMENSION_SCOPE[(plat,"round_trip")]` 标「仅国际/仅国内」，且
+   `DIMENSION_NOTES` 的长说明写出同一范围；r805ae 会核对短标签与长说明。
+5. **证据**：用**真实结果页夹具**跑解析 + 一条离线全链用例（结果页 →
+   `FlightPrice`），再加真机/真请求分步实测（切档/日期/查询/页脚）。
+   营销页或示例数据不落价，旧结论被推翻时在文档里保留「过程结论」。
+6. **界面**：矩阵/能力说明要出现范围短标签；截图按最终值重烘
+   （`docs/screenshots/console-dims.png`），静态站同步重烘。
+
 ---
 
 ## 9b. 平台质量契约（r813）：11 条轴怎么被自动验收
@@ -388,13 +493,13 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONIOENCODING=utf-8 python -m pytest tests -
 | 可区分 | 浏览器：`CHANNEL_SURFACES` 两端分列且各有 `SURFACE_NOTES`；App：无端面 + `APP_BROWSER_PEER` |
 | 可幂等 | `flight_daily` 主键含 `platform` 且 `INSERT OR REPLACE`（跨渠道不互相覆盖） |
 | 语义清晰 | 三态取值合法；有 `n` 维度必须在 crawler 里有 `unsupported` 分支；端面/范围有说明 |
-| 可指导 | `pacing.advise()` 对登录失效/冷却/无样本三态都给出动作 + 中文说明，动作在界面有中文落点 |
+| 可指导 | `pacing.advise()` 契约覆盖**五态**（登录失效/冷却/无样本/路径劣化/成功率低），每态都给出动作 + 中文说明，动作在界面有中文落点；hint 承诺「自检」的 action（probe/route）必须在行内真渲染自检按钮（`test_r905`） |
 | 可判断 | `tests/` 里至少一个门禁文件引用该渠道 id（声明不是无人守的） |
 
 **用法**
 
 ```bash
-python -m core.channel_contract            # 7 行 × 11 列，全绿应显示「无缺口」
+python -m core.channel_contract            # 10 行 × 11 列，全绿应显示「无缺口」
 python -m core.channel_contract --strict   # 有缺口退出码 1（已接进 CI，见 ci.yml）
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest \
   tests/test_r813_channel_platform_contract.py \

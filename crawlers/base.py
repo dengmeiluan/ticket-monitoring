@@ -18,6 +18,8 @@ from core.models import PRICE_MAX, PRICE_MIN, FlightPrice
 from core.intl import tz_offset_min
 from core.pacing import parse_retry_after, should_watch_response
 
+from .challenge import ChallengeContext, install_navigation_guard
+
 
 # 冻结态用 exe 所在目录：否则 user_data（登录态）会落进 _internal，
 # 用户找不到、升级即丢。与 main.py 同源（core.paths.app_root）。
@@ -116,16 +118,145 @@ MOBILE_UA = ("Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) "
              "Version/16.6 Mobile/15E148 Safari/604.1")
 
 # 本地指纹一致性（crawler.stealth，默认开）：
-# 只抹掉「这是自动化浏览器」的显式标记，让页面看到一个普通 Chrome；
-# 不伪造账号、不破解验证、不改 IP。缺了它，同一份 UA/视口也会因为
-# navigator.webdriver=true 被直接降档——这是误判，不是我们在伪装身份。
+# 只抹掉「这是自动化浏览器」的显式标记，让页面看到一个普通 Chrome。
+# 缺了它，同一份 UA/视口也会因为 navigator.webdriver=true 被直接降档。
 STEALTH_JS = r"""
 (() => {
   try { Object.defineProperty(Navigator.prototype, 'webdriver',
         {get: () => undefined, configurable: true}); } catch (e) {}
-  try { if (__ADDCHROME__ && !window.chrome) { window.chrome = {runtime: {}}; } } catch (e) {}
+  // oscpu 是 Firefox 独有；Chromium 两档都不该出现（默认就没有，
+  // 这里显式清掉，负控断言钉住 'oscpu' in navigator === false）。
+  try {
+    if ('oscpu' in navigator) {
+      try { delete Navigator.prototype.oscpu; } catch (e) {}
+      try { delete navigator.oscpu; } catch (e) {}
+    }
+  } catch (e) {}
+  // NetworkInformation：headless 下时有时无且不自洽。两档统一给一个
+  // 由 profile seed 派生的自洽对象（同 profile 稳定，不随机）。
+  try {
+    const conn = {
+      effectiveType: __CONN_EFFECTIVE__,
+      type: __CONN_EFFECTIVE__,
+      saveData: __CONN_SAVEDATA__,
+      rtt: __CONN_RTT__,
+      downlink: __CONN_DOWNLINK__,
+      onchange: null
+    };
+    Object.defineProperty(Navigator.prototype, 'connection',
+      {get: () => conn, configurable: true});
+  } catch (e) {}
+  try {
+    if (__ADDCHROME__) {
+      if (!window.chrome) { window.chrome = {runtime: {}}; }
+    } else {
+      try { delete window.chrome; } catch (e) {
+        Object.defineProperty(window, 'chrome',
+          {get: () => undefined, configurable: true});
+      }
+    }
+  } catch (e) {}
   try { Object.defineProperty(navigator, 'languages',
         {get: () => ['zh-CN', 'zh'], configurable: true}); } catch (e) {}
+  try { Object.defineProperty(navigator, 'vendor',
+        {get: () => __VENDOR__, configurable: true}); } catch (e) {}
+  try { Object.defineProperty(navigator, 'platform',
+        {get: () => __PLAT__, configurable: true}); } catch (e) {}
+  try { Object.defineProperty(navigator, 'hardwareConcurrency',
+        {get: () => __CORES__, configurable: true}); } catch (e) {}
+  try {
+    if (__MEM__ > 0) {
+      Object.defineProperty(navigator, 'deviceMemory',
+        {get: () => __MEM__, configurable: true});
+    } else {
+      try { delete navigator.deviceMemory; } catch (e) {}
+      try { delete Navigator.prototype.deviceMemory; } catch (e) {}
+    }
+  } catch (e) {}
+  try { Object.defineProperty(navigator, 'maxTouchPoints',
+        {get: () => __MAXTOUCH__, configurable: true}); } catch (e) {}
+
+  // screen / DPR：headless 默认 800×600 会和声明的 viewport 打架。
+  try {
+    const screenProps = [
+      ['width', __SW__], ['height', __SH__],
+      ['availWidth', __AW__], ['availHeight', __AH__],
+      ['colorDepth', 24], ['pixelDepth', 24]
+    ];
+    for (const [k, v] of screenProps) {
+      try {
+        Object.defineProperty(Screen.prototype, k,
+          {get: () => v, configurable: true});
+      } catch (e) {
+        try {
+          Object.defineProperty(window.screen, k,
+            {get: () => v, configurable: true});
+        } catch (e2) {}
+      }
+    }
+    Object.defineProperty(window, 'devicePixelRatio',
+      {get: () => __DPR__, configurable: true});
+  } catch (e) {}
+
+  // userAgentData：移动档是 Safari UA，不该出现 Chromium 专属对象。
+  try {
+    if (__UAD__) {
+      const uad = __UAD__;
+      if (!uad.getHighEntropyValues) {
+        uad.getHighEntropyValues = () => Promise.resolve({
+          brands: uad.brands, mobile: uad.mobile, platform: uad.platform,
+          architecture: 'x86', bitness: '64', model: '',
+          platformVersion: '10.0.0', uaFullVersion: uad.fullVersion,
+          wow64: false
+        });
+      }
+      Object.defineProperty(Navigator.prototype, 'userAgentData',
+        {get: () => uad, configurable: true});
+    } else {
+      try { delete navigator.userAgentData; } catch (e) {}
+      try { delete Navigator.prototype.userAgentData; } catch (e) {}
+    }
+  } catch (e) {}
+
+  // plugins / mimeTypes：headless 默认空数组，真实 Chrome 有 PDF 插件。
+  try {
+    const PLUGINS = __PLUGINS__;
+    const MIMES = __MIMES__;
+    const mimeObjs = MIMES.map((m) => ({
+      type: m.type, suffixes: m.suffixes, description: m.description,
+      enabledPlugin: null
+    }));
+    const pluginObjs = PLUGINS.map((p) => {
+      const po = {name: p.name, filename: p.filename,
+                  description: p.description, length: p.mimes.length};
+      const mine = p.mimes.map((idx) => mimeObjs[idx]);
+      mine.forEach((m, i) => {
+        po[i] = m;
+        if (m) { m.enabledPlugin = po; }
+      });
+      po.item = (i) => po[i] || null;
+      po.namedItem = (n) => mine.find((m) => m && m.type === n) || null;
+      return po;
+    });
+    const pluginArray = {
+      length: pluginObjs.length,
+      item: (i) => pluginObjs[i] || null,
+      namedItem: (n) => pluginObjs.find((p) => p.name === n) || null,
+      refresh: () => {}
+    };
+    pluginObjs.forEach((p, i) => { pluginArray[i] = p; pluginArray[p.name] = p; });
+    const mimeArray = {
+      length: mimeObjs.length,
+      item: (i) => mimeObjs[i] || null,
+      namedItem: (n) => mimeObjs.find((m) => m.type === n) || null
+    };
+    mimeObjs.forEach((m, i) => { mimeArray[i] = m; mimeArray[m.type] = m; });
+    Object.defineProperty(navigator, 'plugins',
+      {get: () => pluginArray, configurable: true});
+    Object.defineProperty(navigator, 'mimeTypes',
+      {get: () => mimeArray, configurable: true});
+  } catch (e) {}
+
   try {
     const q = navigator.permissions && navigator.permissions.query;
     if (q) {
@@ -135,18 +266,12 @@ STEALTH_JS = r"""
           : q.call(navigator.permissions, p);
     }
   } catch (e) {}
-  try { Object.defineProperty(navigator, 'hardwareConcurrency',
-        {get: () => __CORES__, configurable: true}); } catch (e) {}
-  try { Object.defineProperty(navigator, 'deviceMemory',
-        {get: () => __MEM__, configurable: true}); } catch (e) {}
-  try { Object.defineProperty(navigator, 'platform',
-        {get: () => '__PLAT__', configurable: true}); } catch (e) {}
 
   // WebGL：把调试扩展里"真实显卡"换成一台普通办公机（UNMASKED_* 是
   // 最常被拿去做指纹的两个参数，headless 默认值（SwiftShader）几乎是
   // 自报家门）。
-  const VENDOR = '__GLV__';
-  const RENDERER = '__GLR__';
+  const VENDOR = __GLV__;
+  const RENDERER = __GLR__;
   const patchGL = (proto) => {
     if (!proto) return;
     const orig = proto.getParameter;
@@ -190,6 +315,145 @@ STEALTH_JS = r"""
   } catch (e) {}
 })();
 """
+
+# 桌面 GPU 按 seed 选一台，保证同 profile 稳定、不同 profile 可不同；
+# 移动档是 iPhone Safari，GL 只能是 Apple 系。
+_DESKTOP_GL = (
+    ("Google Inc. (Intel)",
+     "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)"),
+    ("Google Inc. (Intel)",
+     "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0, D3D11)"),
+    ("Google Inc. (NVIDIA)",
+     "ANGLE (NVIDIA, NVIDIA GeForce MX250 Direct3D11 vs_5_0 ps_5_0, D3D11)"),
+)
+_PDF_MIMES = (
+    {"type": "application/pdf", "suffixes": "pdf",
+     "description": "Portable Document Format"},
+    {"type": "text/pdf", "suffixes": "pdf",
+     "description": "Portable Document Format"},
+)
+_DESKTOP_PLUGINS = (
+    {"name": "PDF Viewer", "filename": "internal-pdf-viewer",
+     "description": "Portable Document Format", "mimes": [0, 1]},
+    {"name": "Chrome PDF Viewer", "filename": "internal-pdf-viewer",
+     "description": "Portable Document Format", "mimes": [0, 1]},
+    {"name": "Chromium PDF Viewer", "filename": "internal-pdf-viewer",
+     "description": "Portable Document Format", "mimes": [0, 1]},
+)
+_MOBILE_PLUGINS = (
+    {"name": "PDF Viewer", "filename": "internal-pdf-viewer",
+     "description": "Portable Document Format", "mimes": [0, 1]},
+)
+
+
+def stealth_replacements(fp: dict) -> dict:
+    """指纹占位符的唯一替换来源（测试可直接审计）。
+
+    同一 profile 的 seed 固定 → GPU/尺寸/插件不变；移动/桌面两档
+    的 vendor/platform/触摸/DPR/userAgentData 互斥，不能缝在一起。
+    """
+    mobile = bool((fp or {}).get("is_mobile"))
+    vp = (fp or {}).get("viewport") or {}
+    width = int(vp.get("width") or (390 if mobile else 1366))
+    height = int(vp.get("height") or (844 if mobile else 900))
+    seed = int((fp or {}).get("seed") or 0)
+    if mobile:
+        glv, glr = "Apple Inc.", "Apple GPU"
+        vendor, plat = "Apple Computer, Inc.", "iPhone"
+        cores, mem, touch, dpr = 6, 0, 5, 3
+        plugins = _MOBILE_PLUGINS
+    else:
+        glv, glr = _DESKTOP_GL[seed % len(_DESKTOP_GL)]
+        vendor, plat = "Google Inc.", "Win32"
+        cores, mem, touch, dpr = 8, 8, 0, 1
+        plugins = _DESKTOP_PLUGINS
+    uad = None
+    if not mobile:
+        m = re.search(r"Chrome/(\d+)", str((fp or {}).get("ua") or ""))
+        major = m.group(1) if m else "126"
+        uad = {
+            "brands": [
+                {"brand": "Chromium", "version": major},
+                {"brand": "Google Chrome", "version": major},
+                {"brand": "Not-A.Brand", "version": "99"},
+            ],
+            "mobile": False,
+            "platform": "Windows",
+            "fullVersion": "%s.0.0.0" % major,
+        }
+    return {
+        "__ADDCHROME__": "true" if not mobile else "false",
+        "__VENDOR__": json.dumps(vendor),
+        "__PLAT__": json.dumps(plat),
+        "__CORES__": str(cores),
+        "__MEM__": str(mem),
+        "__MAXTOUCH__": str(touch),
+        "__DPR__": str(dpr),
+        "__SW__": str(width),
+        "__SH__": str(height),
+        "__AW__": str(width),
+        "__AH__": str(height),
+        "__UAD__": (json.dumps(uad, ensure_ascii=False)
+                    if uad is not None else "null"),
+        "__PLUGINS__": json.dumps(plugins, ensure_ascii=False),
+        "__MIMES__": json.dumps(_PDF_MIMES, ensure_ascii=False),
+        "__GLV__": json.dumps(glv),
+        "__GLR__": json.dumps(glr),
+        "__SEED__": str(seed),
+        # NetworkInformation：rtt 50–100、downlink 8–12，按 seed 单射派生
+        # （seed%51 与 seed//51 组合唯一），同 profile 稳定、不同 profile 不同。
+        "__CONN_EFFECTIVE__": json.dumps("4g"),
+        "__CONN_SAVEDATA__": "false",
+        "__CONN_RTT__": str(50 + seed % 51),
+        "__CONN_DOWNLINK__": "%.1f" % (8.0 + (seed // 51) * 0.2),
+    }
+
+
+def _accept_language(locale) -> str:
+    """locale → Accept-Language；zh-CN 固定为 zh-CN,zh;q=0.9。"""
+    loc = str(locale or "zh-CN").replace("_", "-")
+    low = loc.lower()
+    if low == "zh-cn" or not low:
+        return "zh-CN,zh;q=0.9"
+    if low.startswith("zh"):
+        return "%s,zh;q=0.9" % loc
+    if low == "en-us" or low.startswith("en"):
+        return ("en-US,en;q=0.9" if low == "en-us"
+                else "%s,en;q=0.9" % loc)
+    return "%s,en;q=0.9" % loc
+
+
+def profile_headers(fp: dict, extra=None) -> dict:
+    """按指纹档案生成稳定 HTTP 头（B1 单源）。
+
+    - UA 取 fp["ua"]；Accept-Language 由 fp["locale"] 派生；
+    - 桌面 Chrome 才出现 sec-ch-ua*，版本与 UA 的 Chrome 大版本一致；
+    - 移动档（iPhone Safari）完全不出现 sec-ch-ua*；
+    - Referer / Accept-Encoding 等由 extra 传入，本函数不硬编码；
+    - 同 profile 多次调用逐项一致（不随机）。
+    """
+    fp = fp or {}
+    ua = str(fp.get("ua") or "")
+    mobile = bool(fp.get("is_mobile"))
+    identity = {"user-agent", "accept-language", "sec-ch-ua",
+                "sec-ch-ua-mobile", "sec-ch-ua-platform"}
+    out = {}
+    for k, v in (extra or {}).items():
+        if str(k).lower() in identity:
+            continue
+        out[str(k)] = v
+    out["User-Agent"] = ua
+    out["Accept-Language"] = _accept_language(fp.get("locale"))
+    if not mobile:
+        m = re.search(r"Chrome/(\d+)", ua)
+        if m:
+            major = m.group(1)
+            out["sec-ch-ua"] = (
+                '"Chromium";v="%s", "Google Chrome";v="%s", '
+                '"Not-A.Brand";v="99"' % (major, major))
+            out["sec-ch-ua-mobile"] = "?0"
+            out["sec-ch-ua-platform"] = '"Windows"'
+    return out
 
 
 def iata3(v) -> str:
@@ -425,13 +689,27 @@ class BaseCrawler:
         return out
 
     def _state_has_auth(self, state: dict) -> bool:
-        names = {str(c.get("name") or "")
-                 for c in (state or {}).get("cookies") or []
-                 if isinstance(c, dict)}
         # 只认渠道声明的登录凭证；RISK_COOKIES 里的统计/风控 Cookie
         # 未登录也在场，拿它们当判据会把掉登录状态覆盖进快照。
+        # 同名还不够：空值/已过期的持久 Cookie 是残留，不是登录证据
+        # （2026-11-02 实测 QN1/cookie2 匿名就下发，曾导致登出态回写）。
         want = tuple(getattr(self, "AUTH_COOKIES", ()) or ())
-        return bool(want) and any(n in names for n in want)
+        if not want:
+            return False
+        now = time.time()
+        for c in (state or {}).get("cookies") or []:
+            if not isinstance(c, dict) or c.get("name") not in want:
+                continue
+            if not str(c.get("value") or "").strip():
+                continue
+            try:
+                exp = float(c.get("expires", -1))
+            except (TypeError, ValueError):
+                continue
+            if exp > 0 and exp <= now:
+                continue
+            return True
+        return False
 
     def _should_refresh_snapshot(self, save_session) -> bool:
         """采集态是否回写快照（沿用 saved_at，不冒充重新登录）。"""
@@ -439,6 +717,20 @@ class BaseCrawler:
             save_session is None
             and self.session_saved_at > 0
             and getattr(self, "AUTH_COOKIES", ()))
+
+    def _session_state_allowed(self, state: dict, save_session) -> bool:
+        """登录窗口/采集态的快照是否允许落盘。
+
+        登录窗口的“我已登录完成”只是用户声明，不是登录证据；若快照里
+        没有 AUTH_COOKIES（空值/过期不算），覆盖旧快照会把上一份可用
+        会话弄丢。采集态同理：登出态不覆盖。
+        migrate 是旧 profile 迁移，不要求认证。
+        """
+        if not state:
+            return False
+        if save_session in (None, "login"):
+            return self._state_has_auth(state)
+        return True
 
     def load_session_cookies(self, domains=None) -> list:
         """读取最新快照，保留 Cookie 的域、路径和期限，不缓存认证值。"""
@@ -561,20 +853,7 @@ class BaseCrawler:
                 try:
                     # 种子按 profile 固定：同一档案跨重启指纹一致（像真人），
                     # 不同档案互不相同（不把多个身份缝成同一个）
-                    if fp["is_mobile"]:
-                        # iPhone + Safari UA 上不该存在 window.chrome，
-                        # 加了反而是矛盾特征（Chromium 专属对象出现在 WebKit UA 里）
-                        _rep = {"__PLAT__": "iPhone", "__CORES__": "6",
-                                "__MEM__": "4", "__GLV__": "Apple Inc.",
-                                "__GLR__": "Apple GPU", "__ADDCHROME__": "false"}
-                    else:
-                        _rep = {"__PLAT__": "Win32", "__CORES__": "8",
-                                "__MEM__": "8", "__GLV__": "Intel Inc.",
-                                "__ADDCHROME__": "true",
-                                "__GLR__": ("ANGLE (Intel, Intel(R) UHD "
-                                            "Graphics 630 Direct3D11 vs_5_0 "
-                                            "ps_5_0, D3D11)")}
-                    _rep["__SEED__"] = str(fp["seed"])
+                    _rep = stealth_replacements(fp)
                     _js = STEALTH_JS
                     for _k, _v in _rep.items():
                         _js = _js.replace(_k, _v)
@@ -620,7 +899,12 @@ class BaseCrawler:
                 ctx.close()
             # 保存、关闭、发布必须全部成功，调用方才能报告登录已保存。
             if state is not None:
-                if save_session is None and not self._state_has_auth(state):
+                if not self._session_state_allowed(state, save_session):
+                    if save_session == "login":
+                        # 用户点了“我已登录完成”，但快照里没有登录凭证：
+                        # 不能把登出态写成刚登录，也不覆盖旧快照。
+                        raise RuntimeError(
+                            "未检测到登录凭证（AUTH_COOKIES），未覆盖旧快照")
                     # 采集回写只在认证 Cookie 仍在场时发生：已掉登录的
                     # 状态不覆盖上一份可用快照。
                     state = None
@@ -635,6 +919,10 @@ class BaseCrawler:
         page.set_default_navigation_timeout(self.timeout_ms)
         self._last_page = page
         self._watch_retry_after(page)
+        # 挑战处置接缝：导航完成后交给已注册的处理器（没注册=纯转发，
+        # 行为与开销都不变）。处理器解完自行 reload，采集器照常解析。
+        install_navigation_guard(page, lambda url: ChallengeContext(
+            plat=self.name, url=url, crawler=self))
         return page
 
     # ---------- 风控信号：服务端让我们等多久（2 区）----------
@@ -1056,22 +1344,32 @@ class BaseCrawler:
                         # 关窗只落 cookie 快照，沿用旧 saved_at；随后抛错
                         # 让调用方明确「未确认」。不能在这里写 now——那会
                         # 把"关窗"伪装成"刚保存登录"，登录态卡片会说谎。
+                        _saved = False
                         try:
                             state = ctx.storage_state()
-                            if state:
+                            if state and self._session_state_allowed(
+                                    state, "login"):
                                 self._write_session_state(state, keep_saved_at)
                                 self._session_snap_ok = True
+                                _saved = True
+                            else:
+                                self.logger.info(
+                                    "[%s] 登录窗口已关闭，未检测到登录凭证，"
+                                    "旧快照保留", self.name)
                         except Exception:
                             pass
-                        self.logger.info("[%s] 登录窗口已关闭，cookie 快照已落盘"
-                                         "（未确认，不判定登录成功）",
-                                         self.name)
+                        if _saved:
+                            self.logger.info(
+                                "[%s] 登录窗口已关闭，cookie 快照已落盘"
+                                "（未确认，不判定登录成功）", self.name)
                         raise RuntimeError("登录窗口已关闭，尚未确认完成")
                     now = _t.time()
                     if now - last_snap >= 5:
                         try:
                             state = ctx.storage_state()
-                            if state:
+                            # 登录未完成前不落盘：否则会用登出态覆盖旧快照
+                            if state and self._session_state_allowed(
+                                    state, "login"):
                                 self._write_session_state(state, keep_saved_at)
                                 self._session_snap_ok = True
                         except Exception:

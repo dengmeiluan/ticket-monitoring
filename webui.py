@@ -722,7 +722,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
        --c-tongcheng:#6b46c1;--c-tuniu:#2f9e44;
        /* App 渠道取自官方 App 图标主色（与 SRX_BRAND_IMG 同源）：
           智行 #008CFF、去哪儿 App 沿用去哪儿品牌青 */
-       --c-app_zhixing:#008cff;--c-app_qunar:#03cde9;   /* 渠道识别色唯一真源：SRX_PLATS/静态芯片均引用本组 token（v1.5.274 审计 P1：旧谱与芯片谱两组互为「去哪儿=蓝/携程=青」反色，图例和检索芯片同名不同色）。亮色全线 ≥3:1 非文字对比；暗色见下方主题块 */
+       --c-app_zhixing:#008cff;--c-app_qunar:#03cde9;--c-app_fliggy:var(--c-fliggy);--c-app_ctrip:var(--c-ctrip);--c-app_tongcheng:var(--c-tongcheng);   /* 渠道识别色唯一真源：SRX_PLATS/静态芯片均引用本组 token（v1.5.274 审计 P1：旧谱与芯片谱两组互为「去哪儿=蓝/携程=青」反色，图例和检索芯片同名不同色）。亮色全线 ≥3:1 非文字对比；暗色见下方主题块 */
        --sh1:0 1px 2px rgba(20,31,43,.05);
        --sh2:0 6px 18px -6px rgba(20,31,43,.12);
        --sh3:0 16px 40px -12px rgba(20,31,43,.22);
@@ -2306,6 +2306,20 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
 .dimgap{font-size:11px;color:var(--r-ink-2);line-height:1.6}
 .dimgap b{color:var(--warn-deep);font-weight:600}
 .dimgap .none{color:var(--ok-txt);font-weight:600}
+/* r931：10 列矩阵在 390 档横滚 374px，滚到右边时维度名整列消失，
+   读者只剩一排勾叉。窄档冻结首列，并给一条滑动提示；桌面不生效。
+   首列背景必须不透明——上面的扁平规则刻意把 th 设为 transparent。 */
+.dimscroll{display:none;font-size:10.5px;color:var(--r-ink-3);
+ text-align:right;margin:-2px 0 4px;letter-spacing:.2px}
+@media (max-width:760px){
+ .dimscroll{display:block}
+ .dimtbl thead th:first-child,.dimtbl tbody tr>th:not([colspan]){
+  position:sticky;left:0;z-index:2;background:var(--card)!important;
+  box-shadow:1px 0 0 var(--r-hair)!important}
+ .dimtbl thead th:first-child{z-index:3}
+ .dimtbl tbody th{width:112px;min-width:112px;max-width:112px;padding-right:6px}
+ .dimtbl tbody th em{white-space:normal;line-height:1.35}
+}
  .glgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 /* 只读参数说明（r521）：整行宽、两列（键路径 / 说明）。用既有发丝线与
    弱色阶，不新造色值；窄档退成单列。 */
@@ -6558,7 +6572,8 @@ html[data-theme="dark"] .bic-plane{filter:none!important}
  /* r360b 五源现势从「大卡片」收为两行数据条：名字/行数/原页链接一行，
     状态小字与覆盖条一行；上面整块不再压成五只大盒子 */
  @media(min-width:901px){
-  #searchview .srx-brief{gap:7px}
+  #searchview .srx-brief{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:7px}
+  #searchview .srx-brief .srx-src{flex:1 1 0;min-width:96px}
   #searchview .srx-src{display:grid;grid-template-columns:minmax(0,1fr) auto auto;
    grid-template-areas:"h big a" "sub sub bar";align-items:center;gap:1px 8px;padding:5px 9px;min-height:0}
   #searchview .srx-src-h{grid-area:h;min-width:0}
@@ -7540,7 +7555,7 @@ html[data-theme="dark"] .bic-air{box-shadow:0 0 0 1px rgba(255,255,255,.17)!impo
  #searchview .srx-qrow .srx-fromfield .srx-citybox,#searchview .srx-qrow .srx-tofield .srx-citybox{width:150px}
  #searchview .srx-qrow .srx-datefield input{width:132px}
  #searchview .srx-qrow .arr{padding-bottom:0}
- #searchview .srx-crow{flex:1 1 auto;min-width:0;border-top:0;padding-top:0;justify-content:flex-start;flex-wrap:nowrap;gap:5px}
+ #searchview .srx-crow{flex:1 1 0;min-width:0;border-top:0;padding-top:0;justify-content:flex-start;flex-wrap:nowrap;gap:5px}
  #searchview .srx-crow-lab,#searchview .srx-crow-hint{display:none}
  #searchview .srx-crow .srx-platpick{flex-wrap:nowrap;min-width:0}
 }
@@ -8222,21 +8237,30 @@ r433：改成 6 列 + 前三张 span2 / 后两张 span3 后，两行卡宽不一
 }
 /* r813k：6 张（只启用一个 App）与 8 张（未来第 8 家）的前瞻规则。
    6 张按 3+3（≥1360 一行 6 张），8 张按 4+4；卡头/登录行沿用 7 张的地板，
-   避免「5+1」「6+2」的孤卡。9 张以上暂未声明——新增渠道时先按 4/3 的
-   因数补规则，再由 test_r813d 的 6/8 模拟守住。 */
+   避免「5+1」「6+2」的孤卡。
+   10 张（5 浏览器 + 5 App）按 5+5（≥1360 同样 5+5，10 列会把卡压到
+   ~140px）；≤1359 4+4+2；≤700 单列。避免 auto-fit 在 768 排成 3+3+3+1。 */
 .hdiag[data-n="6"]{grid-template-columns:repeat(3,minmax(0,1fr))}
 .hdiag[data-n="8"]{grid-template-columns:repeat(4,minmax(0,1fr))}
+.hdiag[data-n="10"]{grid-template-columns:repeat(5,minmax(0,1fr))}
 .hdiag[data-n="6"] .hdiag-h,
-.hdiag[data-n="8"] .hdiag-h{flex-wrap:wrap;row-gap:2px;min-height:36px}
+.hdiag[data-n="8"] .hdiag-h,
+.hdiag[data-n="10"] .hdiag-h{flex-wrap:wrap;row-gap:2px;min-height:36px}
 .hdiag[data-n="6"] .hdiag-h>.hdiag-st,
-.hdiag[data-n="8"] .hdiag-h>.hdiag-st{margin-left:0}
+.hdiag[data-n="8"] .hdiag-h>.hdiag-st,
+.hdiag[data-n="10"] .hdiag-h>.hdiag-st{margin-left:0}
 .hdiag[data-n="6"] .hdiag-l,
-.hdiag[data-n="8"] .hdiag-l{min-height:48px}
+.hdiag[data-n="8"] .hdiag-l,
+.hdiag[data-n="10"] .hdiag-l{min-height:48px}
 @media(min-width:1360px){
  .hdiag[data-n="6"]{grid-template-columns:repeat(6,minmax(0,1fr))}
 }
+@media(max-width:899px){
+ .hdiag[data-n="10"]{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
 @media(max-width:700px){
- .hdiag[data-n="6"],.hdiag[data-n="8"]{grid-template-columns:1fr}
+ .hdiag[data-n="6"],.hdiag[data-n="8"],
+ .hdiag[data-n="10"]{grid-template-columns:1fr}
 }
 /* 2026-10-31 拆卡中卡：渠道诊断卡原先在 `.ucard` 白卡里又各画一层
    `--r-surface-2` 浅灰底 + 8px 圆角，5 张并排读作「白卡里套了 5 张灰卡」
@@ -8268,7 +8292,7 @@ r433：改成 6 列 + 前三张 span2 / 后两张 span3 后，两行卡宽不一
    --ok-txt（#0b6e39 / 暗色 #43c072），与达标 pill 同一文字令牌。 */
 .hdiag-card.ok .hdiag-st{background:var(--r-green-soft);color:var(--ok-txt)}
 .hdiag-l,.hdiag-e{font-size:10px;color:var(--r-ink-3)}
-.hdiag-l{display:flex;flex-wrap:wrap;gap:2px 8px}
+.hdiag-l{display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px 8px}
 /* r999c：登录/Cookie/最近轮次这行同样会随文案长短折行——1024 档去哪儿
    比其余卡多一行（实测 47.5 vs 31），把下面的动作行与「自检」整整推低
    16.5px。前两处（卡头、动作说明）定高之后它就成了最后一个漏网的撑高
@@ -8700,13 +8724,12 @@ a.chlink .chlink-go::after{content:'↗';font-size:10px!important}
 #searchview .srx-band-h span{font-size:11px!important}
 #searchview .srx-bandlogin{background:transparent!important;border:0!important;color:var(--r-blue)!important;
  padding:0 4px!important;height:24px!important;font-size:11px!important;box-shadow:none!important;cursor:pointer}
-/* 与基线同律：按实际渠道数自适应一行（App 渠道接入后第 6/7 张卡不许
-   掉到第二行）。写死 5 列的旧值见 docs/uitest.py 的 r360，实测两排卡顶
-   371 vs 429。 */
-#searchview .srx-brief{display:grid!important;
- grid-template-columns:repeat(auto-fit,minmax(140px,1fr))!important;
- gap:0!important;margin:2px 0 5px!important}
-#searchview .srx-src{padding:4px 8px 4px!important;min-height:0!important}
+/* 与基线同律：按实际渠道数自适应一行（App 渠道接入后第 6/7/10 张卡不许
+   掉到第二行）。旧 `auto-fit minmax(140px)` 在 1512 只排 9 列，10 家时
+   必然换行；改成单行弹性 + 等宽，超出时横滚。 */
+#searchview .srx-brief{display:flex!important;flex-wrap:nowrap!important;
+ overflow-x:auto!important;gap:0!important;margin:2px 0 5px!important}
+#searchview .srx-src{flex:1 1 0!important;min-width:0!important;padding:4px 8px 4px!important;min-height:0!important}
 #searchview .srx-src .srx-srcname,.searchview .srx-src-name{font-size:11px!important}
 /* r425：`display:flex!important` 会压过 `[hidden]{display:none}`——空态
    capbar（innerHTML=0、hidden=true）仍被强制渲染成 6px 高、上下各一条
@@ -10064,6 +10087,11 @@ html[data-theme="dark"] #opscard .opsbtns>button:first-child{color:#0b1220!impor
 #searchview .srx-probe.open>.srx-probeform{order:1}
 #searchview .srx-probe.open>.srx-probefoot{order:2}
 #searchview .srx-probe.open>.srx-probehead{order:3}
+/* 10 渠道时表单 max-content 会把动作簇挤到第二行：宽屏让表单吃掉
+   剩余宽度（内部 picker 横滚），head/form 保持同一行。 */
+@media(min-width:1240px){
+ #searchview .srx-probe.open>.srx-probeform{flex:1 1 0}
+}
 #searchview .srx-probehead>b,#searchview .srx-probehead em,
 #searchview .srx-probehead .srx-probehint{display:none!important}
 #searchview .srx-crow-lab,#searchview .srx-crow-hint{display:none!important}
@@ -10568,6 +10596,9 @@ html[data-theme="dark"] #opscard .opsbtns>button:first-child{color:#0b1220!impor
      <label class="srx-pchip" data-p="tuniu" style="--pc:var(--c-tuniu)"><input type="checkbox" value="tuniu" checked><span class="dot" aria-hidden="true"></span>途牛</label>
      <label class="srx-pchip srx-pchip-ic" data-p="app_zhixing" style="--pc:var(--c-app_zhixing)" title="智行 App · 真机通道（需勾选）" aria-label="智行 App · 真机通道"><input type="checkbox" value="app_zhixing" aria-label="智行 App"><span class="dot" aria-hidden="true"></span></label>
      <label class="srx-pchip srx-pchip-ic" data-p="app_qunar" style="--pc:var(--c-app_qunar)" title="去哪儿 App · 真机通道（需勾选）" aria-label="去哪儿 App · 真机通道"><input type="checkbox" value="app_qunar" aria-label="去哪儿 App"><span class="dot" aria-hidden="true"></span></label>
+     <label class="srx-pchip srx-pchip-ic" data-p="app_fliggy" style="--pc:var(--c-app_fliggy)" title="飞猪 App · 真机通道（需勾选）" aria-label="飞猪 App · 真机通道"><input type="checkbox" value="app_fliggy" aria-label="飞猪 App"><span class="dot" aria-hidden="true"></span></label>
+     <label class="srx-pchip srx-pchip-ic" data-p="app_ctrip" style="--pc:var(--c-app_ctrip)" title="携程 App · 真机通道（需勾选）" aria-label="携程 App · 真机通道"><input type="checkbox" value="app_ctrip" aria-label="携程 App"><span class="dot" aria-hidden="true"></span></label>
+     <label class="srx-pchip srx-pchip-ic" data-p="app_tongcheng" style="--pc:var(--c-app_tongcheng)" title="同程 App · 真机通道（需勾选）" aria-label="同程 App · 真机通道"><input type="checkbox" value="app_tongcheng" aria-label="同程 App"><span class="dot" aria-hidden="true"></span></label>
     </div>
     <span class="srx-crow-hint" id="srxPlatHint">本次提交使用勾选渠道</span>
    </div>
@@ -10769,7 +10800,7 @@ html[data-theme="dark"] #opscard .opsbtns>button:first-child{color:#0b1220!impor
  </div>
  <div class="ucard" id="sec-dims" style="margin-top:10px">
   <div class="uhead"><span class="seclab inline"><span class="secicon"><svg class="ic" aria-hidden="true"><use href="#i-rows"></use></svg></span><span class="zh">能力对照</span></span>
-   <span class="secnote">按维度看 7 家渠道的<b>采集端状态</b> · ✓=已验证出数 · ×=渠道无此能力/停服 · ?=产品支持但采集端未实现或当前风控未出数（原因见悬停） · App 缺的维度单列在下方</span></div>
+   <span class="secnote">按维度看全部渠道的<b>采集端状态</b> · ✓=已验证出数 · ×=渠道无此能力/停服 · ?=产品支持但采集端未实现或当前风控未出数（原因见悬停） · App 缺的维度单列在下方</span></div>
   <div id="cfgDimMatrix"><span class="muted">加载中…</span></div>
  </div>
  </div><!-- /panel-login -->
@@ -15079,7 +15110,7 @@ async function diagProbe(p){
    整页脚本抛 `Cannot access 'APP_PLAT_NAME' before initialization`，
    S 永不初始化、全站不可用。r614 曾把它写进 renderHealth 体内（缩进 0
    看不出来），结果健康卡之外的三处读它全是 ReferenceError。 */
-const APP_PLAT_NAME={app_zhixing:'智行 App',app_qunar:'去哪儿 App'};
+const APP_PLAT_NAME={app_zhixing:'智行 App',app_qunar:'去哪儿 App',app_fliggy:'飞猪 App',app_ctrip:'携程 App',app_tongcheng:'同程 App'};
 function renderHealth(j){
  /* 已有时间线时错误体保陈旧（与 catch 分支「healthcard 可见=保陈旧不
     闪错」政策对齐）：瞬态 500 曾把整条格带掀成错误文案，下一轮询才自愈 */
@@ -15815,7 +15846,7 @@ function srxRadarName(p){var m=SRX_PLATS[p];if(m)return m[0];
    去哪儿 App「低价机票」与智行 App「特价」（r732 真机逐天报价）。
    清单与后端 special_radar._CHANNELS 互为镜像（test_r709 守）。
    写死旧结论会让能力已接通的渠道「勾得到、点了不算」。 */
-var SRX_RADAR_APP_KEYS=['app_qunar','app_zhixing'];
+var SRX_RADAR_APP_KEYS=['app_qunar','app_zhixing','app_fliggy','app_ctrip','app_tongcheng'];
 function srxRadarChannelKeys(){var out=[],k;
  for(k in SRX_PLATS)out.push(k);
  var A=(typeof APP_PLAT_NAME!=='undefined')?APP_PLAT_NAME:{};
@@ -15914,7 +15945,7 @@ async function spMonLoad(force){
  const u=(S&&S.users||[])[U];if(!u)return;
  const box=$('spMonCal');if(!box)return;
  try{
-  // 同时取雷达能力清单（7 家各自的发现源与口径）：上排 chip 只列
+  // 同时取雷达能力清单（每家渠道各自的发现源与口径）：上排 chip 只列
   // **本次真有数据** 的渠道，没接入的渠道在那里根本不出现，读者会
   // 以为「都在跑、只是没供」。能力清单来自 /api/specials（单源
   // SPECIAL_CAPABILITY），与核心矩阵的 low_fare 同口径。
@@ -16014,9 +16045,9 @@ function spMonRender(){
    +(basisChg.length?'<span class="spmon-missing" title="'+he(basisChg.join('、'))+'">口径变化 '+basisChg.length+' 日</span>':'')
    +'<span class="spmon-srcnote">官方日历/榜单价只作发现 · 口径：'+he(bl)+' · 明细由真实探针采集</span>'
    /* 雷达能力清单（r804）：上排 chip 只列**本次真有数据**的渠道，
-      没接入雷达的渠道在这里根本不出现——读者会以为「7 家都在跑、
+      没接入雷达的渠道在这里根本不出现——读者会以为「所有渠道都在跑、
       只是这次没供」。用户原话：「每个渠道特价雷达的能力都不同，
-      但是我们提供的是统一监控」。所以补一行能力声明：7 家各自的
+      但是我们提供的是统一监控」。所以补一行能力声明：每家各自的
       发现源与口径边界，与核心矩阵 low_fare 同源（SPECIAL_CAPABILITY）。 */
    +(()=>{
      const caps=(SPMON.caps||{});
@@ -18059,7 +18090,8 @@ function renderDimMatrix(){
       '<b>'+he(c.name)+'</b> '+c.gaps.map(g=>he(DIM_CN[g]||g)).join('、')).join('；')
     +'　（基准＝任一浏览器渠道已具备该维度）</div>'
   : '<div class="dimgap"><span class="none">App 渠道已与浏览器端逐维对齐</span></div>';
- box.innerHTML='<div class="dimwrap"><table class="dimtbl"><thead>'+head+'</thead><tbody>'
+ box.innerHTML='<div class="dimscroll">左右滑动查看全部渠道 →</div>'
+  +'<div class="dimwrap"><table class="dimtbl"><thead>'+head+'</thead><tbody>'
   +surfHead+rows+'</tbody></table></div>'
   +'<div class="dimlegend"><span>'+dimCell('y')+' 已验证出数</span><span>'+dimCell('n')
   +' 渠道无此能力/停服</span><span>'+dimCell('')+' 产品支持但采集端未实现或当前风控未出数</span></div>'+gapHtml;
@@ -20170,15 +20202,17 @@ async function loadPacing(force){
      ac.push('<button type="button" data-pk="'+k+':verify" onclick="verifyNow(\''+k+'\')">去验证</button>');
     }
    }
-   /* r669：「建议自检」的行必须真有一个自检按钮。
+   /* r669/r905：「建议自检」的行必须真有一个自检按钮。
       后端在 soft_reject / path_degraded / calendar_only / stale 四类结论里
       都写「可点『自检』验证这条路」（action=probe），但按钮原先只按
       v.state / needs_login 拼，这四类一行都落不到，只剩「展开溯源」——
       结论让人按的按钮不存在，等于把人晾在原地。这里按 adv.action 补一个。
-      只补 probe：它是**当场可执行**的（probeNow 走真实探测）。`route` /
-      `watch` 指向「去配置里改」，本面板没有对应动作，不伪造按钮。 */
+      `path_degraded` 的 route 分支同样在 hint 里写「可点『自检』验证这条
+      路」（影子模式只记偏好，不改采集顺序），所以 route 也必须有按钮；
+      `watch` 只是「观察一轮」，不伪造按钮。 */
    const _advAct=String(adv.action||'');
-   if(_advAct==='probe'&&!v.needs_login&&adv.state!=='login'){
+   if((_advAct==='probe'||_advAct==='route')&&!v.needs_login
+      &&adv.state!=='login'){
     const _hasProbe=ac.some(b=>b.indexOf(':probe')>=0);
     if(!_hasProbe)ac.push('<button type="button" data-pk="'+k+':probe" onclick="probeNow(\''+k+'\')">自检</button>');
    }
@@ -20304,12 +20338,12 @@ async function loadPacing(force){
   const _ivName={probe:'自检',warmup:'预热',reset:'解除',verify:'验证',relogin:'重登'};
   /* 作用域中文（r511）：与溯源表同一套词，两处各写一份会漂移。 */
   /* scope 到中文（r654/r813d）：网页登录写**槽位 key**（ctrip / fliggy_h5 …），
-     App 登录写**渠道 id**（app_zhixing / app_qunar）——两个 App 的成功率必须
+     App 登录写**渠道 id**（app_zhixing / app_qunar / …）——各 App 的成功率必须
      分开，否则去哪儿 App 的重登被标成智行。历史行 scope=app 保留中性标签。 */
   const _ivScope={dom:'国内',intl:'国际',pc:'PC',h5:'H5',
    ctrip:'携程',qunar:'去哪儿',tongcheng:'同程',tuniu:'途牛',
    fliggy:'飞猪 PC',fliggy_h5:'飞猪 H5',
-   app_zhixing:'智行 App',app_qunar:'去哪儿 App',app:'App 登录（旧记录）'};
+   app_zhixing:'智行 App',app_qunar:'去哪儿 App',app_fliggy:'飞猪 App',app_ctrip:'携程 App',app_tongcheng:'同程 App',app:'App 登录（旧记录）'};
   const _ivRate=(()=>{
    const _all=Object.keys(_iv).filter(k=>_iv[k]&&(_iv[k].n>0||_iv[k].unjudged>0));
    const judged=_all.filter(k=>_iv[k].n>0)
@@ -20521,8 +20555,8 @@ function buildForm(){if(!CFG)return;let h='',gh='';
   +glcell('无头浏览器','glbHl','glbHlChk(this)',GLB.headless!==false,GLB.headless!==false?'后台静默采集':'弹窗可见调试','check')
   +glcell('采集超时','glbTo','GLB.timeout_seconds=Math.min(600,Math.max(10,parseInt(this.value)||45))',esc(GLB.timeout_seconds||45),'10–600 · 单渠道上限',null,'秒')
   +glcell('调试日志','glbDbg','GLB.debug=this.checked',!!GLB.debug,'接口现场存 debug/','check')
-  +glcell('指纹一致性','glbStl','GLB.stealth=this.checked',GLB.stealth!==false,'抹掉 navigator.webdriver 等「自动化浏览器」标记；只让页面看到普通 Chrome，不伪造账号、不破解验证','check')
-  +glcell('命中验证自动开窗','glbAV','GLB.auto_verify=this.checked',!!GLB.auto_verify,'命中人机验证时自动弹出验证窗口（同一会话），同渠道 10 分钟只开一次；不代答验证','check')
+  +glcell('指纹一致性','glbStl','GLB.stealth=this.checked',GLB.stealth!==false,'抹掉 navigator.webdriver 等「自动化浏览器」标记；只让页面看到普通 Chrome','check')
+  +glcell('命中验证自动开窗','glbAV','GLB.auto_verify=this.checked',!!GLB.auto_verify,'命中人机验证时自动弹出验证窗口（同一会话），同渠道 10 分钟只开一次','check')
   +glcell('错峰延迟 · 自','glbDn','GLB.delay_min=Math.max(0,parseInt(this.value)||0)',esc(GLB.delay_min==null?5:GLB.delay_min),'页面动作间随机延迟',null,'秒')
   +glcell('错峰延迟 · 至','glbDx','GLB.delay_max=Math.max(0,parseInt(this.value)||0)',esc(GLB.delay_max==null?15:GLB.delay_max),'与「自」组成随机区间',null,'秒')
   +glcell('采集代理（空=直连）','glbProxy','GLB.proxy=this.value',esc(GLB.proxy||''),'如 http://127.0.0.1:7897（本机 Clash）：浏览器与特价发现出口统一走它，出口 IP 可变（IP 级限流绕行）；国内站建议国内直落节点，境外出口=风控风险升档','text',null,'http://127.0.0.1:7897')
@@ -20703,7 +20737,11 @@ function buildForm(){if(!CFG)return;let h='',gh='';
      r665：改为**按 APP_PLAT_NAME 派生**。原先写死智行一个 chip，新增去哪儿
      App 时后端已注册、配置页却勾不到（门禁 test_r613 直接抓到）。 */
    Object.keys(APP_PLAT_NAME).map(p=>`<span class="chip pch p-${p}${(u.platforms||[]).includes(p)?' on':''}" title="真机采集（${APP_PLAT_NAME[p]}）：需先在「全局参数 · Android 真机通道」启用；不开总开关时勾了也不会跑" onclick="togPlat(${i},'${p}',this)">${srxPlatIcon(p)}${APP_PLAT_NAME[p]}</span>`).join('')+
-   `</div></div>`;
+   `</div></div>`+
+   ((Object.keys(APP_PLAT_NAME).some(p=>(u.platforms||[]).includes(p))
+     && !(GLB.android||{}).enabled)
+    ? '<div class="shint" style="color:var(--warn);margin:6px 0 0">已勾选 App 渠道，但「Android 真机通道」总开关未开——不会采集；请到「全局参数」开启</div>'
+    : '');
   const _en=(u.routes||[]).filter(r=>r.enabled!==false).length,
         _dis=(u.routes||[]).length-_en;
   h+=glab('C','关注航线','','<span id="csum-'+i+'">'+_en+' 条监控中'+(_dis?' · '+_dis+' 条已停用':'')+'</span>');
@@ -22903,7 +22941,7 @@ function cfgDirtyCount(){
    （用户实测：两个 App 采集正常，界面上却找不到它们）。 */
 const SRX_PLATS={ctrip:['携程','var(--c-ctrip)'],qunar:['去哪儿','var(--c-qunar)'],fliggy:['飞猪','var(--c-fliggy)'],
  tongcheng:['同程','var(--c-tongcheng)'],tuniu:['途牛','var(--c-tuniu)'],
- app_zhixing:['智行 App','var(--c-app_zhixing)'],app_qunar:['去哪儿 App','var(--c-app_qunar)']};
+ app_zhixing:['智行 App','var(--c-app_zhixing)'],app_qunar:['去哪儿 App','var(--c-app_qunar)'],app_fliggy:['飞猪 App','var(--c-app_fliggy)'],app_ctrip:['携程 App','var(--c-app_ctrip)'],app_tongcheng:['同程 App','var(--c-app_tongcheng)']};
 /* 固定渠道优先级：仅影响展示/排障/取数资源顺序；价格与达标仍按真实数据计算 */
 const SRX_PLAT_ORDER=['ctrip','qunar','fliggy','tongcheng','tuniu'];
 const SRX_PLAT_KEYS=Object.keys(SRX_PLATS);
@@ -22999,8 +23037,11 @@ function platCN(p){
  return (typeof APP_PLAT_NAME!=='undefined'&&APP_PLAT_NAME[p])
    ||(SRX_PLATS[p]&&SRX_PLATS[p][0])||(p||'渠道');
 }
+/* App 渠道复用同品牌浏览器图标（同一公司、同一官方标记），
+   别名表是单一源：新增 App 渠道只加一行，不复制 base64。 */
+const SRX_BRAND_ALIAS={app_fliggy:'fliggy',app_ctrip:'ctrip',app_tongcheng:'tongcheng'};
 function srxPlatIcon(p,cls,lazy){
- const im=SRX_BRAND_IMG[p]||'';
+ const im=SRX_BRAND_IMG[p]||SRX_BRAND_IMG[SRX_BRAND_ALIAS[p]]||'';
  const nm=platCN(p);
  const c='bic bic-ota '+(cls||'');
  /* 无官方图标时，字符牌只在「它不能从名字里猜出来」时才画：
@@ -27007,7 +27048,10 @@ _CFG_SAVE_LOCK = threading.Lock()
 # 包一层，把 webui 的配置/日志接到 core.android.login_api 上；
 # login_api 本身不 import webui，避免循环依赖。
 APP_LOGIN_PACKAGES = {"app_zhixing": "cn.suanya.zhixing",
-                      "app_qunar": "com.Qunar"}
+                      "app_qunar": "com.Qunar",
+                      "app_fliggy": "com.taobao.trip",
+                      "app_ctrip": "ctrip.android.view",
+                      "app_tongcheng": "com.tongcheng.android"}
 
 
 def _app_login_registry():
@@ -27047,6 +27091,15 @@ def _app_login_ctx():
         if (plat or "") == "app_qunar":
             if "请输入手机号" in xml or "获取验证码" in xml:
                 return False, "页面仍是手机号登录页，请完成登录后再试"
+        if (plat or "") in ("app_ctrip", "app_fliggy"):
+            try:
+                act = dev.current_activity() or ""
+            except Exception:
+                act = ""
+            if "CtripLoginActivity" in act:
+                return False, "页面仍是携程登录页，请完成登录后再试"
+            if "login" in act.lower():
+                return False, "页面仍是飞猪登录页，请完成登录后再试"
         try:
             from crawlers.app_zhixing_parse import detect_state
             st = detect_state(xml)
@@ -27249,6 +27302,29 @@ def _path_block_from_rows(rows, entry="", saved_at=0.0):
     return best
 
 
+def _clear_qunar_stale_auth(scopes: dict, saved_at: float, event_time) -> dict:
+    """去哪儿单 profile：任一 scope 的真实明细成功，已证明账号会话可用；
+    更早的其它 scope 拒绝（unknown/路由级）是限流/软拒残留，不能把整张
+    登录卡挂成「需登录」。只在最新成功明细之后仍有拒绝时才保留。
+    """
+    latest = 0.0
+    for s in (scopes or {}).values():
+        latest = max(latest, float(event_time(s.get("detail_at")) or 0))
+    saved = float(saved_at or 0)
+    if latest <= saved:
+        return scopes
+    for s in (scopes or {}).values():
+        dt = float(event_time(s.get("detail_at")) or 0)
+        if s.get("needs_login") and dt < latest:
+            s["needs_login"] = False
+        # 明细已在登录快照之后成功时，「会话失效」只是历史残留文案；
+        # 即使该 scope 的 needs_login 已被别处清掉，也不能继续挂着它。
+        if (s.get("reason") == "会话失效"
+                and not s.get("needs_login") and dt >= saved):
+            s["reason"] = ""
+    return scopes
+
+
 def _login_state_view() -> dict:
     """One current authentication snapshot, separate from historical health."""
     import os as _os
@@ -27347,6 +27423,8 @@ def _login_state_view() -> dict:
             cur["detail_available"] = da > saved_at and da > aa
             cur["needs_login"] = aa > max(saved_at, da)
             scopes[scope] = cur
+        if p == "qunar":
+            _clear_qunar_stale_auth(scopes, saved_at, event_time)
         rejected = any(s["needs_login"] for s in scopes.values())
         available = any(s["detail_available"] for s in scopes.values())
         session = _State.login_sessions.get(p) or {}
@@ -31684,6 +31762,24 @@ def _attach_demo_paths(out: dict) -> None:
         pass
 
 
+def _demo_health_payload() -> dict:
+    """演示 /api/health 的完整轻量载荷（诊断卡 + 分通路 + 渠道全集）。
+
+    静态烘焙与在线 demo 共用。**不含** `_attach_diag_slots`：那一步读
+    本机真实登录态，公开演示站不能把访客自己的登录状态烘进 HTML。
+    """
+    from core.demo import demo_health
+    from core.health_diag import classify_round
+    out = demo_health()
+    rounds = out.get("rounds") or []
+    plats = (rounds[-1].get("plats") if rounds else {}) or {}
+    out["diag"] = classify_round(plats, all_plats=tuple(plats))
+    out["diag_at"] = rounds[-1].get("ts", "") if rounds else ""
+    _attach_demo_paths(out)
+    out["enabled_platforms"] = _enabled_platforms()
+    return out
+
+
 def _diag_platforms(seen_plats=None) -> tuple:
     """诊断卡要覆盖的渠道：默认 5 家浏览器渠道 + 用户启用的 App 渠道。
 
@@ -32791,24 +32887,14 @@ class _Handler(BaseHTTPRequestHandler):
         elif self.path == "/api/health":
             try:
                 if DEMO["on"]:
-                    from core.demo import demo_health
-                    from core.health_diag import classify_round
-                    out = demo_health()
-                    rounds = out.get("rounds") or []
-                    plats = (rounds[-1].get("plats") if rounds else {}) or {}
-                    out["diag"] = classify_round(plats, all_plats=tuple(plats))
-                    out["diag_at"] = rounds[-1].get("ts", "") if rounds else ""
-                    # 演示也要会话维度，但只能走「只查 slots」这条轻路径：
-                    # 复用 _health_decorate 会打开 PriceStorage 连接，在
-                    # demo 下把 /api/health 挂到 25s 以上（实测），页面
-                    # networkidle 永不达成，整批 UI 用例连锁超时。
+                    out = _demo_health_payload()
+                    # 只有在线 demo 才补真实槽位；静态烘焙不读本机登录态。
                     global _IN_HEALTH_DECORATE
                     _prevd = _IN_HEALTH_DECORATE
                     _prevd_tid = getattr(_IN_HEALTH_DECORATE_TID, "ident", None)
                     _IN_HEALTH_DECORATE = True
                     _IN_HEALTH_DECORATE_TID.ident = threading.get_ident()
                     try:
-                        _attach_demo_paths(out)
                         _attach_diag_slots(out)
                     finally:
                         _IN_HEALTH_DECORATE = _prevd
@@ -32819,7 +32905,6 @@ class _Handler(BaseHTTPRequestHandler):
                                 pass
                         else:
                             _IN_HEALTH_DECORATE_TID.ident = _prevd_tid
-                    out["enabled_platforms"] = _enabled_platforms()
                     self._json(out)
                 else:
                     _hp = _health_state()
@@ -32851,40 +32936,8 @@ class _Handler(BaseHTTPRequestHandler):
             # 测试都读不到——「App 对齐 PC/H5 每个维度」
             # 就无从核实。只读不写：无侧作用。
             try:
-                from core.channels import (APP_BROWSER_PEER, CHANNEL_CN,
-                                           CHANNEL_DIMENSIONS, DIMENSION_NOTES,
-                                           DIMENSION_SCOPE, DIMENSIONS,
-                                           SURFACE_NOTES, SURFACES,
-                                           app_alignment_gaps, has_surface,
-                                           surface_state)
-                # 只有浏览器渠道有端面之分。App 渠道若也下发 surface_cells，
-                # 前端 hasOwnProperty 恒真，那两格会画成「?」未验证——
-                # 读者会以为「智行的 PC 端没验证过」，而事实是它没有端面概念。
-                # 不下发这个键，界面才走「—」分支。
-                def _surf(p):
-                    if not has_surface(p):
-                        return {}
-                    return {
-                        "surface_cells": {s: surface_state(p, s)
-                                          for s in SURFACES},
-                        "surface_notes": {s: SURFACE_NOTES.get((p, s), "")
-                                          for s in SURFACES},
-                    }
-                self._json({
-                    "ok": True, "dims": list(DIMENSIONS),
-                    "surfaces": list(SURFACES),
-                    "channels": [
-                        dict({"plat": p, "name": CHANNEL_CN.get(p, p),
-                              "cells": {d: (CHANNEL_DIMENSIONS.get(p) or {}).get(d, "")
-                                        for d in DIMENSIONS},
-                              "dim_notes": {d: DIMENSION_NOTES.get((p, d), "")
-                                            for d in DIMENSIONS},
-                              "dim_scopes": {d: DIMENSION_SCOPE.get((p, d), "")
-                                             for d in DIMENSIONS}},
-                             **_surf(p),
-                             peer=APP_BROWSER_PEER.get(p, ""),
-                             gaps=list(app_alignment_gaps(p)))
-                        for p in CHANNEL_DIMENSIONS]})
+                from core.channels import channel_dims_payload
+                self._json(channel_dims_payload())
             except Exception as e:
                 self._json({"ok": False, "err": str(e)}, 500)
         elif self.path == "/api/pulse":

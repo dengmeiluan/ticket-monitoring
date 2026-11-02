@@ -555,7 +555,7 @@ _QUNAR_COOLDOWN_UNTIL = 0.0
 def _qunar_deals(q: RadarQuery, logger, proxy,
                  user_data_dir: str = "user_data") -> tuple:
     """去哪儿官方 H5 低价日历：加载官方特价页，由页面 JS 生成签名，
-    只读取真实 getFlightCalendar 响应；不做签名逆向/验证码绕过。"""
+    只读取真实 getFlightCalendar 响应。"""
     global _QUNAR_COOLDOWN_UNTIL
     from urllib.parse import quote
     from crawlers.qunar import QunarCrawler
@@ -678,6 +678,126 @@ def _app_qunar_deals(q: RadarQuery, logger) -> tuple:
     st = _status("ok" if out else ("error" if note else "empty"),
                  note, len(out))
     return out, st
+
+
+def _app_ctrip_deals(q: RadarQuery, logger) -> tuple:
+    """携程 App 原生价格日历：该航线逐天一条最低价（OCR 读屏）。
+
+    2026-11-02/03 真机 calendar() 连续两次 SHA→PEK 61 天 ¥380–420
+    （app-calendar ok，OCR 3.7/3.8s）；国际档 SHA→NRT 连续两次
+    54/53 天 ¥864–1530（两月视野，未滚动；11-10 查价）。
+    页面未标含税/优惠口径，行标 `tax_included=None` + 「口径未标注」。
+    """
+    from datetime import date as _d, timedelta as _td
+    from crawlers.app_ctrip import AppCtripCrawler
+    today = _d.today()
+    max_end = today + _td(days=62)
+    if q.end < today:
+        return [], _status("empty", "请求区间已过去；App 日历从今天起算")
+    if q.start > max_end:
+        return [], _status(
+            "empty", "App 日历只覆盖今天起 62 天（到 %s），请求区间 %s..%s 超出"
+            % (max_end.isoformat(), q.start.isoformat(), q.end.isoformat()))
+    days = max(1, (min(q.end, max_end) - today).days + 1)
+    crawler = AppCtripCrawler(
+        {"user_data_dir": "user_data",
+         "android": {"enabled": True}}, logger)
+    rows_d = crawler.low_fare(q.from_code, q.to_code, days=days) or []
+    out = []
+    for r in rows_d:
+        date_s = str(r.get("date") or "")
+        if not _in_range(date_s, q):
+            continue
+        try:
+            price = float(r.get("price"))
+        except (TypeError, ValueError):
+            continue
+        if price <= 0:
+            continue
+        out.append(SpecialDeal(
+            "app_ctrip", q.from_code, q.to_code, date_s, price,
+            link="", to_name=q.to_name, tax_included=None,
+            price_basis="unknown",
+            price_basis_label="口径未标注"))
+    note, pstatus = "", ""
+    for pth in getattr(crawler, "paths", []) or []:
+        if pth.get("path") in ("app-calendar", "android-ocr", "app-login") \
+                and pth.get("status") != "ok":
+            note = str(pth.get("detail") or pth.get("status") or "")
+            pstatus = str(pth.get("status") or "")
+            break
+    if not out and pstatus in ("unsupported",):
+        return out, _status("not_connected", note)
+    if not out and pstatus == "login":
+        return out, _status("error", note or "携程 App 需要登录")
+    if out:
+        last = max(str(getattr(r, "date", "") or "") for r in out)
+        want = min(q.end, max_end).isoformat()
+        # 国际档日历只渲染两个月，屏幕外的后半段读不到；别让读者
+        # 把「请求区间」当成已经全部覆盖。
+        if last < want:
+            _tail = ("本次可见日历到 %s；请求区间 %s..%s 未完全覆盖"
+                     % (last, q.start.isoformat(), q.end.isoformat()))
+            note = (note + "；" if note else "") + _tail
+    return out, _status("ok" if out else ("error" if note else "empty"),
+                        note, len(out))
+
+
+def _app_tongcheng_deals(q: RadarQuery, logger) -> tuple:
+    """同程 App 原生价格日历：该航线逐天一条最低价（App 渠道的 low_fare 源）。
+
+    日期弹层一次渲染 2–3 个月，每个日格 content-desc 自带 `¥`；与浏览器
+    同程 H5 日历同一契约（发现源，不是明细）。页面未标价格口径，行标
+    `tax_included=None` + 「口径未标注」，不假设含税。
+    """
+    from datetime import date as _d, timedelta as _td
+    from crawlers.app_tongcheng import AppTongchengCrawler
+    today = _d.today()
+    max_end = today + _td(days=60)
+    if q.end < today:
+        return [], _status("empty", "请求区间已过去；App 日历从今天起算")
+    if q.start > max_end:
+        return [], _status(
+            "empty", "App 日历只覆盖今天起 60 天（到 %s），请求区间 %s..%s 超出"
+            % (max_end.isoformat(), q.start.isoformat(), q.end.isoformat()))
+    days = max(1, (min(q.end, max_end) - q.start).days + 1)
+    crawler = AppTongchengCrawler(
+        {"user_data_dir": "user_data",
+         "android": {"enabled": True}}, logger)
+    rows_d = crawler.low_fare(q.from_code, q.to_code, days=days,
+                              anchor_ymd=q.start.isoformat()) or []
+    out = []
+    for r in rows_d:
+        date_s = str(r.get("date") or "")
+        if not _in_range(date_s, q):
+            continue
+        try:
+            price = float(r.get("price"))
+        except (TypeError, ValueError):
+            continue
+        if price <= 0:
+            continue
+        out.append(SpecialDeal(
+            "app_tongcheng", q.from_code, q.to_code, date_s, price,
+            link="", to_name=q.to_name, tax_included=None,
+            price_basis="unknown",
+            price_basis_label="口径未标注"))
+    note, pstatus = "", ""
+    for pth in getattr(crawler, "paths", []) or []:
+        if pth.get("path") in ("app-calendar", "app-login") \
+                and pth.get("status") != "ok":
+            note = str(pth.get("detail") or pth.get("status") or "")
+            pstatus = str(pth.get("status") or "")
+            break
+    if not out and pstatus == "unsupported":
+        return out, _status("not_connected", note)
+    if not out and pstatus == "login":
+        return out, _status("error", note or "同程 App 需要登录")
+    if out and q.end > max_end:
+        _tail = "App 日历只到 %s，区间后半段未覆盖" % max_end.isoformat()
+        note = (note + "；" if note else "") + _tail
+    return out, _status("ok" if out else ("error" if note else "empty"),
+                        note, len(out))
 
 
 def _app_zhixing_deals(q: RadarQuery, logger) -> tuple:
@@ -808,6 +928,10 @@ def build_radar(payload: dict, logger, proxy: str = "",
                 rows, st = _app_qunar_deals(q, logger)
             elif ch == "app_zhixing":
                 rows, st = _app_zhixing_deals(q, logger)
+            elif ch == "app_tongcheng":
+                rows, st = _app_tongcheng_deals(q, logger)
+            elif ch == "app_ctrip":
+                rows, st = _app_ctrip_deals(q, logger)
             else:
                 rows, st = [], _status(
                     "not_connected", "自定义航线低价日历尚未验证接入；可用明细探针")

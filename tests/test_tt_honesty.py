@@ -3,8 +3,7 @@
 
 同程日历与途牛 queryFlight 的真实边界必须可区分：导航/请求超时、
 请求异常、坏 JSON/解析失败不得落成 empty；只有干净成功响应且无行
-才允许 empty。本文件用故障注入钉住三条映射与两条干净边界，禁止
-CAPTCHA/登录门被绕过（只做分类，不做验证码破解）。
+才允许 empty。本文件用故障注入钉住三条映射与两条干净边界，只做分类。
 
 运行：PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/test_tt_honesty.py
 """

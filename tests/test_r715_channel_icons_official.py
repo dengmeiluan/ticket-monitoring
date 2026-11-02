@@ -41,10 +41,13 @@ def test_every_plat_has_official_icon_in_registry():
 
     k = src.index("const SRX_BRAND_IMG={")
     line = src[k:src.index("\n", k)]
+    am = re.search(r"const SRX_BRAND_ALIAS=\{(.*?)\};", src, re.S)
+    alias = dict(re.findall(r"(\w+):'(\w+)'", am.group(1) if am else ""))
     missing = []
     for p in plats:
+        key = p if re.search(r'"%s"\s*:' % re.escape(p), line) else alias.get(p)
         m = re.search(r'"%s"\s*:\s*"data:image/[a-z+]+;base64,([A-Za-z0-9+/=]+)"'
-                      % re.escape(p), line)
+                      % re.escape(key or ""), line)
         if not m or len(m.group(1)) < 100:
             missing.append(p)
     assert plats, "SRX_PLATS 解析为空（判据本身失效）"

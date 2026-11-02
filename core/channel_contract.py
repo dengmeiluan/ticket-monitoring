@@ -88,7 +88,17 @@ class _Ctx:
 
     def icon_keys(self) -> set:
         if self._icons is None:
-            self._icons = _js_quoted_keys(self.webui, "SRX_BRAND_IMG")
+            keys = _js_quoted_keys(self.webui, "SRX_BRAND_IMG")
+            # App 渠道可复用同品牌浏览器渠道的官方图标（运行时
+            # `srxPlatIcon` 走 `SRX_BRAND_ALIAS`）。不解析别名会把
+            # 「有图标」误判成缺图，逼着为一模一样的图复制 base64。
+            m = re.search(r"const SRX_BRAND_ALIAS=\{([^}]*)\}", self.webui)
+            if m:
+                for alias, target in re.findall(
+                        r"([a-z_]+)\s*:\s*'([a-z_]+)'", m.group(1)):
+                    if target in keys:
+                        keys.add(alias)
+            self._icons = keys
         return self._icons
 
     def tests_hitting(self, plat: str) -> Tuple[int, Tuple[str, ...]]:
@@ -384,18 +394,28 @@ def _actionable(plat: str, ctx: _Ctx) -> Cell:
     import time
     from core.pacing import advise
     now = time.time()
+    last = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - 60))
+    route_paths = {"H5": {"attempts": 10, "ok": 1, "rate": 0.1,
+                          "rate_excl_empty": 0.1, "last_at": last}}
+    watch_paths = {"H5": {"attempts": 10, "ok": 4, "rate": 0.4,
+                          "rate_excl_empty": 0.4, "last_at": last}}
     cases = (
-        ("登录失效", {"needs_login": True}),
-        ("冷却中", {"state": "cooldown", "reason": "ip", "remain_s": 90}),
-        ("无样本", {}),
+        ("登录失效", {"ch": {"needs_login": True}}),
+        ("冷却中", {"ch": {"state": "cooldown", "reason": "ip",
+                           "remain_s": 90}}),
+        ("无样本", {"ch": {}}),
+        ("路径劣化", {"ch": {}, "paths": route_paths,
+                     "node": {"scopes": {"dom": {"paths": route_paths}}}}),
+        ("成功率低", {"ch": {}, "paths": watch_paths,
+                     "node": {"scopes": {"dom": {"paths": watch_paths}}}}),
     )
     labels = {"relogin": "重登", "wait": "冷却", "scan": "扫描",
-              "probe": "自检", "route": "换路径", "watch": "关注",
-              "none": ""}
+              "probe": "自检", "route": "路径劣化",
+              "watch": "成功率低", "none": ""}
     bad = []
     seen = []
-    for label, ch in cases:
-        r = advise(plat, ch=dict(ch), paths={}, now=now)
+    for label, kwargs in cases:
+        r = advise(plat, now=now, **kwargs)
         act = str(r.get("action") or "")
         hint = str(r.get("hint") or "")
         seen.append("%s→%s" % (label, act or "?"))
@@ -407,7 +427,7 @@ def _actionable(plat: str, ctx: _Ctx) -> Cell:
             bad.append("动作 %s 在界面没有中文落点" % act)
     if bad:
         return Cell(N, "；".join(bad))
-    return Cell(Y, "三态均有动作+中文说明（%s）" % "，".join(seen))
+    return Cell(Y, "五态均有动作+中文说明（%s）" % "，".join(seen))
 
 
 def _judgeable(plat: str, ctx: _Ctx) -> Cell:

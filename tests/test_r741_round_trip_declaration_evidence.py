@@ -111,17 +111,21 @@ def test_fliggy_still_goes_through_the_strict_row_compare():
 
 
 def test_tongcheng_domestic_round_trip_declared_after_api():
-    """r815h：同程**国内**往返已由 book1/roundtrips 接通（atp 产品总价）。
+    """r815h 国内 book1/roundtrips；r926 国际 book1 RT 页 ts/list。
 
-    国际往返仍走页面两步流、本通路未出数，卡点保留在 `_intl_rt_note`。
-    矩阵 y 指国内已验证；国际边界由 DIMENSION_NOTES 说明。
+    国内：`book1/roundtrips` 的 atp 是组合总价（210/210）。
+    国际：登录档案下 book1 RT 页的 `miflightapi/ts/list`，每条 res 的
+    `tp` 是含税总价、`lng` 带去/返两段（2026-11-03 SHA→HKG 41 条 ¥1463）。
+    矩阵 y 覆盖国内/国际，只采渠道总价，不做两段单程相加。
     """
     assert dim_state("tongcheng", "round_trip") == "y"
     src = _src("tongcheng")
     assert "book1/roundtrips" in src and "_parse_rt_fps" in src, (
         "声明国内往返 y，但代码里没有 roundtrips 接口/解析器")
-    assert "本通路取不到往返价" in src, (
-        "国际往返的卡点说明被误删")
+    assert "_fetch_intl_rt" in src and "miflightapi/ts/list" in src, (
+        "国际往返 y，但代码里没有 book1 RT 页/ts/list 通路")
+    assert 'e.get("tp")' in src and 'e.get("lng")' in src, (
+        "国际往返没有读 tp/lng（含税总价 + 去/返两段）")
 
 
 DOCS_MAKING_CHANNEL_CLAIMS = ("docs/INTL_DESIGN.md", "docs/APP_CHANNELS.md",

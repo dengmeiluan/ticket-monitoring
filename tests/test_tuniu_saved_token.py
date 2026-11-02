@@ -42,7 +42,9 @@ def test_pc_runs_before_token_and_token_is_only_for_fallback():
     assert "if not ret_date and not h5_token:" not in src, (
         "PC 仍被 token 挡住——会把有数据的通路跳过")
     # PC 在 token 之前：`_fetch_pc_dom` 的调用行要先于 `_saved_page_token`
-    i_pc = src.index("pc_map = self._fetch_pc_dom(fc, tc, dates)")
+    # 2026-11-02：PC 只查近 30 天（远日期走 H5/API），调用参数改为
+    # `_pc_dates`，但顺序契约不变。
+    i_pc = src.index("_fetch_pc_dom(fc, tc, _pc_dates)")
     i_tok = src.index("h5_token = self._saved_page_token(fc, tc, missing[0])")
     assert i_pc < i_tok, "取 token 的代码跑在 PC 之前，PC 又会被跳过"
 

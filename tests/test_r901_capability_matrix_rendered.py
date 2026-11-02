@@ -154,16 +154,55 @@ def test_every_cell_is_one_of_three_states(server):
 
 def test_app_gaps_are_named_on_screen(server):
     """App 相对浏览器端的缺口必须写在屏上，不能只在接口 JSON 里。"""
-    from core.channels import app_alignment_gaps
+    from core.channels import APP_CHANNELS, plat_cn, app_alignment_gaps
     out, _ = _matrix(server, 1512)
     assert not out.get("err"), out
     gap = out["gap"]
     assert gap, "能力对照下方没有缺口说明"
-    any_gap = any(app_alignment_gaps(p) for p in ("app_zhixing", "app_qunar"))
-    if any_gap:
+    gapped = [p for p in APP_CHANNELS if app_alignment_gaps(p)]
+    if gapped:
         assert "缺" in gap, "有缺口却没写「缺」：%s" % gap
+        unnamed = [plat_cn(p) for p in gapped if plat_cn(p) not in gap]
+        assert not unnamed, "有缺口的 App 没在屏上点名：%s（文案：%s）" % (
+            unnamed, gap)
     else:
         assert "对齐" in gap, "无缺口时应明说已对齐：%s" % gap
+
+
+def test_static_demo_bakes_capability_matrix():
+    """公开演示站（file:// 单文件）必须自带矩阵数据，不能显示「加载失败」。"""
+    from pathlib import Path
+    from playwright.sync_api import sync_playwright
+    site = Path(ROOT) / "docs" / "site" / "index.html"
+    assert site.exists(), site
+    with sync_playwright() as pw:
+        b = pw.chromium.launch(headless=True)
+        pg = b.new_page(viewport={"width": 1512, "height": 1100})
+        errs = []
+        pg.on("pageerror", lambda e: errs.append(str(e)))
+        try:
+            pg.goto(site.resolve().as_uri() + "#cfg",
+                    wait_until="domcontentloaded", timeout=30000)
+            pg.wait_for_timeout(2500)
+            pg.evaluate("""()=>{const t=document.querySelector(
+                  '.cnav [data-tab=login],#cfgnav [data-tab=login]');
+                  if(t)t.click();}""")
+            pg.wait_for_timeout(2200)
+            out = pg.evaluate("""()=>{
+              const w=document.getElementById('cfgDimMatrix');
+              const t=w&&w.querySelector('.dimtbl');
+              return {table:!!t, text:w?w.innerText.slice(0,120):'',
+                      heads:t?t.querySelectorAll('thead th').length:0,
+                      cells:t?t.querySelectorAll('tbody td .cell').length:0};
+            }""")
+        finally:
+            b.close()
+    from core.channels import CHANNEL_DIMENSIONS
+    assert out["table"], "静态站没有矩阵表格：%s" % out["text"]
+    assert "加载失败" not in out["text"], out["text"]
+    assert out["heads"] >= len(CHANNEL_DIMENSIONS), out
+    assert out["cells"] > 0, out
+    assert not errs, errs[:3]
 
 
 def test_surface_note_reaches_the_cell_title(server):
@@ -206,6 +245,76 @@ def test_matrix_stays_usable_on_narrow(server, width):
     assert not out.get("err"), out
     assert not errs, errs[:3]
     assert out["ncell"] > 0 and out["empty"] == 0, out
+
+
+def test_matrix_freezes_dimension_column_on_narrow_scroll(server):
+    """390 档 10 列横滚后维度名必须还在屏上，且有滑动提示。
+
+    2026-11-03 实测：内容宽 698 / 可视 324，滚到最右后首列 left=-346，
+    读者只剩一排勾叉；屏上也没有任何「可横滑」的提示。修法：窄档冻结
+    首列 + 提示。判据按真实滚动后的 rect，不做 CSS 字面断言——去掉
+    sticky 时首列会滚成负坐标，本用例立刻红。
+    """
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as pw:
+        b = pw.chromium.launch(headless=True)
+        try:
+            pg = b.new_page(viewport={"width": 390, "height": 1100})
+            errs = []
+            pg.on("pageerror", lambda e: errs.append(str(e)))
+            pg.goto("http://127.0.0.1:%d/#cfg" % server,
+                    wait_until="domcontentloaded", timeout=30000)
+            pg.wait_for_timeout(2200)
+            pg.evaluate("""()=>{const t=document.querySelector(
+                  '.cnav [data-tab=login],#cfgnav [data-tab=login]');
+                  if(t)t.click();}""")
+            pg.wait_for_timeout(2200)
+            out = pg.evaluate("""()=>{
+              const w=document.getElementById('cfgDimMatrix');
+              const wrap=w&&w.querySelector('.dimwrap');
+              const tbl=w&&w.querySelector('.dimtbl');
+              if(!tbl)return {err:'no table'};
+              const rows=[...tbl.querySelectorAll('tbody tr')];
+              const dimRow=rows.find(tr=>{
+                const th=tr.querySelector('th');
+                return th&&!th.hasAttribute('colspan')
+                  &&th.innerText.trim().startsWith('国内');});
+              if(!dimRow)return {err:'no dimension row'};
+              const th=dimRow.querySelector('th');
+              const hint=w.querySelector('.dimscroll');
+              const wr=wrap.getBoundingClientRect();
+              const before=th.getBoundingClientRect();
+              wrap.scrollLeft=wrap.scrollWidth;
+              const after=th.getBoundingClientRect();
+              const heads=[...tbl.querySelectorAll('thead th')];
+              const last=heads[heads.length-1].getBoundingClientRect();
+              return {overflow:wrap.scrollWidth-wrap.clientWidth,
+                      beforeLeft:Math.round(before.left),
+                      afterLeft:Math.round(after.left),
+                      afterRight:Math.round(after.right),
+                      wrapLeft:Math.round(wr.left),wrapRight:Math.round(wr.right),
+                      hintVisible:!!hint
+                        &&getComputedStyle(hint).display!=='none'
+                        &&hint.getBoundingClientRect().width>0,
+                      hintText:hint?hint.innerText.trim():'',
+                      lastLeft:Math.round(last.left),
+                      lastRight:Math.round(last.right)};
+            }""")
+        finally:
+            b.close()
+    assert not out.get("err"), out
+    assert not errs, errs[:3]
+    assert out["overflow"] > 100, "390 档矩阵没有横向滚动，判据失去意义"
+    assert out["beforeLeft"] >= out["wrapLeft"] - 1, out
+    assert out["afterLeft"] >= out["wrapLeft"] - 1, (
+        "滚到最右后维度名被滚出屏幕（left=%d，容器左缘=%d）"
+        % (out["afterLeft"], out["wrapLeft"]))
+    assert out["afterRight"] <= out["wrapLeft"] + 130, (
+        "冻结列过宽或没停在左侧：%r" % (out,))
+    assert out["hintVisible"] and "滑动" in out["hintText"], (
+        "窄档没有「左右滑动」提示：%r" % (out,))
+    assert out["lastLeft"] <= out["wrapRight"] and out["lastRight"] >= out["wrapLeft"], (
+        "没有滚到最后一列：%r" % (out,))
 
 
 def test_unsupported_cells_say_why_on_hover(server):

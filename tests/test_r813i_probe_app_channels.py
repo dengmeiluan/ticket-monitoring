@@ -24,9 +24,6 @@ import urllib.request
 import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ALL = ("ctrip", "qunar", "fliggy", "tongcheng", "tuniu",
-       "app_zhixing", "app_qunar")
-BROWSER = ("ctrip", "qunar", "fliggy", "tongcheng", "tuniu")
 
 
 def _free_port() -> int:
@@ -75,7 +72,10 @@ def _open(port):
     return pw, b, pg, errs
 
 
-def test_probe_picker_covers_seven_channels(server):
+def test_probe_picker_covers_registered_channels(server):
+    from core.channels import APP_CHANNELS, BROWSER_CHANNELS
+    all_plats = tuple(BROWSER_CHANNELS) + tuple(APP_CHANNELS)
+    browser = tuple(BROWSER_CHANNELS)
     pw, b, pg, errs = _open(server)
     try:
         chips = pg.evaluate("""()=>[...document.querySelectorAll(
@@ -87,20 +87,19 @@ def test_probe_picker_covers_seven_channels(server):
                     aria:(l.getAttribute('aria-label')||''),
                     title:(l.getAttribute('title')||''),
                     icon:ic?ic.dataset.plat:''};})""")
-        assert len(chips) == 7, chips
-        assert {c["p"] for c in chips} == set(ALL), chips
+        assert len(chips) == len(all_plats), chips
+        assert {c["p"] for c in chips} == set(all_plats), chips
         for c in chips:
             assert c["icon"] == c["p"], ("chip 没有对应官方图标", c)
             # 浏览器 5 家带文字；App 是真机可选，用官方图标 + 名称供
             # 悬停/读屏识别（带文字会挤爆「探针一行」——r813i 实测）
-            if c["p"] in BROWSER:
+            if c["p"] in browser:
                 assert c["txt"], c
             else:
                 assert "App" in (c["aria"] + c["title"]), c
         by = {c["p"]: c for c in chips}
-        assert all(by[p]["checked"] for p in BROWSER), by
-        assert not by["app_zhixing"]["checked"], by["app_zhixing"]
-        assert not by["app_qunar"]["checked"], by["app_qunar"]
+        assert all(by[p]["checked"] for p in browser), by
+        assert not any(by[p]["checked"] for p in APP_CHANNELS), by
         assert not errs, errs[:3]
     finally:
         b.close()

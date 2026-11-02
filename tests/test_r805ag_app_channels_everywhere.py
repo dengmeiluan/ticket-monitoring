@@ -26,6 +26,11 @@ import urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
+from core.channels import (APP_CHANNELS, BROWSER_CHANNELS,  # noqa: E402
+                           CHANNEL_CN)
+APP_NAMES = [CHANNEL_CN[p] for p in APP_CHANNELS]
+ALL_COUNT = len(BROWSER_CHANNELS) + len(APP_CHANNELS)
+
 
 def test_app_channels_present_on_every_surface():
     import pytest
@@ -61,7 +66,7 @@ def test_app_channels_present_on_every_surface():
                 pg.wait_for_function(
                     "()=>typeof S!=='undefined'&&S&&S.users", timeout=30000)
                 got = pg.evaluate("""async()=>{
-                  const APP=['智行 App','去哪儿 App'];
+                  const APP=Object.values(APP_PLAT_NAME);
                   const vis=el=>{const r=el.getBoundingClientRect();
                     const st=getComputedStyle(el);
                     return r.width>0&&r.height>0&&st.visibility!=='hidden'
@@ -146,16 +151,17 @@ def test_app_channels_present_on_every_surface():
                 }""")
             finally:
                 b.close()
-        assert len(got.get("search_chips") or []) >= 7, (
-            "检索页渠道 chip 不足 7 个：%s" % (got.get("search_chips"),))
-        assert len(got.get("search_app_chips") or []) == 2, (
+        assert len(got.get("search_chips") or []) >= ALL_COUNT, (
+            "检索页渠道 chip 不足 %d 个：%s"
+            % (ALL_COUNT, got.get("search_chips")))
+        assert len(got.get("search_app_chips") or []) == len(APP_NAMES), (
             "检索页筛选缺 App 渠道：%s" % (got.get("search_app_chips"),))
         cells = got.get("filtered_app_cells") or []
         assert cells, (
             "只勾 App 渠道后明细表没有任何 App 行（筛选或表体没接上）：%s"
             % (got.get("search_app_chips"),))
         bad_name = [c for c in cells
-                    if not any(n in c["t"] for n in ("智行 App", "去哪儿 App"))]
+                    if not any(n in c["t"] for n in APP_NAMES)]
         assert not bad_name, ("App 行没有中文渠道名：%s" % bad_name[:3])
         bad_icon = [c for c in cells if not c.get("icon")]
         assert not bad_icon, ("App 行没有官方图标：%s" % bad_icon[:3])
@@ -166,17 +172,18 @@ def test_app_channels_present_on_every_surface():
                    if not r.get("src")]
         assert not missing, (
             "检索页 App 渠道 chip 没有官方图标：%s" % missing)
-        assert len(got.get("cfg_app_checks") or []) == 2, (
+        assert len(got.get("cfg_app_checks") or []) == len(APP_NAMES), (
             "配置页监控渠道缺 App 渠道：%s" % (got.get("cfg_app_checks"),))
         head = got.get("matrix_head") or []
-        assert len(head) == 8, "能力矩阵表头应为「维度 + 7 渠道」：%s" % (head,)
-        assert len(got.get("matrix_app_cols") or []) == 2, (
+        assert len(head) == ALL_COUNT + 1, (
+            "能力矩阵表头应为「维度 + %d 渠道」：%s" % (ALL_COUNT, head))
+        assert len(got.get("matrix_app_cols") or []) == len(APP_NAMES), (
             "能力矩阵缺 App 列：%s" % (got.get("matrix_app_cols"),))
-        assert len(got.get("matrix_app_peer") or []) == 2, (
+        assert len(got.get("matrix_app_peer") or []) == len(APP_NAMES), (
             "App 列头没标「同源」：%s" % (got.get("matrix_app_peer"),))
-        assert len(got.get("health_app") or []) == 2, (
+        assert len(got.get("health_app") or []) == len(APP_NAMES), (
             "渠道健康没出现 App 渠道：%s" % (got.get("health_app"),))
-        assert len(got.get("login_app") or []) == 2, (
+        assert len(got.get("login_app") or []) == len(APP_NAMES), (
             "登录区没有 App 登录卡：%s" % (got.get("login_app"),))
     finally:
         srv.terminate()

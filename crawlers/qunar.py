@@ -33,7 +33,7 @@ from core.models import PRICE_MAX, PRICE_MIN, FlightPrice, price_band_ok
 from core.citydata import CODE_NAME as _CODE_NAME
 from core.intl import (airport_city_code, city_name_of, city_short_of,
                        is_intl_route)
-from .base import BaseCrawler, iata2, iata3
+from .base import BaseCrawler, MOBILE_UA, iata2, iata3, profile_headers
 from .challenge import ChallengeSignal, blocked_signal, classify_text, login_signal
 
 _LOG = logging.getLogger(__name__)
@@ -229,6 +229,13 @@ class QunarCrawler(BaseCrawler):
         self._qn1999_streak = {}
         # (fc|tc|date) -> 是否已在本轮做过短退避重试（只重试一次）
         self._qn1999_retried = {}
+        # 本轮三路径空结果是否已退避重试过（软空只重试一次，避免连打）
+        self._soft_empty_retried = False
+        # 国际查询让位窗口：国际列表与国内列表限额相互独立，国际一旦
+        # 出数或软空，同轮继续打其它国际线只会连续 1999（实测 19:15
+        # BKK 出数后，LHR/NRT/SIN 连续 3 条全 1999，而国内 70 条正常）。
+        self._intl_quiet_until = 0.0
+        self._intl_quiet_reason = ""
 
     CITY_NAME = {
         "SZX": "深圳", "KMG": "昆明", "PEK": "北京", "BJS": "北京",
@@ -274,7 +281,9 @@ class QunarCrawler(BaseCrawler):
     warmup_url = H5_HOME
     # 预热成效判据：这几个风控 cookie 落下来才算"真的被当成正常会话"
     RISK_COOKIES = ("QN1", "QunarGlobal", "QN205", "QN277")
-    AUTH_COOKIES = ("QN1",)
+    # QN1 匿名首页就下发（2026-11-02 无 Cookie 实测），不能当登录凭证；
+    # _q 是 qmark SDK 读取的 uname（登录后才有），用作采集态回写判据。
+    AUTH_COOKIES = ("_q",)
 
     def login_url(self) -> str:
         return self.LOGIN_URL
@@ -288,8 +297,19 @@ class QunarCrawler(BaseCrawler):
     # r385：国际列表 1999 单次间歇放行的同轮短退避（A/B 实测 1.5 分钟
     # 内自愈；取 45s 兼顾"够它放行"与"不拖死整轮"）
     INTL_1999_RETRY_S = 45
+    # 国际列表让位：成功一条后 20 分钟内不再查其它国际线；软空/连续
+    # 1999 后 15 分钟让位。国内列表另有配额，不受此限（实测同轮国内
+    # 70 条明细正常）。下一轮调度 ≈30 分钟，窗口到期自然恢复。
+    INTL_QUIET_S = 1200
+    INTL_SOFT_QUIET_S = 900
     _last_done_ts = 0.0
     _cooldown_until = 0.0
+    # 三路径空结果的登录态探测（userBaseInfo）：只在归属存疑时打一次，
+    # 5 分钟内复用结果，避免把「软空」当「掉登录」反复催用户重登。
+    AUTH_PROBE_URL = "https://user.qunar.com/index/userBaseInfo"
+    AUTH_PROBE_TTL_S = 300
+    _auth_probe_at = 0.0
+    _auth_probe_ok = None
 
     @staticmethod
     def fetch_low_price_calendar(dep_name: str, arr_name: str,
@@ -300,7 +320,7 @@ class QunarCrawler(BaseCrawler):
         """去哪儿官方 H5 低价日历（特价页官方深链，零登录）。
 
         页面 JS 自行生成 bella/june 签名；本函数只加载官方页面并读取
-        getFlightCalendar 的真实响应，不逆向签名、不绕过验证码/风控。
+        getFlightCalendar 的真实响应。
         成功返回响应 dict；观测到页面风控证据返回 None（调用方进入长
         冷却）；加载超时/浏览器不可用则抛 TimeoutError/RuntimeError，
         由调用方按失败如实上报，不冒充风控冷却。"""
@@ -365,7 +385,7 @@ class QunarCrawler(BaseCrawler):
                     st = j.get("bstatus")
                     bcode = st.get("code") if isinstance(st, dict) else st
                     # 页面侧风控/人机码（10003 通用风控、1999/2008 登录、
-                    # 10004 点选、code 7/8/9 同族）——只识别不绕过。
+                    # 10004 点选、code 7/8/9 同族）——只识别。
                     if bcode in (1999, 2008, 10003, 10004) \
                             or j.get("code") in (7, 8, 9):
                         obj["risk"] = str(bcode or j.get("code"))
@@ -433,6 +453,19 @@ class QunarCrawler(BaseCrawler):
         self._query_challenge = None
         self._last_no_result = False
         self._last_failure_status = ""
+        self._soft_empty_retried = False
+        _is_intl = bool(is_intl_route(from_city, to_city)) and not ret_date
+        if _is_intl and self._intl_quiet_until > _t.time():
+            _left = int(self._intl_quiet_until - _t.time())
+            self.logger.info(
+                "[qunar] 国际查询让位 %ds（%s），本轮跳过 %s→%s",
+                _left, self._intl_quiet_reason or "渠道限流保护",
+                from_city, to_city)
+            self.path_note(
+                "QUERY", "soft_reject",
+                detail="国际查询让位：%s"
+                       % (self._intl_quiet_reason or "渠道限流保护"))
+            return []
         # 往返（r815j）：国内 touch 往返页去程卡直接给产品「往返总价」，
         # 只采这个价（返程卡的「补 ¥N」是增量，不当总价）。国际往返
         # 仍走 interlist 单程面，未验证组合总价，显式拒绝。
@@ -480,9 +513,14 @@ class QunarCrawler(BaseCrawler):
                 # 元素是 FlightPrice dataclass 非 dict（.get 形态对
                 # dataclass AttributeError——qunar 出数轮整渠道炸，
                 # r290 钉在 CI 抓获的形态）：按属性取
-                if any(getattr(r, "flight_no", "") or getattr(r, "depart_time", "")
-                       for r in res):
+                _has_detail = any(
+                    getattr(r, "flight_no", "") or getattr(r, "depart_time", "")
+                    for r in res)
+                if _has_detail:
                     QunarCrawler.login_suspect = False
+                if _is_intl and _has_detail:
+                    self._intl_quiet_until = _t.time() + self.INTL_QUIET_S
+                    self._intl_quiet_reason = "上一条国际明细已成功"
                 return res
             _ch = (getattr(self, "_query_challenge", None)
                    or getattr(self, "_last_challenge", None))
@@ -511,16 +549,28 @@ class QunarCrawler(BaseCrawler):
                                     attempt)
                 return []
             if QunarCrawler.login_suspect:
-                # 会话失效证据在案（软性空列表+本地档案在，r290 产生点
-                # 捕获）——确定性拒绝不走全档退避（r339c 观测：退避链
-                # 570s+4 轮抓取≈17min 必触 900s 路由栅栏，单渠道超时
-                # 连锁是长链主因；登录态不会在退避窗内自愈，重试注定
-                # 同果，NOT_SUPPORT 同族律）。下轮调度自然重试，出数即
-                # 复位（上方 328 行）；不设冷却防顺带压制他线查询
-                self.logger.warning(
-                    "[qunar] 会话失效证据在案，跳过退避重试"
-                    "（请在配置页「渠道登录」重新登录 qunar）")
-                return []
+                # 旧失效证据先复核：会话可能已在后续轮次自愈（1999 间歇
+                # 放行/软空恢复），不能让它永久拦住抓取、逼用户重登。
+                _state = self._read_session_state()
+                _old_probe = (self._probe_session_alive()
+                              if self._state_has_auth(_state) else False)
+                if _old_probe is True:
+                    QunarCrawler.login_suspect = False
+                    self.logger.info(
+                        "[qunar] 登录态探测在线——清除旧「会话失效」证据，"
+                        "本轮继续按实际结果重试")
+                elif _old_probe is None:
+                    self.logger.warning(
+                        "[qunar] 登录态探测不可达——旧失效证据待验证，"
+                        "本轮不催重登")
+                else:
+                    # 确定性拒绝不走全档退避（r339c 观测：退避链
+                    # 570s+4 轮抓取≈17min 必触 900s 路由栅栏）。
+                    self.logger.warning(
+                        "[qunar] 会话失效证据在案（认证 Cookie 不在场/"
+                        "探测匿名），跳过退避重试"
+                        "（请在配置页「渠道登录」重新登录 qunar）")
+                    return []
             back = self._BACKOFF_S[attempt]
             # 整体门拒（r404）：通道级拒绝不是会话失效，也不值得在同轮
             # 阶梯退避连打（实测四条航线一字不差同文案 → 重试注定同果，
@@ -533,13 +583,39 @@ class QunarCrawler(BaseCrawler):
                     "[qunar] 整体门拒在案（%s），跳过退避重试；"
                     "不判会话失效", str(_gate.get("note"))[:40])
                 return []
-            self.logger.warning("[qunar] 三路径空结果——qunar 已于 09-12 起对"
-                                "未登录会话软性返回空列表（低价日历仍出价）；"
-                                "请在配置页「渠道登录」重新登录 qunar。先按限流重试 %ds（第 %d 次）",
-                                back, attempt + 1)
-            # 服务端按未登录处理的证据（产生点捕获）：登录态卡片分层
-            # 「会话可能失效，建议重登」的数据源——本地档案在而会话死
-            QunarCrawler.login_suspect = True
+            _state = self._read_session_state()
+            _has_auth = self._state_has_auth(_state)
+            _probe = self._probe_session_alive() if _has_auth else False
+            _verdict = self._empty_verdict(_has_auth, _probe)
+            if _verdict == "login":
+                self.logger.warning(
+                    "[qunar] 三路径空结果，认证 Cookie 不在场或探测匿名"
+                    "——请在配置页「渠道登录」重新登录 qunar")
+                QunarCrawler.login_suspect = True
+                return []
+            _why = ("userBaseInfo 在线" if _probe is True
+                    else "userBaseInfo 不可达，待验证")
+            if self._soft_empty_retried:
+                self.logger.warning(
+                    "[qunar] 三路径仍空，但登录态%s——本轮按软性空结果"
+                    "结束，下轮再试，不催重登", _why)
+                self.last_soft_reject = {
+                    "kind": "soft_empty",
+                    "note": "三路径空结果；登录态%s" % _why}
+                QunarCrawler.login_suspect = False
+                QunarCrawler._cooldown_until = _t.time() + back
+                if _is_intl:
+                    self._intl_quiet_until = _t.time() + self.INTL_SOFT_QUIET_S
+                    self._intl_quiet_reason = "上一条国际查询软空/限流"
+                return []
+            self._soft_empty_retried = True
+            self.logger.warning(
+                "[qunar] 三路径空结果，但登录态%s——按软空/限流退避 %ds "
+                "后重试一次，不催重登", _why, back)
+            self.last_soft_reject = {
+                "kind": "soft_empty",
+                "note": "三路径空结果；登录态%s" % _why}
+            QunarCrawler.login_suspect = False
             QunarCrawler._cooldown_until = _t.time() + back
         return []
 
@@ -1747,7 +1823,7 @@ class QunarCrawler(BaseCrawler):
         body["r"] = now_ms
         body["st"] = now_ms - 1
 
-        headers = dict(token["headers"])
+        headers = profile_headers(self.fingerprint(), token["headers"])
         headers["referer"] = "https://m.flight.qunar.com/ncs/page/flightlist"
         cookies = dict(token["cookies"])
 
@@ -1789,8 +1865,7 @@ class QunarCrawler(BaseCrawler):
         _sig = self._risk_signal(text)
         if _sig:
             self._last_challenge = _sig
-            if _sig.status == "login":
-                QunarCrawler.login_suspect = True
+            self._mark_login_signal(_sig)
             self.logger.warning(
                 "[qunar] httpx 命中%s，可能是限流或 token 过期",
                 _sig.detail)
@@ -1880,6 +1955,114 @@ class QunarCrawler(BaseCrawler):
         if obj.get("code") == 3 and "无航线" in msg:
             return msg[:80]
         return ""
+
+    @staticmethod
+    def _qn1999_is_login(streak: int, auth_present: bool) -> bool:
+        """1999/8 连续未放行是否升级成「请重登」。
+
+        单次是间歇放行（r385 A/B 自愈）；连续 ≥2 次且快照里仍有登录
+        Cookie（_q）时，2026-11-02 实测用户重登后仍 1999——更像限流/
+        软拒，不能反复催用户重登。只有认证 Cookie 不在场才判登录。
+        """
+        return bool(streak >= 2 and not auth_present)
+
+    @staticmethod
+    def _empty_verdict(has_auth: bool, probe) -> str:
+        """三路径空结果的归因：login / soft / verify。
+
+        `probe` 是 userBaseInfo 的登录态探测（True/False/None）：
+        - 无认证 Cookie：login（只有这种确定证据才催重登）
+        - 探测在线：soft（软空/限流，退避重试即可）
+        - 探测匿名：login（Cookie 残留但会话已死）
+        - 探测不可达：verify（待验证，不能据此催重登）
+        """
+        if not has_auth:
+            return "login"
+        if probe is True:
+            return "soft"
+        if probe is False:
+            return "login"
+        return "verify"
+
+    def _probe_session_alive(self):
+        """用同一个 _q 会话问 userBaseInfo：True=在线/False=匿名/None=未知。
+
+        只在空结果归属存疑时调用；成功结果缓存 5 分钟，避免把探测本身
+        变成新的风控负担。匿名接口实测 ret=False/errcode=22032，登录态
+        ret=True/errcode=200。
+        """
+        now = time.time()
+        if QunarCrawler._auth_probe_at > 0 and \
+                now - QunarCrawler._auth_probe_at < self.AUTH_PROBE_TTL_S:
+            return QunarCrawler._auth_probe_ok
+        state = self._read_session_state()
+        if not self._state_has_auth(state):
+            return False
+        cookies = {}
+        for c in state.get("cookies") or []:
+            if isinstance(c, dict) and c.get("name") \
+                    and c.get("value") is not None:
+                cookies[str(c["name"])] = str(c["value"])
+        headers = profile_headers(self.fingerprint(), {
+            "Accept": "application/json, text/plain, */*",
+            "Referer": "https://touch.qunar.com/",
+        })
+        try:
+            from core import net as _net
+            with _net.new_client(proxy=self.proxy or None, timeout=10,
+                                 follow_redirects=True) as cli:
+                r = cli.get(self.AUTH_PROBE_URL, headers=headers,
+                            cookies=cookies)
+            if r.status_code != 200:
+                self.logger.warning(
+                    "[qunar] 登录态探测 HTTP %s，暂按待验证处理",
+                    r.status_code)
+                return None
+            data = r.json() if callable(getattr(r, "json", None)) else {}
+            if isinstance(data, dict) and data.get("ret") is True:
+                ok = True
+            elif isinstance(data, dict) and \
+                    int(data.get("errcode") or 0) == 22032:
+                ok = False
+            else:
+                self.logger.warning(
+                    "[qunar] 登录态探测响应无法归因，暂按待验证处理")
+                return None
+        except Exception as e:
+            self.logger.warning("[qunar] 登录态探测异常: %s", e)
+            return None
+        QunarCrawler._auth_probe_at = now
+        QunarCrawler._auth_probe_ok = ok
+        return ok
+
+    def _mark_login_signal(self, sig) -> bool:
+        """登录信号归因：认证在线/探测不可达时按软拒，不催重登。
+
+        1999/2008 既可能是会话失效，也可能是限流软拒；通用风控信号
+        解析器统一给 login，若直接置 login_suspect 会绕过 r816/r817
+        的认证判断，把完好的会话推去重登。
+        """
+        if not sig or getattr(sig, "status", "") != "login":
+            return False
+        state = self._read_session_state()
+        if not self._state_has_auth(state):
+            QunarCrawler.login_suspect = True
+            return True
+        probe = self._probe_session_alive()
+        if probe is False:
+            QunarCrawler.login_suspect = True
+            return True
+        QunarCrawler.login_suspect = False
+        self.last_soft_reject = {
+            "kind": "soft_reject",
+            "note": "登录信号（%s）；会话探测%s" % (
+                getattr(sig, "detail", ""),
+                "在线" if probe is True else "不可达")}
+        self.logger.warning(
+            "[qunar] 命中登录信号（%s），但 userBaseInfo %s——按软拒/限流"
+            "处理，不催重登", getattr(sig, "detail", ""),
+            "在线" if probe is True else "不可达")
+        return False
 
     @staticmethod
     def _no_result_text(text: str) -> bool:
@@ -2058,8 +2241,7 @@ class QunarCrawler(BaseCrawler):
                     _sig = self._risk_signal(t)
                     if _sig:
                         self._last_challenge = _sig
-                        if _sig.status == "login":
-                            QunarCrawler.login_suspect = True
+                        self._mark_login_signal(_sig)
                         break
                 if getattr(self, "_last_challenge", None) is None:
                     try:
@@ -2070,8 +2252,7 @@ class QunarCrawler(BaseCrawler):
                         _body_text, url=str(getattr(page, "url", "")))
                     if _sig:
                         self._last_challenge = _sig
-                        if _sig.status == "login":
-                            QunarCrawler.login_suspect = True
+                        self._mark_login_signal(_sig)
                 # 无证据的空（r400）：一没拦到响应、二页面正文是空的、
                 # 三没有任何风控/无票证据。这既不是"站点说没票"，也不是
                 # 明确的登录墙/人机验证——它只是"这一趟什么也没拿回来"
@@ -2122,8 +2303,8 @@ class QunarCrawler(BaseCrawler):
     # 与国内 touchInnerList 同族（同 SPA/同 Bella/同 binfo 行结构），但
     # 未登录=1999 硬拒（国内是软性空列表）——生产 .qunar.com 主域登录
     # cookie 同域直接生效。风控状态机（Judge 源码实证）：业务 code
-    # 7=滑块/8=跳登录/9=强刷、bstatus.code 10004=点选——只记录+退避，
-    # 不绕过（宁缺勿错同律）
+    # 7=滑块/8=跳登录/9=强刷、bstatus.code 10004=点选——只记录+退避
+    # （宁缺勿错同律）
     INTL_URL_TPL = ("https://touch.qunar.com/ncs/page/interlist"
                     "?depCity={from_name}&arrCity={to_name}&goDate={date}"
                     "&from=touch_index_search")
@@ -2788,7 +2969,13 @@ class QunarCrawler(BaseCrawler):
                 self._qn1999_streak[_key] = self._qn1999_streak.get(
                     _key, 0) + 1
                 _n = self._qn1999_streak[_key]
-                if _n >= 2:
+                _auth_present = False
+                try:
+                    _auth_present = self._state_has_auth(
+                        self._read_session_state())
+                except Exception:
+                    pass
+                if self._qn1999_is_login(_n, _auth_present):
                     QunarCrawler.login_suspect = True
                     self.path_note("H5", "login", date=date,
                                    detail="国际列表 1999/8 连续 %d 次"
@@ -2806,6 +2993,20 @@ class QunarCrawler(BaseCrawler):
                     self.logger.warning(
                         "[qunar][intl] %s 1999/8 连续 %d 次未放行——疑会话"
                         "失效，请在配置页「渠道登录」重登 qunar", date, _n)
+                elif _n >= 2:
+                    # 认证 Cookie 仍在场：重登也救不回 1999（2026-11-02
+                    # 实测），按限流/软拒退避，不催用户重登、不叠风控。
+                    self.path_note("H5", "soft_reject", date=date,
+                                   detail="国际列表 1999/8 连续 %d 次，"
+                                          "但认证 Cookie 仍在场→按限流/"
+                                          "软拒退避，不催重登" % _n)
+                    self.logger.warning(
+                        "[qunar][intl] %s 1999/8 连续 %d 次，但认证 "
+                        "Cookie 仍在场——按限流/软拒退避，不催重登",
+                        date, _n)
+                    # 这不是登录证据；别让早先一次 login_suspect 继续
+                    # 把登录卡挂在「需登录」上。
+                    type(self).login_suspect = False
                 else:
                     self.path_note("H5", "soft_reject", date=date,
                                    detail="国际列表 1999/8 间歇放行（单次，"
@@ -2860,7 +3061,7 @@ class QunarCrawler(BaseCrawler):
             if risk in ("slider", "captcha", "refresh"):
                 _status, _kind = self._intl_risk_path(risk)
                 self.logger.warning(
-                    "[qunar][intl] %s 风控%s（%s/%s）——本轮拒采不绕过",
+                    "[qunar][intl] %s 风控%s（%s/%s）——本轮拒采",
                     date, "强刷" if risk == "refresh" else "验证码",
                     risk, _kind)
                 self.path_note("H5", _status, date=date,

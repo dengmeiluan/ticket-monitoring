@@ -63,6 +63,23 @@ def test_ad_without_close_button_is_still_ad():
     assert b.close_xy is None
 
 
+def test_travel_notice_with_zhidao_is_closable():
+    """同程结果页「出行提醒」：标题 + 底部「知道了」，可安全点掉。"""
+    xml = _xml(("出行提醒", 120, 100, 780, 150),
+               ("重要通知：国内燃油附加费11月5日起上调", 60, 260, 840, 300),
+               ("知道了", 300, 1500, 600, 1560))
+    b = detect_block(xml)
+    assert b.kind == BLOCK_AD, (b.kind, b.detail)
+    assert b.close_xy == (450, 1530), b.close_xy
+
+
+def test_travel_notice_without_close_is_not_a_block():
+    xml = _xml(("出行提醒", 120, 100, 780, 150),
+               ("MU5185", 80, 300, 220, 340),
+               ("￥336", 760, 300, 860, 340))
+    assert detect_block(xml).kind == ""
+
+
 def test_clean_flight_page_has_no_block():
     with open(FIX, encoding="utf-8") as f:
         xml = f.read()

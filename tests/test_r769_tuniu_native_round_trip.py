@@ -141,13 +141,22 @@ def test_round_trip_marks_rows_as_rt_with_back_date(crawler):
     assert all(e.get("backDate") == "2026-12-01" for e in ex), ex[:2]
 
 
-def test_international_round_trip_stays_unsupported(crawler):
-    """国际分支的 productList 是单段结构，没做过两段实测 → 必须显式拒绝。"""
+def test_international_round_trip_dispatches_to_h5(crawler, monkeypatch):
+    """国际往返改走 H5 queryFlight（r927），不再显式 unsupported；这里只
+    守分流，不发网络请求。"""
+    seen = {}
+
+    def fake(from_city, to_city, dates, ret_date):
+        seen["args"] = (from_city, to_city, dates, ret_date)
+        return []
+
+    monkeypatch.setattr(crawler, "_fetch_intl_rt", fake)
     rows = crawler.fetch("SHA", "NRT", ["2026-11-27"],
                          ret_date="2026-12-01")
     assert rows == []
+    assert seen["args"] == ("SHA", "NRT", ["2026-11-27"], "2026-12-01")
     notes = [(p.get("path"), p.get("status")) for p in (crawler.paths or [])]
-    assert ("TRIP", "unsupported") in notes, notes
+    assert ("TRIP", "unsupported") not in notes, notes
 
 
 def test_caliber_note_records_the_price_identity():

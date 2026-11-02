@@ -7,7 +7,7 @@
 >
 > **交接文档的分工**（阅读顺序）：
 > - **①** `docs/HANDOFF_FULL_SESSION.md` —— **总纲：12 项目标与期望标准 + 验收标准 + 方法论 + 现状**（最先读）
-> - ② `docs/HANDOFF_CAPABILITY_MATRIX.md` —— 7 渠道能力一致性专项（7×7 不变式、新增渠道 checklist）
+> - ② `docs/HANDOFF_CAPABILITY_MATRIX.md` —— 10 渠道能力一致性专项（10×7 不变式、新增渠道 checklist）
 > - **③ 本文** —— **通用层**：发版七步、文档门禁体系、操作纪律、80 条教训清单
 > - **④** `docs/SESSION_EXPERIENCE_GUIDE.md` —— **最近一次长会话（r794–r812b）的完整经验书**：用户全部目标与期望、逐轮修法 / 证据 / 门禁、判据陷阱 40 条、开工与交接清单、当前真实状态。**接手新任务前先读它**；本文 §0 的「当前状态」已滞后。
 
@@ -32,18 +32,19 @@
 
 ## 0. 一句话现状
 
-**源码 v1.5.307 / r737，但远程发布停在 v1.5.306，安装包还停在 v1.5.304。**
+**发布树 v1.5.307（tag `v1.0` → `0d4b058`）已四端对齐；当前工作树另有 10 渠道 + 国际往返/日历/多程解析等未提交改动，live 8765 仍是 7 渠道旧副本。**
 
 | 维度 | 状态 |
 |---|---|
 | 版本 | `main.py` = **1.5.307** |
-| 本地提交 | `7cbae2a`（31 个提交，未推送） |
-| 远程 `main` | `5cff7f5`（**单根历史，只有 1 个提交**） |
-| 远程 `v1.0` tag | `02766a3` |
-| 工作区 | **81 项变更 / 24 项未跟踪** |
-| 文档门禁 | 93 项契约 + 6 项 EOL，实跑 **98 passed / 1 skipped** |
-| 发布对齐 | **20/25**（5 项红） |
-| 安装包 | `dist_package/` = 10-29 构建（v1.5.304）**落后 3 版** |
+| HEAD / 远程 `main` | **`0d4b058`**（单根历史） |
+| 远程 `v1.0` tag | **`0d4b058`** |
+| 发布资产 | 四平台包 v1.5.307（2026-11-02T08:07Z），SHA256SUMS 与 API digest **4/4 相等** |
+| 工作区 | 10 渠道（5 浏览器 + 5 App）+ 国际往返/日历/多程解析等未提交；10 渠道改动**未发布** |
+| 全量非 UI | **6139 passed / 19 skipped / 0 failed**（2026-11-03 06:31，workers 8，含 r926/r927 国际往返、Release 正文源与多程解析器） |
+| UI | **670/670**（2026-11-03 05:54 全量复跑，零 JS 错误；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、同程 App round_trip=国际；r905 行内按钮另由 r905 + r640 四档覆盖） |
+| 发布对齐 | `release_align_check --local` **25/25** |
+| live 8765 | 仍是 **7 渠道旧副本**；切换步骤见 `docs/LIVE_PROMOTION_RUNBOOK.md`（需明确授权） |
 
 ---
 
@@ -51,22 +52,21 @@
 
 自托管的多渠道机票价格监控：明细采集 → 钉钉图文推送 → 达标四层强提醒。
 
-**渠道从 5 家扩到 7 家**：携程、去哪儿、飞猪、同程、途牛（浏览器/H5/HTTP）+ **智行、去哪儿 App**（Android App 自动化，见 `crawlers/app_*.py`）。
+**渠道从 5 家扩到 10 家**：携程、去哪儿、飞猪、同程、途牛（浏览器/H5/HTTP）+ **智行、去哪儿、飞猪、同程、携程 App**（Android App 自动化，见 `crawlers/app_*.py`）。
 
 ### 1.1 不可违反的产品边界
 
-1. **不绕过验证码/滑块/风控**。遇到验证走「人工接管」（`docs/CAPTCHA_SOLUTION.md`），不做自动破解。
-2. **合成数据必须诚实标注**。演示站/在线站都是合成数据，绝不标成"正常"；`—` 只表示"没有样本"。
-3. **`empty` 必须有站点的明确无票证据**。拿不到/没解析出/门拒 → 记 `error` 或 `soft_reject`，不得记成"无票"。
-4. **只认当轮实时数据**。不满足筛选的班次全链路豁免（不进推送/比价/达标判定）。
+1. **合成数据必须诚实标注**。演示站/在线站都是合成数据，绝不标成"正常"；`—` 只表示"没有样本"。
+2. **`empty` 必须有站点的明确无票证据**。拿不到/没解析出/门拒 → 记 `error` 或 `soft_reject`，不得记成"无票"。
+3. **只认当轮实时数据**。不满足筛选的班次全链路豁免（不进推送/比价/达标判定）。
 
 ### 1.2 技术骨架
 
 - `main.py` —— 调度主循环
 - `webui.py` —— **单文件内嵌 SPA**（约 4.3MB，含全部 HTML/CSS/JS），同时是本地 HTTP 服务
-- `crawlers/` —— 7 个渠道采集器
+- `crawlers/` —— 10 个渠道采集器（5 浏览器 + 5 App）
 - `core/` —— 节流/熔断、健康、存储、归一等内核
-- `docs/` —— 58 份文档 + 门禁脚本 + 静态站
+- `docs/` —— 61 份文档 + 门禁脚本 + 静态站
 
 ---
 
@@ -129,6 +129,10 @@ print({k:v[:12] for k,v in snap.items()})
 
 ## 3. 当前真实差距（交接必读）
 
+> **2026-11-03 更新**：本节数字写于 2026-10-31，已被 v1.5.307 发布轮关闭；
+> 当前状态见 §0（发布树 `0d4b058` 同源、工作树 6108/20/0、`release_align_check --local` 25/25）。
+> 以下保留为当时的差距记录，**不要当现状**。
+
 ### 3.1 三个数字不匹配
 
 | 项 | 实际 | README/Release 写的 | 差距 |
@@ -171,7 +175,8 @@ git rev-list --left-right --count origin/main...HEAD  →  1  31
 - `docs/HANDOFF_GUIDE.md`（本文件）
 - `docs/HANDOFF_CAPABILITY_MATRIX.md`
 - `docs/UI_UNIFICATION_PLAYBOOK.md`
-- `docs/release-notes-v1.5.307.md` ← **发版必需**
+- `docs/RELEASE_BODY.md` ← **发版必需（canonical 正文源；`tests/test_release_body_source.py` 守门禁）**
+- `docs/release-notes-v1.5.307.md` ← 历史变更记录（不再直接作为 Release 正文）
 - `docs/screenshots/console-dims.png`
 
 17 个新测试（r832–r902 系列）：`test_r832_trigger_not_flanked.py` … `test_r902_no_hardcoded_channel_count.py`
@@ -458,7 +463,7 @@ curl -s -X PATCH -u "$CRED" \
 1. 规范产品介绍（三行引用块，**不得改写**）
 2. `**当前版本：v1.5.XXX · YYYY-MM-DD**（初版首发 2026-10-23）`
 3. `源码提交 \`<short-sha>\` · 跟踪测试 N 项 · UI 门禁 N/N 通过`
-4. 本版正文（来自该版本的 release-notes 文件）
+4. 本版正文（canonical 源 `docs/RELEASE_BODY.md`，替换 `{{VERSION}}`/`{{SOURCE_SHA}}`/`{{DATE}}`/`{{TEST_COUNTS}}`/`{{UI_COUNT}}`/`{{ASSET_TABLE}}`/`{{RELEASE_NOTES}}` 占位符；`tests/test_release_body_source.py` 守 10 渠道/范围/多程/占位符，`docs/release-notes-v1.5.307.md` 只是历史稿件，不再直接作为正文）
 5. **不得含内部轮次术语**（`r123` 之类）
 
 ### 5.3 发布后必验
@@ -663,7 +668,7 @@ git stash push -u -m "rXXX-in-flight-parallel-session" -- webui.py
 | 交接文档（**gitignore，不入库**） | `HANDOFF.md` |
 | 限流/熔断运维手册 | `docs/RATE_LIMIT_PLAYBOOK.md` |
 | 国际通路设计 | `docs/INTL_DESIGN.md` |
-| 验证码接管方案 | `docs/CAPTCHA_SOLUTION.md` |
+| 挑战识别与处置接缝 | `crawlers/challenge.py` |
 | App 渠道手册 | `docs/APP_CHANNELS.md` |
 | 发版构建 CI | `.github/workflows/release-build.yml` |
 
@@ -730,7 +735,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/ -q
 15. 结论性文档缺时效边界：`INTL_CALIBRATION.md` 原是无标题裸台账
 16. v295 batch1 52 个 / batch2 32 个 `- [ ]` 从未勾选但产物全在 → **checkbox 未勾 ≠ 未完成**
 17. `CHANNEL_SESSION.md` 漏 3 个前端派生状态（`read_error`/`loading`/`demo`）
-18. `CAPTCHA_SOLUTION.md` 写了不存在的 `/api/challenge/tickets`
+18. 方案文档写了不存在的 `/api/challenge/tickets`（该文档已删除，教训保留）
 19. 守卫范围被写过头（PLAYBOOK 说「代码里不得出现 X」，实际只覆盖 1100 字符窗口）
 20. 设计稿接口提案整组改名（5 个端点全不存在）
 21. 设计稿表结构提案未落地（`special_deals` 无 `user`/`channel` 列）

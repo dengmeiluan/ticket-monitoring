@@ -81,17 +81,16 @@ def test_parse_calendar_transfer_signal():
 
 # ---- R40b ret_date 穿链钉（98081b0 半链 NameError 生产实锤）----
 
-def test_intl_ret_date_threaded_to_inner(monkeypatch):
-    """ret_date 必须穿 _fetch_intl→_fetch_intl_inner：R15 往返一期
-    穿链只落一半（inner 函数体用 ret_date 但签名缺参）→ 生产每轮
-    NameError（22:00:37 实锤，98081b0 收编链）。"""
+def test_intl_ret_date_dispatches_to_rt(monkeypatch):
+    """国际往返必须走 _fetch_intl_rt（book1 RT 页/ts/list），
+    不再穿到单程日历 inner；匿名/未登录由 RT 通路记 login。"""
     got = {}
 
-    def _fake_inner(self, from_city, to_city, dates, fc, tc, ret_date=""):
-        got["ret_date"] = ret_date
+    def _fake_rt(self, from_city, to_city, dates, ret_date):
+        got["rt"] = (from_city, to_city, dates, ret_date)
         return []
 
-    monkeypatch.setattr(TongchengCrawler, "_fetch_intl_inner", _fake_inner)
+    monkeypatch.setattr(TongchengCrawler, "_fetch_intl_rt", _fake_rt)
     assert _TC._fetch_intl("SHA", "NRT", ["2026-11-16"],
                            ret_date="2026-11-20") == []
-    assert got["ret_date"] == "2026-11-20"
+    assert got["rt"] == ("SHA", "NRT", ["2026-11-16"], "2026-11-20")

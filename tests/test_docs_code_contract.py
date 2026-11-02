@@ -281,7 +281,7 @@ def test_spec_and_handoff_called_functions_exist():
     """SPEC / HANDOFF 里写成 `foo()` 的函数名必须在源码里真有定义。
 
     与 `test_doc_called_identifiers_exist` 互补：那条查 README/CHANNEL_SESSION/
-    INTL_DESIGN/CAPTCHA_SOLUTION，这条查规范与交割文档——它们最常被当作
+    INTL_DESIGN/RATE_LIMIT_PLAYBOOK，这条查规范与交割文档——它们最常被当作
     "实现真值"引用，点错名会让人以为功能不存在。
     第三方 API 走白名单；扫描范围含 tests/（门禁自身的名字也在文档里出现）。
     """
@@ -353,7 +353,7 @@ def test_doc_called_identifiers_exist():
     targets = [ROOT / "HANDOFF.md", ROOT / "README.md",
                ROOT / "docs" / "CHANNEL_SESSION.md",
                ROOT / "docs" / "INTL_DESIGN.md",
-               ROOT / "docs" / "CAPTCHA_SOLUTION.md"]
+               ROOT / "docs" / "RATE_LIMIT_PLAYBOOK.md"]
     offenders = []
     examined = 0
     for p in targets:
@@ -370,7 +370,7 @@ def test_doc_called_identifiers_exist():
                 if any(k in line for k in ("建议", "提案", "未实现", "未创建", "计划")):
                     continue
                 offenders.append("%s:%d %s()" % (p.name, i, name))
-    # 下限：五份文档里确实有 `name()` 写法（实测 >0，全部来自 CAPTCHA_SOLUTION）。
+    # 下限：五份目标文档里确实有 `name()` 写法（实测 >0，PLAYBOOK 占 28 处）。
     # 0 命中说明反引号风格或正则变了，门禁会静默失效。
     assert examined, "五份目标文档里没有 `name()` 写法，本门禁失去检查对象"
     assert not offenders, "文档调用了不存在的函数：\n" + "\n".join(sorted(set(offenders)))
@@ -404,7 +404,7 @@ def test_spec_ui_filter_keys_exist():
 def test_docs_with_many_line_refs_declare_staleness():
     """行号引用超过阈值的文档，必须在正文声明「行号是当时的快照」。
 
-    实测：CAPTCHA_SOLUTION 有 19 处 `file.py:NNN-NNN`，抽查
+    实测：某方案文档有 19 处 `file.py:NNN-NNN`，抽查
     `qunar.py:419-443`（现为 `fetch()` 定义）、`tuniu.py:492-493`（普通字段赋值）、
     `ctrip.py:733-751`（`lay_min = 0`）——全部已不是原文描述的逻辑。
     这类文档不该逐条改行号（改完下次又漂），而应显式告知读者改用符号检索。
@@ -417,7 +417,7 @@ def test_docs_with_many_line_refs_declare_staleness():
             continue
         text = p.read_text(encoding="utf-8", errors="replace")
         n = len(re.findall(r"(?:core|crawlers|tests|docs)/[\w./-]+\.py:\d+", text))
-        if n < 8:
+        if n < 5:
             continue
         examined += 1
         has_decl = ("行号" in text and
@@ -884,9 +884,10 @@ def test_playbook_defaults_block_matches_code():
 def test_breaker_backoff_ladder_matches_code():
     """文档写的退避阶梯必须与 `ChannelBreaker` 的 base/cap 实参推导一致。
 
-    实测踩过：CAPTCHA_SOLUTION 写「指数退避（15/60/180 分钟）」，
-    而代码是 `base_s=300`、`cap_s=3600`、`min(cap, base*2^(n-1))`
-    → 实际阶梯是 5/10/20/40/60 分钟。照文档排障会等错时长。
+    实测踩过：退避阶梯的文档描述与代码推导值分叉过（曾写「指数退避
+    （15/60/180 分钟）」，而代码是 `base_s=300`、`cap_s=3600`、
+    `min(cap, base*2^(n-1))` → 实际阶梯是 5/10/20/40/60 分钟）。
+    照文档排障会等错时长。
     """
     pace = (ROOT / "core" / "pacing.py").read_text(encoding="utf-8", errors="replace")
     m = re.search(r"def __init__\(self,\s*base_s=(\d+),\s*cap_s=(\d+)", pace)
@@ -900,9 +901,9 @@ def test_breaker_backoff_ladder_matches_code():
             break
         cur = min(cap, cur * 2)
     expect = "/".join(str(x) for x in ladder)
-    doc = (ROOT / "docs" / "CAPTCHA_SOLUTION.md")
+    doc = (ROOT / "docs" / "RATE_LIMIT_PLAYBOOK.md")
     if not doc.exists():
-        pytest.skip("CAPTCHA_SOLUTION 不存在")
+        pytest.skip("RATE_LIMIT_PLAYBOOK 不存在")
     text = doc.read_text(encoding="utf-8", errors="replace")
     if "指数退避" not in text:
         pytest.skip("文档未描述退避")
@@ -974,7 +975,7 @@ def test_playbook_claimed_improvements_hold():
         "要么功能退化，要么文档需更新" % (last_date, declared))
 
 def test_playbook_section9_keys_and_landing_points_exist():
-    """PLAYBOOK §9 的实现表：列的配置键必须在 config.example.yaml，落点必须能找到。
+    """PLAYBOOK §8 的实现表：列的配置键必须在 config.example.yaml，落点必须能找到。
 
     防的是：节流功能重构后键改名/删键/移模块，而这张"已落地实现"表仍指着旧名字，
     读者照着配却不生效。
@@ -986,9 +987,9 @@ def test_playbook_section9_keys_and_landing_points_exist():
     doc = playbook_path.read_text(encoding="utf-8", errors="replace")
     cfg = cfg_path.read_text(encoding="utf-8", errors="replace")
 
-    start = doc.find("## 9. 已落地实现")
-    assert start > 0, "PLAYBOOK 缺少 §9 已落地实现"
-    end = doc.find("\n## 10.", start)
+    start = doc.find("## 8. 已落地实现")
+    assert start > 0, "PLAYBOOK 缺少 §8 已落地实现"
+    end = doc.find("\n## 9.", start)
     section = doc[start:end if end > 0 else len(doc)]
 
     # 表内用反引号写的键；含花括号枚举的展开后逐个验证叶子名
@@ -1695,7 +1696,7 @@ def test_fliggy_tax_pad_claim_matches_value():
                 "%s 未写明税垫值 %d" % (name, pad))
 
 def test_playbook_named_identifiers_exist():
-    """PLAYBOOK §10 之后的各轮小节点名了大量函数/常量；这些名字必须能在源码里找到。
+    """PLAYBOOK §9 之后的各轮小节点名了大量函数/常量；这些名字必须能在源码里找到。
 
     实测踩过：`_fc_key` 全仓不存在（真实是 `flight_key` / `_srx_flight_key`），
     读者按文档去找会扑空。本测试只覆盖**强特征**标识符（下划线开头或全大写常量），
@@ -1706,8 +1707,8 @@ def test_playbook_named_identifiers_exist():
         pytest.skip("PLAYBOOK 不存在")
     doc = playbook_path.read_text(encoding="utf-8", errors="replace")
 
-    start = doc.find("## 10. 第二轮")
-    assert start > 0, "PLAYBOOK 缺少 §10"
+    start = doc.find("## 9. 第二轮")
+    assert start > 0, "PLAYBOOK 缺少 §9"
     section = doc[start:]
 
     # 只取强特征：_snake_case 或 ALL_CAPS（≥4 字符）
@@ -1924,7 +1925,7 @@ def test_intl_design_core_contract_matches_code():
         except Exception:
             tuniu_intl = 0
     if tuniu_intl > 0:
-        for name in ("INTL_DESIGN.md", "CAPTCHA_SOLUTION.md"):
+        for name in ("INTL_DESIGN.md",):
             p = ROOT / "docs" / name
             if not p.exists():
                 continue
@@ -2050,14 +2051,18 @@ def test_asset_ledger_counts_match_code():
 
     # 渠道品牌图标
     brands = set(re.findall(r'"([a-z_]+)"\s*:\s*"data:image', _block("const SRX_BRAND_IMG={")))
-    # App 渠道（app_zhixing / app_qunar）也要有官方图标：只有 5 家浏览器
-    # 渠道时，配置页/检索行上的「智行 App」「去哪儿 App」会静默丢图标
-    # （srxPlatIcon 找不到就返回空串）。
+    # App 渠道（app_zhixing / app_qunar / app_ctrip / app_tongcheng）也要有
+    # 官方图标：缺图时配置页/检索行会静默丢图标（srxPlatIcon 返回空串）。
+    # 同品牌的 App 渠道走 SRX_BRAND_ALIAS 复用浏览器图标，按别名解析后
+    # 再判覆盖，避免为了过门禁复制两份 base64。
+    aliases = dict(re.findall(
+        r"([a-z_]+)\s*:\s*'([a-z_]+)'", _block("const SRX_BRAND_ALIAS={")))
     from core.channels import APP_CHANNELS, BROWSER_CHANNELS
     need = set(BROWSER_CHANNELS) | set(APP_CHANNELS)
-    missing = need - brands
+    missing = {p for p in need
+               if p not in brands and aliases.get(p) not in brands}
     assert not missing, "渠道缺官方图标：%s" % sorted(missing)
-    assert "%d/%d）" % (len(brands), len(need)) in doc,         "ASSET_LEDGER 未写「渠道图标（%d/%d）」" % (len(brands), len(need))
+    assert "%d/%d）" % (len(need) - len(missing), len(need)) in doc,         "ASSET_LEDGER 未写「渠道图标（%d/%d）」" % (len(need) - len(missing), len(need))
 
     # 航司图标
     airlines = set(re.findall(r'"([A-Z0-9]{2})"\s*:\s*"data:image', _block("SRX_AIR_IMG={")))
@@ -2090,25 +2095,6 @@ def test_asset_ledger_counts_match_code():
             assert int(m.group(1)) == len(airlines), (
                 "%s 写 %s 家航司，代码 SRX_AIR_IMG 有 %d 个"
                 % (name, m.group(1), len(airlines)))
-
-def test_captcha_doc_endpoints_exist():
-    """CAPTCHA_SOLUTION 里写的 /api/... 端点必须在 webui.py 里真实存在。
-
-    实测踩过：文档写 `/api/challenge/tickets` 与 `_State.challenge_tickets`，
-    两者全不存在（真实是 `_probe_challenge_ticket()` 挂在探针任务上）——
-    按文档去调接口会 404，去翻字段会扑空。
-    """
-    doc_path = ROOT / "docs" / "CAPTCHA_SOLUTION.md"
-    if not doc_path.exists():
-        pytest.skip("CAPTCHA 文档不存在")
-    doc = doc_path.read_text(encoding="utf-8", errors="replace")
-    # 先剥掉外链（如 playwright.dev/.../api/class-browsercontext），只留本项目路由
-    stripped = re.sub(r"<https?://[^>]+>", "", doc)
-    stripped = re.sub(r"https?://\S+", "", stripped)
-    routes = sorted(set(re.findall(r"(?<![\w./])(/api/[a-z0-9/_-]+)", stripped)))
-    assert routes, "文档未提到任何 API 路由"
-    missing = [r for r in routes if r not in WEBUI]
-    assert not missing, "文档提到但 webui.py 中不存在的路由: %s" % missing
 
 def test_release_process_claims_match_checker():
     """RELEASE_PROCESS 说「跑 release_align_check 直到 PASS」，那检查器必须还在查关键项。
@@ -2431,7 +2417,6 @@ def test_historical_test_counts_are_marked():
     targets = [
         ROOT / "docs" / "ACCEPTANCE_MATRIX.md",
         ROOT / "docs" / "RATE_LIMIT_PLAYBOOK.md",
-        ROOT / "docs" / "CAPTCHA_SOLUTION.md",
     ]
     MARKERS = ("历史", "当轮", "快照", "当时的")
     bad = []
@@ -2584,7 +2569,7 @@ def test_doc_code_path_refs_exist_or_marked():
     """文档以反引号点名的 `docs/ core/ crawlers/ tests/` 路径必须存在，或就近标注未实现/不入库。
 
     实测踩过三类：
-    1. CAPTCHA_SOLUTION 的「代码落点」表点名 `core/challenges.py`、`tests/test_challenge_classifier.py`
+    1. 某方案文档的「代码落点」表点名 `core/challenges.py`、`tests/test_challenge_classifier.py`
        ——全仓不存在，是按表 import 会失败的地方；
     2. 「存证 `docs/evidence/xxx.json`」——该目录从未入库，文件实际在 gitignore 的 `_scratch/` 下；
     3. 设计稿引用 `docs/evidence/...` 但它从未被创建。
@@ -3138,7 +3123,7 @@ def test_design_doc_channel_coverage_claims():
 def test_doc_symbol_anchors_exist():
     """文档里写成 `path.py::symbol()` 的锚点，符号必须真的存在。
 
-    实测踩过：CAPTCHA_SOLUTION 的能力表用一串裸行号做证据
+    实测踩过：某方案文档的能力表用一串裸行号做证据
     （`crawlers/base.py:419-464`），webui.py 被几轮大改后全部失配；
     我按语义改成符号锚点时又凭印象写了 `_record_path()`/`_persistent_ctx()`，
     两者在代码里并不存在——符号锚点比行号稳，但必须被验证。

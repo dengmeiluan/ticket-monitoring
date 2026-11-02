@@ -22,8 +22,11 @@ pytest.importorskip("playwright",
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = None
-APPS = ("智行 App", "去哪儿 App")
-BROWSERS = ("携程", "去哪儿", "飞猪", "同程", "途牛")
+from core.channels import APP_CHANNELS, BROWSER_CHANNELS, plat_cn
+
+APPS = tuple(plat_cn(p) for p in APP_CHANNELS)
+BROWSERS = tuple(plat_cn(p) for p in BROWSER_CHANNELS)
+ALL_CN = BROWSERS + APPS
 
 
 def _free_port():
@@ -113,7 +116,7 @@ def test_config_channel_chips_fit_phone_width(mobile_page):
         outside:chips.filter(c=>{const r=c.getBoundingClientRect();
           return r.left<-1||r.right>window.innerWidth+1}).length};
     })()""")
-    assert out["n"] >= 7, out
+    assert out["n"] >= len(ALL_CN), out
     for name in BROWSERS + APPS:
         assert any(t.startswith(name) for t in out["names"]), (
             "390 档配置页缺「%s」：%s" % (name, out["names"]))
@@ -133,15 +136,14 @@ def test_radar_channel_toggles_fit_phone_width(mobile_page):
         outside:labels.filter(l=>{const r=l.getBoundingClientRect();
           return r.left<-1||r.right>window.innerWidth+1}).length};
     })()""")
-    assert out["n"] >= 7, out
-    for p in ("ctrip", "qunar", "fliggy", "tongcheng", "tuniu",
-              "app_zhixing", "app_qunar"):
+    assert out["n"] >= len(ALL_CN), out
+    for p in BROWSER_CHANNELS + APP_CHANNELS:
         assert p in out["vals"], "390 档特价雷达缺渠道 %s：%s" % (p, out["vals"])
     assert out["clipped"] == 0, "390 档雷达渠道勾选被裁"
     assert out["outside"] == 0, "390 档雷达渠道勾选越出视口"
 
 
-def test_radar_entry_board_has_all_seven_at_phone_width(mobile_page):
+def test_radar_entry_board_has_all_registered_at_phone_width(mobile_page):
     mobile_page.evaluate("switchView('mon');showMonTab('specials')")
     mobile_page.wait_for_timeout(3000)
     try:
@@ -164,7 +166,7 @@ def test_radar_entry_board_has_all_seven_at_phone_width(mobile_page):
     if not out.get("exists"):
         pytest.skip("特价雷达入口板未渲染")
     assert out["w"] > 0, "入口板宽度 0，测量无效"
-    assert out["bands"] == 7, out["names"]
+    assert out["bands"] == len(ALL_CN), out["names"]
     for name in APPS:
         assert name in out["names"], "390 档雷达入口板缺「%s」：%s" % (name, out["names"])
     assert not out["over"], "390 档雷达入口板横向溢出"

@@ -203,17 +203,22 @@ def test_blanket_gate_does_not_flag_session_invalid():
 
 
 def test_ordinary_empty_still_retries():
-    """普通无名空仍按原逻辑退避一次（别把修复做过头）。"""
+    """普通无名空（认证在线）仍退避重试一次（别把修复做过头）。
+
+    无认证 Cookie 的空结果是另一条路：r817 起直接按需登录处理，
+    不再白打一次请求（见 test_r817_...::test_no_auth_cookie_prompts_login）。
+    """
     c = _c()
     QunarCrawler.login_suspect = False
     QunarCrawler._cooldown_until = 0.0
     c._MIN_GAP_S = 0
+    c._read_session_state = lambda: {
+        "cookies": [{"name": "_q", "value": "user", "expires": -1}]}
+    c._probe_session_alive = lambda: True
     calls = {"n": 0}
 
     def _inner(fc, tc, dates):
         calls["n"] += 1
-        if calls["n"] >= 2:
-            QunarCrawler.login_suspect = True   # 第二轮起走"跳过"分支
         return []
 
     c._fetch_inner = _inner

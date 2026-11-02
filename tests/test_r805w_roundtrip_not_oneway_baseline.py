@@ -95,8 +95,9 @@ def test_round_trip_does_not_inflate_daily_calendar():
     以为单程涨了 2.4 倍。
     """
     import datetime
-    ts = (datetime.datetime.now()
-          - datetime.timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+    # 不能用 now()-5min：刚过零点时它会落到前一天，而日桶按今天过滤，
+    # 全量门禁在 00:00–00:05 之间跑就会全空。
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     st = _fresh()
     st.save_many([_row(500.0, "OW", ts)])
     st.refresh_daily(FC, TC, D)
@@ -137,8 +138,9 @@ def test_round_trip_only_still_shows_on_calendar():
     口径是**互斥而非排除**：有单程就用单程，一条单程都没有时用往返。
     """
     import datetime
-    ts = (datetime.datetime.now()
-          - datetime.timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+    # 不能用 now()-5min：刚过零点时它会落到前一天，而日桶按今天过滤，
+    # 全量门禁在 00:00–00:05 之间跑就会全空。
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     st = _fresh()
     st.save_many([_row(1200.0, "RT", ts)])
     st.refresh_daily(FC, TC, D)
@@ -154,8 +156,9 @@ def test_round_trip_only_still_shows_on_calendar():
 def test_mixed_still_prefers_oneway_not_average():
     """混合时必须**只用单程**，不能平均、也不能选较新的往返。"""
     import datetime
-    ts = (datetime.datetime.now()
-          - datetime.timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+    # 不能用 now()-5min：刚过零点时它会落到前一天，而日桶按今天过滤，
+    # 全量门禁在 00:00–00:05 之间跑就会全空。
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     st = _fresh()
     # 往返先入库、单程后入库（MAX(id) 会指向单程；这里主要防"平均"）
     st.save_many([_row(1200.0, "RT", ts), _row(500.0, "OW", ts)])
@@ -175,8 +178,9 @@ def test_round_trip_does_not_inflate_flight_daily():
     航班历史面板要给的是「这班单程卖多少钱」。
     """
     import datetime
-    ts = (datetime.datetime.now()
-          - datetime.timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+    # 不能用 now()-5min：刚过零点时它会落到前一天，而日桶按今天过滤，
+    # 全量门禁在 00:00–00:05 之间跑就会全空。
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     st = _fresh()
     st.save_many([_row(500.0, "OW", ts)])
     st.refresh_flight_daily(FC, TC, D)

@@ -93,7 +93,8 @@ def test_probe_only_visible_window_and_dom_selector():
     ts = open(os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "crawlers", "tuniu.py"), encoding="utf-8").read()
-    assert 'if missing and getattr(self, "probe_mode", False):' in ts
+    # 2026-11-02：PC 只查近 30 天；可见窗口重试只针对 PC 实际查过的日期。
+    assert 'if _pc_missing and getattr(self, "probe_mode", False):' in ts
     # 已保存会话读取不得引用未定义 headless（NameError 曾使 httpx
     # 匿名请求丢登录 cookie，接口恒 710114）
     _cookie_seg = ts.split("def _saved_session_cookies", 1)[1].split(

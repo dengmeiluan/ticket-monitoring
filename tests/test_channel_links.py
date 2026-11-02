@@ -37,18 +37,45 @@ def test_entry_mode_has_all_twenty_cells():
     assert h5_intl["note"] == "H5 机票搜索（与国内同页，页内切国际）", h5_intl
     assert h5_intl["login_required"] is True, h5_intl
     assert "tiflight/book1" not in h5_intl["url"], h5_intl
-    # 飞猪 H5 没有国内入口，进入即淘宝登录——文案必须这么说
-    assert "淘宝登录" in c[("fliggy", "h5", "domestic")]["note"]
-    assert "淘宝登录" in c[("fliggy", "h5", "intl")]["note"]
+    # 登录要求由渠道元数据承载；H5 入口文案与其余四家同列同构。
+    assert c[("fliggy", "h5", "domestic")]["note"] == "H5 机票搜索"
+    assert c[("fliggy", "h5", "intl")]["note"] == \
+        "H5 机票搜索（与国内同页，页内切国际）"
     assert "flight.tuniu.com/intel" in c[("tuniu", "pc", "intl")]["url"]
     # 固定入口优先落到可输入航线/日期的搜索页，而不是首页。
     assert "/html5/flight/" in c[("ctrip", "h5", "domestic")]["url"]
     assert "/jipiao/" in c[("fliggy", "pc", "domestic")]["url"]
-    assert "/jipiao/" in c[("fliggy", "pc", "intl")]["url"]
+    # 飞猪 PC 国际有独立国际搜索页，不再复用国内 /jipiao/。
+    assert "sijipiao.fliggy.com/ie/flight_search.htm" in \
+        c[("fliggy", "pc", "intl")]["url"]
     assert "/flights/home" in c[("tongcheng", "pc", "domestic")]["url"]
     assert "/ft/touch/index" in c[("tongcheng", "h5", "domestic")]["url"]
-    assert "intlFlight/flight/" in c[("tuniu", "h5", "intl")]["url"]
+    assert "m.tuniu.com/flight/" in c[("tuniu", "h5", "intl")]["url"]
+    # 与同程同句式：半格宽度不变，避免长文案折行破坏四列对齐。
+    assert c[("tuniu", "h5", "intl")]["note"] == \
+        "H5 机票搜索（与国内同页，页内切国际）"
     assert "/h5/flight/" in c[("qunar", "h5", "intl")]["url"]
+
+
+def test_entry_notes_are_uniform_per_column_and_behavior():
+    """入口文案统一：同列同一句，不再夹带官网/登录等变体。
+
+    PC 国际五家统一「PC 机票搜索（国际）」；H5 国际五家统一
+    「H5 机票搜索（与国内同页，页内切国际）」。去哪儿 PC 的 URL 仍是
+    官方站内入口，页内切换细节不写进列文案，避免同列出现第三种写法。
+    """
+    from core.channel_links import channel_links
+    c = _cells(channel_links())
+    plats = ("ctrip", "qunar", "fliggy", "tongcheng", "tuniu")
+    for p in plats:
+        assert c[(p, "pc", "domestic")]["note"] == "PC 机票搜索", p
+        assert c[(p, "h5", "domestic")]["note"] == "H5 机票搜索", p
+        assert c[(p, "pc", "intl")]["note"] == "PC 机票搜索（国际）", p
+        assert c[(p, "h5", "intl")]["note"] == \
+            "H5 机票搜索（与国内同页，页内切国际）", p
+    for x in c.values():
+        assert "淘宝登录" not in x["note"], x
+        assert "官网" not in x["note"], x
 
 
 def test_domestic_route_links_pc_h5_for_each_channel():
@@ -86,7 +113,11 @@ def test_intl_route_links_pc_h5_for_each_channel():
     assert c[("tongcheng", "h5", "intl")]["note"] == \
         "H5 机票搜索（与国内同页，页内切国际）"
     assert "tiflight/book1" not in c[("tongcheng", "h5", "intl")]["url"]
-    assert "m2015/intlFlight" in c[("tuniu", "h5", "intl")]["url"]
+    # 途牛 H5 国际与国内同页（2026-11-02 用户实测）：城市选择里切
+    # 「出境·中国港澳台」/「国际多程」；/list 是采集数据路径，不能当用户深链。
+    assert c[("tuniu", "h5", "intl")]["url"] == "https://m.tuniu.com/flight/"
+    assert "/list" not in c[("tuniu", "h5", "intl")]["url"]
+    assert "intlFlight" not in c[("tuniu", "h5", "intl")]["url"]
     assert "其他范围" in c[("ctrip", "pc", "domestic")]["note"]
 
 

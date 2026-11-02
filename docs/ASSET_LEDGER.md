@@ -2,7 +2,9 @@
 
 本清单记录随项目内嵌、运行时离线可用的品牌资源。所有资源都以 base64 内嵌在 `webui.py`，运行时不请求第三方图片；首用时转 Blob URL 复用，加载失败回退到字符牌（`srxIconErr`）。
 
-## 1. 渠道图标（7/7）
+## 1. 渠道图标（10/10）
+
+5 家浏览器渠道 + 5 家 App 渠道（10/10）全覆盖；App 与同品牌浏览器渠道共用一张官方图（`SRX_BRAND_ALIAS`），不重复内嵌 base64。
 
 | 本地标识 | 渠道 | 规格 | 来源与用途 | 核验日期 |
 | --- | --- | --- | --- | --- |
@@ -13,6 +15,9 @@
 | `SRX_BRAND_IMG.tuniu` | 途牛 | 256×256 PNG | 官方 App/站点品牌标记，用于渠道识别 | 2026-10-24 |
 | `SRX_BRAND_IMG.app_zhixing` | 智行 App | 256×256 PNG | 智行官方 App 图标（蓝底「智行」标识） | 2026-10-31 |
 | `SRX_BRAND_IMG.app_qunar` | 去哪儿 App | 256×256 PNG | 去哪儿官方 App 图标（青色骆驼，与浏览器 `qunar` 同品牌标记） | 2026-10-31 |
+| `SRX_BRAND_IMG.app_fliggy`（别名 → `fliggy`） | 飞猪 App | 256×256 PNG | 与浏览器 `fliggy` 同一官方品牌标记，经 `SRX_BRAND_ALIAS` 复用 | 2026-11-02 |
+| `SRX_BRAND_IMG.app_ctrip`（别名 → `ctrip`） | 携程 App | 256×256 PNG | 与浏览器 `ctrip` 同一官方品牌标记，经 `SRX_BRAND_ALIAS` 复用 | 2026-11-02 |
+| `SRX_BRAND_IMG.app_tongcheng`（别名 → `tongcheng`） | 同程 App | 256×256 PNG | 与浏览器 `tongcheng` 同一官方品牌标记，经 `SRX_BRAND_ALIAS` 复用 | 2026-11-02 |
 
 ## 2. 航司图标（87 个 IATA 码）
 

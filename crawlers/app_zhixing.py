@@ -97,12 +97,14 @@ class AppZhixingCrawler(AppCrawler):
         # 「登录一次永久复用」+ 清权限框 + 清 ANR：统一前置（与其它 App
         # 渠道同源）。快照恢复会 force-stop 再解包，必须在任何 UI 操作之前，
         # 否则会把正在操作的页面顶掉；恢复后最容易撞上「无响应」死锁。
-        self.prepare_device(dev)
-
+        # r821：prepare_device 会 app_start/切前台，必须与采集同锁——放在
+        # 锁外会与其它 App 渠道并发抢前台（2026-11-02 21:23 线上实测：
+        # app_qunar 刚启动 com.Qunar，前台又被锁外的智行 prepare 抢走）。
         # 异常逃逸不在这里写：调用方统一走 `AppBaseCrawler.safe_fetch()`，
         # 它已 try/except 并记 `app-error`（含本段抛出的一切）。此处再包一层
         # 只是重复防御，且会抢在 safe_fetch 的去重判断之前多记一条。
         with rt.device_lock():
+            self.prepare_device(dev)
             if ret_date:
                 return self._fetch_round_trip_locked(
                     dev, from_city, to_city, dates, ret_date)
@@ -138,7 +140,9 @@ class AppZhixingCrawler(AppCrawler):
         ok, detail = self._set_round_trip_form(dev, from_city, to_city,
                                                dep_date, ret_date)
         if not ok:
-            self.path_note("app-route", "blocked", detail=detail,
+            # 导航失败不是「已确认验证码」：blocked 会被 pacing 归 captcha
+            # 并熔断 300s；真验证码由 _clear_blockers 识别后另记。
+            self.path_note("app-route", "timeout", detail=detail,
                            ms=int((_t.time() - started) * 1000))
             self.logger.warning("[%s] 往返导航失败：%s", self.name, detail)
             return []
@@ -242,7 +246,7 @@ class AppZhixingCrawler(AppCrawler):
         started = time.time()
         # 拦路物必须最先处理：广告弹层会盖住首页，后面所有点击都落在
         # 广告上（实测：不先关广告，设航线会点到弹层里的空白）。
-        # 验证码/人脸在这里直接返回，不做任何后续操作。
+        # 验证码/人脸在这里直接返回。
         warm = dev.dump()
         if warm:
             warm, block = self._clear_blockers(dev, warm)
@@ -265,7 +269,9 @@ class AppZhixingCrawler(AppCrawler):
         else:
             ok, detail = self._set_route(dev, from_city, to_city, dates)
             if not ok:
-                self.path_note("app-route", "blocked", detail=detail,
+                # 导航失败不是「已确认验证码」：blocked 会被 pacing 归
+                # captcha 并熔断 300s；真验证码由 _clear_blockers 另记。
+                self.path_note("app-route", "timeout", detail=detail,
                                ms=int((time.time() - started) * 1000))
                 self.logger.warning("[%s] 设置航线失败：%s", self.name, detail)
                 return []
@@ -307,9 +313,10 @@ class AppZhixingCrawler(AppCrawler):
             dev, from_city, to_city, dates)
         if blocked:
             # 已经按拦截入账：不回退日历价，否则用户看到「有价」而
-            # 实际是被人机验证挡住，问题被数据掩盖。
+            # 实际是被人机验证挡住，问题被数据掩盖。登录归因由
+            # _enter_detail_and_parse 按 block.kind 判定——广告/验证码/
+            # 人脸不是登录失效，不能在这里一律置 login_suspect。
             self._close_calendar(dev)
-            self.login_suspect = True
             return []
         if detail:
             self._park_at_home(dev)
@@ -531,6 +538,8 @@ class AppZhixingCrawler(AppCrawler):
                 self.logger.warning("[%s] 明细页被拦截（%s）：%s（%s）",
                                     self.name, target, block.kind,
                                     block.detail)
+                if block.kind == "login":
+                    self.login_suspect = True
                 return got, True
             out = self._to_prices(rows, from_city, to_city, target)
             if not out:

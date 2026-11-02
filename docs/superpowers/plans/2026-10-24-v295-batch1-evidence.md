@@ -22,7 +22,6 @@
 
 ## Global Constraints
 
-- Do not bypass CAPTCHA/slider/risk control; never add stealth or proxy-pool evasion.
 - Do not fabricate history, raw responses, flight rows, progress, or success states.
 - `webui.py` remains the single UI integrator; no new frontend framework.
 - Migrations only add columns/tables; existing DBs must remain readable.

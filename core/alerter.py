@@ -1099,7 +1099,9 @@ class Alerter:
     # 不能直接塞进上面的 PLATFORM_CN——那张表是「默认渠道全集」的来源
     # （`self.platforms = list(PLATFORM_CN)`），加进去会让没启用 App 渠道
     # 的用户每轮都被记「智行 App 当轮无数据」的缺勤告警。
-    PLATFORM_CN_EXTRA = {"app_zhixing": "智行 App", "app_qunar": "去哪儿 App"}
+    PLATFORM_CN_EXTRA = {"app_zhixing": "智行 App", "app_qunar": "去哪儿 App",
+                         "app_fliggy": "飞猪 App",
+                         "app_ctrip": "携程 App", "app_tongcheng": "同程 App"}
 
     @classmethod
     def plat_cn(cls, p: str) -> str:

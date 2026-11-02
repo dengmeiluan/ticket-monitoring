@@ -16,6 +16,7 @@
   2. 单程行**不能**带 RT 标记（防止标记泛化后失去区分力）；
   3. 声明 y 的渠道源码里必须真的写了这个标记。
 """
+import glob
 import io
 import json
 import os
@@ -33,8 +34,13 @@ RT_MARK_ALT = '"tripType": "RT"'
 
 
 def _src(plat):
-    return io.open(os.path.join(ROOT, "crawlers", plat + ".py"),
-                   encoding="utf-8").read()
+    """渠道主文件 + 同名伴随模块（携程把往返解析拆在 *_roundtrip.py）。
+
+    只看主文件会把「拆到 parser 模块里的 RT 标记」误报成没写；标记的
+    真正产出由各渠道自己的夹具用例保证（如 app_ctrip_roundtrip 测试）。
+    """
+    files = sorted(glob.glob(os.path.join(ROOT, "crawlers", plat + "*.py")))
+    return "".join(io.open(f, encoding="utf-8").read() for f in files)
 
 
 @pytest.mark.parametrize("plat", list(APP_CHANNELS) + list(BROWSER_CHANNELS))

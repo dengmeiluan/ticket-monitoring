@@ -44,7 +44,10 @@ M = r"""() => {
 #   只把 overflow/text-overflow 退回 visible/clip。
 # 不能连 white-space 一起注回 normal——那等于真的允许换行，lost 会归零，
 # 判据自然抓不到（第一版负控就是这么失效的）。
+# 10 渠道后来源卡在 1024 档宽 220px，副标题已完整放下（lost=0）；
+# 负控额外压窄卡片，确保注回 clip 后确有溢出可抓。
 REVERT = ("@media(min-width:761px) and (max-width:1100px){"
+          "#searchview .srx-brief .srx-src{flex:0 0 80px!important}"
           "#searchview .srx-src-sub{white-space:nowrap!important;"
           "overflow:visible!important;text-overflow:clip!important}}")
 

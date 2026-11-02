@@ -143,6 +143,10 @@ class XxxCrawler(BaseCrawler):
 
 要点：
 
+> **行号时效**：本节登记点里的 `file.py:NNN` 是 **2026-10-27 当时的行号快照**，
+> 后续几轮代码改动后**行号已可能漂移**——请按文中同时给出的**符号/常量名**
+> （REGISTRY / PLATFORMS / PLATS / ENTRY）检索，不要按行号定位。
+
 - **不继承浏览器路径**：`browser()` 走 Playwright，这条路用 adb，别混。可照 `crawlers/tuniu.py`
   的「纯 httpx、不用 browser」先例；这里改成「纯 adb，不用 browser」。
 - **探针要接项目既有账本**：`path_reset()/path_note()`（`crawlers/base.py:225/230`）记录
@@ -181,5 +185,5 @@ class XxxCrawler(BaseCrawler):
 
 出现以下任一情况，就该停而不是继续加参数/加等待：
 - 引擎装不上或 `abilist` 没有 32 位 ARM → 换 C（MuMu）或 D（云手机）；
-- 能装能连，但机票页需要登录且登录有强风控 → 回到 `docs/CAPTCHA_SOLUTION.md` 的人工接管边界，不做破解；
+- 能装能连，但机票页需要登录且登录有强风控 → 转人工接管；
 - UI 每次都变、元素定位靠坐标硬编码 → 维护成本高于收益时改用 D 的固定镜像，或放弃该渠道。

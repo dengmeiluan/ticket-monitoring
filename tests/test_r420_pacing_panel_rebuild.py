@@ -465,9 +465,13 @@ def test_demo_health_exposes_path_dimension_without_fake_zero():
     src = (pathlib.Path(ROOT) / "webui.py").read_text(encoding="utf-8")
     i = src.index('elif self.path == "/api/health":')
     demo = src[i:i + 1400].split("\n                else:", 1)[0]
-    assert "_attach_demo_paths(out)" in demo, "演示未补分通路维度"
+    assert "_demo_health_payload()" in demo, "演示未补分通路维度"
+    helper = src[src.index("def _demo_health_payload("):]
+    helper = helper[:helper.index("\ndef ")]
+    assert "_attach_demo_paths(out)" in helper, "演示载荷没补分通路维度"
     # 只判有没有真的调用：注释里说明函数名不算走重路径
     assert "_health_decorate(" not in demo, "演示又走重路径"
+    assert "_health_decorate(" not in helper, "演示又走重路径"
 
     fn = src[src.index("def _attach_demo_paths("):]
     fn = fn[:fn.index("\ndef ")]

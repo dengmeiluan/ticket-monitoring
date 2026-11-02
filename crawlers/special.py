@@ -19,9 +19,18 @@ from typing import Optional
 import httpx
 from core import net as _net
 
+from .base import profile_headers
+
 _UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
        "AppleWebKit/537.36 (KHTML, like Gecko) "
        "Chrome/126.0.0.0 Safari/537.36")
+# 发现层没有 crawler 实例，用模块级固定档案（同 profile 稳定，不随机）；
+# 移动面单独一份 iPhone Safari 档案，避免与桌面 Chrome 的 client hints 混用。
+_FP_DESKTOP = {"ua": _UA, "locale": "zh-CN", "is_mobile": False}
+_FP_MOBILE = {"ua": ("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like "
+                     "Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) "
+                     "Version/17.0 Mobile/15E148 Safari/604.1"),
+              "locale": "zh-CN", "is_mobile": True}
 
 _TUNIU_URL = "https://flight-api.tuniu.com/query/queryCheapTickets"
 _CTRIP_URL = ("https://m.ctrip.com/restapi/soa2/15380/bjjson/"
@@ -65,9 +74,9 @@ def fetch_tuniu_calendar(from_code: str, to_code: str, departure_date: str,
     }
     try:
         with _net.new_client(
-                headers={"User-Agent": _UA,
-                         "Accept": "application/json, text/javascript, */*; q=0.01",
-                         "Referer": "https://m.tuniu.com/"},
+                headers=profile_headers(_FP_DESKTOP, {
+                    "Accept": "application/json, text/javascript, */*; q=0.01",
+                    "Referer": "https://m.tuniu.com/"}),
                 timeout=timeout, trust_env=False,
                 proxy=proxy or None) as c:
             r = c.get(_TUNIU_CAL_URL, params={
@@ -118,8 +127,8 @@ def fetch_tuniu_board(logger: logging.Logger, timeout: float = 15.0,
     即榜单城市——想换城市看榜换出口即可；空=直连）。"""
     try:
         with _net.new_client(
-                headers={"User-Agent": _UA,
-                         "Referer": "http://flight.tuniu.com/"},
+                headers=profile_headers(_FP_DESKTOP, {
+                    "Referer": "http://flight.tuniu.com/"}),
                 timeout=timeout,
                 trust_env=False,
                 proxy=proxy or None,
@@ -160,9 +169,9 @@ def fetch_ctrip_calendar(from_code: str, to_code: str, start_date: str,
     }
     try:
         with _net.new_client(
-                headers={"User-Agent": _UA,
-                         "Content-Type": "application/json",
-                         "Referer": "https://m.ctrip.com/"},
+                headers=profile_headers(_FP_DESKTOP, {
+                    "Content-Type": "application/json",
+                    "Referer": "https://m.ctrip.com/"}),
                 timeout=timeout,
                 trust_env=False,
                 proxy=proxy or None) as c:
@@ -210,9 +219,9 @@ def fetch_ctrip_board(from_code: str, from_name: str, start_date: str,
                              "ddate": None}]}
     try:
         with _net.new_client(
-                headers={"User-Agent": _UA,
-                         "Content-Type": "application/json",
-                         "Referer": "https://m.ctrip.com/"},
+                headers=profile_headers(_FP_DESKTOP, {
+                    "Content-Type": "application/json",
+                    "Referer": "https://m.ctrip.com/"}),
                 timeout=timeout, trust_env=False,
                 proxy=proxy or None) as c:
             r = c.post(_CTRIP_BD_URL, json=payload)
@@ -235,9 +244,9 @@ def fetch_fliggy_calendar(from_code: str, to_code: str, leave_date: str,
     tc = airport_city_code(to_code)
     try:
         with _net.new_client(
-                headers={"User-Agent": _UA,
-                         "Referer": "https://sijipiao.fliggy.com/ie/"
-                                    "flight_search_result.htm"},
+                headers=profile_headers(_FP_DESKTOP, {
+                    "Referer": "https://sijipiao.fliggy.com/ie/"
+                               "flight_search_result.htm"}),
                 timeout=timeout, trust_env=False,
                 proxy=proxy or None, follow_redirects=True) as c:
             r = c.get(_FLIGGY_CAL_URL, params={
@@ -279,11 +288,8 @@ def fetch_tongcheng_calendar(from_code: str, from_name: str, to_code: str,
     }
     try:
         with _net.new_client(
-                headers={"User-Agent": ("Mozilla/5.0 (iPhone; CPU iPhone OS "
-                                        "17_0 like Mac OS X) AppleWebKit/605.1.15"
-                                        " (KHTML, like Gecko) Version/17.0 "
-                                        "Mobile/15E148 Safari/604.1"),
-                         "Content-Type": "application/json"},
+                headers=profile_headers(_FP_MOBILE, {
+                    "Content-Type": "application/json"}),
                 timeout=timeout, trust_env=False,
                 proxy=proxy or None, follow_redirects=True) as c:
             r = c.post(_TC_CAL_URL, json=payload)
@@ -326,8 +332,8 @@ def fetch_fliggy_board(from_code: str, start_date: str, end_date: str,
     False，proxy 语义同 fetch_tuniu_board。"""
     try:
         with _net.new_client(
-                headers={"User-Agent": _UA,
-                         "Referer": "https://www.fliggy.com/jipiao/"},
+                headers=profile_headers(_FP_DESKTOP, {
+                    "Referer": "https://www.fliggy.com/jipiao/"}),
                 timeout=timeout, trust_env=False,
                 proxy=proxy or None) as c:
             r = c.get(_FLIGGY_BD_URL, params={

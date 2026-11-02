@@ -137,9 +137,18 @@ def test_dt11_csv_export_download(page):
     assert re.match(r"flights_\d{8}_\d{4}\.csv$", d.suggested_filename), \
         d.suggested_filename
     path = d.path()
+    import csv
     with open(path, encoding="utf-8-sig") as fh:
-        head = fh.readline().strip()
-    assert head.startswith('"价格"'), head[:40]
+        rows = list(csv.reader(fh))
+    head = rows[0][0].strip() if rows else ""
+    assert head.startswith('"价格"'.strip('"')), head[:40]
+    # 渠道列必须是界面中文名：App 渠道不得回退成 app_ctrip 这类裸 id。
+    ci = rows[0].index("渠道")
+    chans = {r[ci] for r in rows[1:] if len(r) > ci}
+    bare = {c for c in chans
+            if c.startswith("app_")
+            or c in ("ctrip", "qunar", "fliggy", "tongcheng", "tuniu")}
+    assert not bare, "CSV 渠道列出现裸 id：%s" % sorted(bare)
     assert ("📤 已导出 %d 行 CSV" % shown) in _toasts(page), _toasts(page)
 
 def test_dt12_scroll_chunk_integrity(page):

@@ -21,7 +21,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from crawlers.base import BaseCrawler  # noqa: E402
 from crawlers.ctrip import CtripCrawler  # noqa: E402
+from crawlers.fliggy import FliggyCrawler  # noqa: E402
+from crawlers.qunar import QunarCrawler  # noqa: E402
 from crawlers.tongcheng import TongchengCrawler  # noqa: E402
+from crawlers.tuniu import TuniuCrawler  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _LOG = logging.getLogger("t_session")
@@ -76,12 +79,15 @@ def test_restore_plan_session_cookie_rules():
 
 def test_state_has_auth_uses_channel_auth_cookie():
     c = CtripCrawler({}, _LOG)
-    assert c._state_has_auth({"cookies": [{"name": "cticket"}]}) is True
-    assert c._state_has_auth({"cookies": [{"name": "unrelated"}]}) is False
+    assert c._state_has_auth(
+        {"cookies": [{"name": "cticket", "value": "v"}]}) is True
+    assert c._state_has_auth(
+        {"cookies": [{"name": "unrelated", "value": "v"}]}) is False
     assert c._state_has_auth({}) is False
     # 没有登记认证 Cookie 的渠道不自动回写，避免把空壳覆盖快照
     plain = BaseCrawler({}, _LOG)
-    assert plain._state_has_auth({"cookies": [{"name": "x"}]}) is False
+    assert plain._state_has_auth(
+        {"cookies": [{"name": "x", "value": "v"}]}) is False
 
 
 def test_should_refresh_snapshot_only_for_logged_in_collection(tmp_path):
@@ -98,13 +104,19 @@ def test_should_refresh_snapshot_only_for_logged_in_collection(tmp_path):
     with io.open(p, "w", encoding="utf-8") as f:
         json.dump({"saved_at": 0, "cookies": []}, f)
     assert c._should_refresh_snapshot(None) is False
-    # 未登记 AUTH_COOKIES 的渠道不回写
-    t = TongchengCrawler({"user_data_dir": root}, _LOG)
-    tp = t.session_state_path
-    os.makedirs(os.path.dirname(tp), exist_ok=True)
-    with io.open(tp, "w", encoding="utf-8") as f:
+    # 未登记 AUTH_COOKIES 的渠道不回写。用本地替身，别拿真渠道当
+    # 反例：同程/途牛已登记认证 Cookie，再拿它们当「未登记」会把
+    # 修复测反。
+    class _NoAuthCrawler(BaseCrawler):
+        name = "noauth"
+        profile_name = "noauth"
+
+    n = _NoAuthCrawler({"user_data_dir": root}, _LOG)
+    np = n.session_state_path
+    os.makedirs(os.path.dirname(np), exist_ok=True)
+    with io.open(np, "w", encoding="utf-8") as f:
         json.dump({"saved_at": time.time(), "cookies": []}, f)
-    assert t._should_refresh_snapshot(None) is False
+    assert n._should_refresh_snapshot(None) is False
 
 
 def test_browser_context_uses_restore_plan_and_guards_refresh():
@@ -112,4 +124,31 @@ def test_browser_context_uses_restore_plan_and_guards_refresh():
                   encoding="utf-8", newline="").read()
     assert "plan = self._restore_plan(ctx.cookies(), saved)" in src
     assert "self._should_refresh_snapshot(save_session)" in src
-    assert "not self._state_has_auth(state)" in src
+    assert "not self._session_state_allowed(state, save_session)" in src
+    assert "未检测到登录凭证（AUTH_COOKIES）" in src
+
+
+def test_web_channel_auth_cookies_registered():
+    """认证 Cookie 必须是「登录后才下发」的那几个。
+
+    2026-11-02 匿名实测：同程 m.ly.com/www.ly.com 只下发 longKey；
+    途牛 m.tuniu.com/flight 只有 connect.sid、passport 登录页只有
+    PASSPORTSESSID；飞猪 www.fliggy.com 下发 cookie2/_m_h5_tk；去哪儿
+    touch/www/h5 首页下发 QN1。上面清单里的名字在匿名上下文都不出现，
+    才能作「已登录」证据；否则登出态也会被当成登录态回写空壳快照。
+    """
+    expected = {
+        CtripCrawler: ("cticket",),
+        FliggyCrawler: ("unb",),
+        QunarCrawler: ("_q",),
+        TongchengCrawler: ("memberIdNew", "cnUser"),
+        TuniuCrawler: ("ssoUser", "TUNIUmuser", "tuniuuser"),
+    }
+    for cls, names in expected.items():
+        assert cls.AUTH_COOKIES == names, cls.__name__
+        c = cls({}, _LOG)
+        for name in names:
+            assert c._state_has_auth(
+                {"cookies": [{"name": name, "value": "v"}]}) is True
+        assert c._state_has_auth(
+            {"cookies": [{"name": "unrelated", "value": "v"}]}) is False

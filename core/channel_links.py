@@ -82,63 +82,79 @@ LOGIN_NOTE = {
 }
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
+# 入口文案按「列 + 真实行为」统一，不再各渠道各写一套：
+#   PC/H5 国内 = 机票搜索
+#   H5 国际   = 与国内同页，页内切国际（五家 H5 实测都是同页）
+#   PC 国际   = 独立国际页写「国际」；站内 tab 写「与国内同页，页内切国际」
+# 登录要求由渠道元数据单独表达，不往入口文案里重复。
+NOTE_PC_SEARCH = "PC 机票搜索"
+NOTE_H5_SEARCH = "H5 机票搜索"
+NOTE_PC_INTL = "PC 机票搜索（国际）"
+NOTE_PC_INTL_SAME = "PC 机票搜索（与国内同页，页内切国际）"
+NOTE_H5_INTL_SAME = "H5 机票搜索（与国内同页，页内切国际）"
+
 # Fixed channel entries. Notes explain entry vs retired/unavailable page;
 # every URL was opened and checked on 2026-10-23.
 ENTRY = {
     "ctrip": {
         ("pc", "domestic"): ("https://flights.ctrip.com/online/channel/domestic",
-                             "PC 机票搜索"),
+                             NOTE_PC_SEARCH),
         ("h5", "domestic"): ("https://m.ctrip.com/html5/flight/",
-                             "H5 机票搜索"),
+                             NOTE_H5_SEARCH),
         ("pc", "intl"): ("https://flights.ctrip.com/online/channel/international",
-                         "PC 机票搜索（国际）"),
+                         NOTE_PC_INTL),
         ("h5", "intl"): ("https://m.ctrip.com/html5/flight/",
-                         "H5 机票搜索（与国内同页，页内切国际）"),
+                         NOTE_H5_INTL_SAME),
     },
     "qunar": {
         ("pc", "domestic"): ("https://flight.qunar.com/site/",
-                             "PC 机票搜索（官网）"),
+                             NOTE_PC_SEARCH),
         ("h5", "domestic"): ("https://touch.qunar.com/h5/flight/",
-                             "H5 机票搜索"),
+                             NOTE_H5_SEARCH),
+        # PC 国际是站内 tab（#js_inter_tab），没有独立国际 URL；
+        # 列文案仍统一为「国际」，不逐格展开页内切换细节。
         ("pc", "intl"): ("https://flight.qunar.com/site/",
-                         "PC 机票搜索（国际·官网）"),
+                         NOTE_PC_INTL),
         ("h5", "intl"): ("https://touch.qunar.com/h5/flight/",
-                         "H5 机票搜索（与国内同页，页内切国际）"),
+                         NOTE_H5_INTL_SAME),
     },
     "fliggy": {
         ("pc", "domestic"): ("https://www.fliggy.com/jipiao/",
-                             "PC 机票搜索"),
+                             NOTE_PC_SEARCH),
         ("h5", "domestic"): ("https://market.m.taobao.com/app/trip/"
                              "rx-traffic-search/pages/index"
                              "?biz=flight&defaultBiz=flight",
-                             "H5 机票搜索（进入即淘宝登录）"),
-        ("pc", "intl"): ("https://www.fliggy.com/jipiao/",
-                         "PC 机票搜索（与国内同页，页内切国际）"),
+                             NOTE_H5_SEARCH),
+        # 2026-11-02：PC 国际改用独立国际页（sijipiao /ie/），
+        # 与国内 /jipiao/ 分开；登录要求由渠道元数据表达。
+        ("pc", "intl"): ("https://sijipiao.fliggy.com/ie/flight_search.htm",
+                         NOTE_PC_INTL),
         ("h5", "intl"): ("https://market.m.taobao.com/app/trip/"
                          "rx-traffic-search/pages/index"
                          "?biz=flight&defaultBiz=flight",
-                         "H5 机票搜索（进入即淘宝登录，页内切国际）"),
+                         NOTE_H5_INTL_SAME),
     },
     "tongcheng": {
         ("pc", "domestic"): ("https://www.ly.com/flights/home",
-                             "PC 机票搜索"),
+                             NOTE_PC_SEARCH),
         ("h5", "domestic"): ("https://m.ly.com/ft/touch/index",
-                             "H5 机票搜索"),
-        ("pc", "intl"): ("https://www.ly.com/iflight/", "PC 机票搜索（国际）"),
+                             NOTE_H5_SEARCH),
+        ("pc", "intl"): ("https://www.ly.com/iflight/", NOTE_PC_INTL),
         # 同程 H5 国际不是独立 URL：2026-11-02 实测点「国际」后
         # location 仍是 ft/touch/index（同页切换，默认国内→上海/北京）。
         # tiflight/book1.html 是已选好航线的列表/订票壳，直接打开会
         # 「网络开小差了 / 找不到合适的行程」。入口应落查询页并提示切国际。
         ("h5", "intl"): ("https://m.ly.com/ft/touch/index",
-                         "H5 机票搜索（与国内同页，页内切国际）"),
+                         NOTE_H5_INTL_SAME),
     },
     "tuniu": {
-        ("pc", "domestic"): ("https://flight.tuniu.com/", "PC 机票搜索"),
-        ("h5", "domestic"): ("https://m.tuniu.com/flight/", "H5 机票搜索"),
-        ("pc", "intl"): ("https://flight.tuniu.com/intel",
-                         "PC 机票搜索（国际）"),
-        ("h5", "intl"): ("https://m.tuniu.com/m2015/intlFlight/flight/",
-                         "H5 机票搜索（国际）"),
+        ("pc", "domestic"): ("https://flight.tuniu.com/", NOTE_PC_SEARCH),
+        ("h5", "domestic"): ("https://m.tuniu.com/flight/", NOTE_H5_SEARCH),
+        ("pc", "intl"): ("https://flight.tuniu.com/intel", NOTE_PC_INTL),
+        # 途牛 H5 国际不是独立 URL：2026-11-02 用户实测，与国内是同一个
+        # 查询页，在城市选择里切「出境·中国港澳台」/「国际多程」。
+        ("h5", "intl"): ("https://m.tuniu.com/flight/",
+                         NOTE_H5_INTL_SAME),
     },
 }
 
@@ -254,8 +270,12 @@ def _route_url(plat, surface, scope, fc, tc, fn, tn, date):
         try:
             from crawlers.tuniu import TuniuCrawler
             if surface == "h5" and intl:
-                return TuniuCrawler.INTL_LIST_PG.format(
-                    route=f"{fc}-{tc}", date=date)
+                # INTL_LIST_PG 的 /list?route=…&date=… 是采集数据路径，
+                # 用户直达会落到列表壳而不是可改航线/日期的查询页。
+                # 2026-11-02 用户实测：国际与国内是同一个 H5 查询页，
+                # 在城市选择里切「出境·中国港澳台」/「国际多程」再搜；
+                # 用户入口落查询页，航线/日期在页内选；采集端不变。
+                return "https://m.tuniu.com/flight/"
             if surface == "pc" and not intl:
                 return TuniuCrawler.PC_URL_TPL.format(
                     fc=fc, tc=tc, date=date)

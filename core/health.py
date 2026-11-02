@@ -63,6 +63,11 @@ _RETRY_MARKS = ("命中风控", "疑似限流", "后第")
 _EMPTY_MARKS = ("没有查询到符合条件的航班", "未查询到符合条件的航班",
                 "没有查询到", "未查询到", "无航班", "no flight")
 _MAINT_MARK = "进入维护模式"
+# App 导航/选址失败：没有完成查询，不能因为末尾的「得到 0 条」就记成
+# 真无票（2026-11-02 线上：智行设目的地失败后健康卡写「本轮无票」）。
+_ROUTE_FAIL_MARKS = ("设置航线失败", "首页未就绪", "设出发城市失败",
+                     "设到达城市失败", "选日期失败", "往返导航失败",
+                     "没能回到机票首页")
 _ROUND_BEGIN = "开始一轮扫描"
 _ROUND_END = "本轮扫描结束"
 
@@ -157,11 +162,16 @@ def parse_health(log_text, now=None, hours=24):
                 s, note = "part", note or "限流后重试成功"
             elif ok_n:
                 s = "ok"
+                # 同轮既有成功又有空结果时，不能把「本轮无票」当整轮
+                # 结论挂在成功轮上（线上：qunar 3 条明细 + 3 条国际空）。
+                if note in ("本轮无票（得到 0 条）", "无符合条件的航班"):
+                    note = ""
                 if cal_n and not detail_n:
                     note = note or "日历价 %d（无航班明细）" % cal_n
                 elif cal_n and detail_n:
                     note = note or "航班级 %d · 日历 %d" % (detail_n, cal_n)
-            elif empty_n and not need_login:
+            elif (empty_n and not need_login
+                  and not (fail_n or ev["generic_fail"])):
                 s = "empty"
                 note = note or "无符合条件的航班"
             else:
@@ -276,6 +286,13 @@ def parse_health(log_text, now=None, hours=24):
                 ev["generic_fail"] += 1
             if not ev["note"]:
                 ev["note"] = "请求被拒（认证状态未确认）"
+        elif any(k in msg for k in _ROUTE_FAIL_MARKS):
+            if d:
+                ev["fail"].add(d)
+            else:
+                ev["generic_fail"] += 1
+            if not ev["note"]:
+                ev["note"] = "App 导航失败（未完成查询）"
         elif _APP_EMPTY.search(msg):
             ev["empty"] += 1
             if not ev["note"]:

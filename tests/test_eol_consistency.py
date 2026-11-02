@@ -32,6 +32,9 @@ def _tracked_text_files():
             continue
         if SKIP_DIRS & set(p.parts):
             continue
+        # 索引里还在、工作树已删（删除待提交）：文件不存在就无从判 EOL
+        if not (REPO / rel).exists():
+            continue
         yield rel
 
 

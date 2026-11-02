@@ -39,7 +39,7 @@ from core import net as _net
 from core.flightnorm import cabin_clean, fmt_dur
 from core.intl import airport_city_code, is_intl_route
 from core.models import PRICE_MAX, PRICE_MIN, FlightPrice, price_band_ok
-from .base import BaseCrawler, iata2, iata3
+from .base import BaseCrawler, iata2, iata3, profile_headers
 from .challenge import blocked_signal, login_signal
 
 _RE_HHMM = re.compile(r"([01]?\d|2[0-3]):([0-5]\d)")
@@ -165,6 +165,9 @@ class IntlFailure:
 class TuniuCrawler(BaseCrawler):
     name = "tuniu"
     use_mobile = True
+    # 匿名实测 m.tuniu.com/flight 只有 connect.sid、passport 登录页
+    # 只有 PASSPORTSESSID；这三个登录后才在，可作认证证据。
+    AUTH_COOKIES = ("ssoUser", "TUNIUmuser", "tuniuuser")
     # 预热入口（L1/L3）：m 站机票首页，先拿 udid/cookie 再查列表
     warmup_url = FLIGHT_HOME
     # 确保 parse_error 可入账（不依赖 base 白名单版本；重复项去重）
@@ -192,6 +195,24 @@ class TuniuCrawler(BaseCrawler):
 
     PC_URL_TPL = ("https://flight.tuniu.com/domestic/list/"
                   "{fc}_{tc}_ST_1_0_0/?start={date}")
+    # 途牛 PC 对远期日期更容易触发软风控（2026-11-02 用户实测）；PC 只查
+    # 近 30 天，远日期交给 H5/API，避免用一次高风险请求换空结果。
+    PC_MAX_AHEAD_DAYS = 30
+
+    @staticmethod
+    def _split_pc_dates(dates, today=None):
+        """按今天切分 PC 可查日期与远日期（远日期不查 PC）。"""
+        today = today or _dtm.date.today()
+        near, far = [], []
+        for d in dates:
+            try:
+                ahead = (_dtm.date.fromisoformat(str(d)) - today).days
+            except ValueError:
+                near.append(d)
+                continue
+            (near if ahead <= TuniuCrawler.PC_MAX_AHEAD_DAYS
+             else far).append(d)
+        return near, far
 
     @classmethod
     def list_url(cls, fc: str, tc: str, date: str) -> str:
@@ -606,12 +627,10 @@ class TuniuCrawler(BaseCrawler):
                      back_date=""):
         page_token = self._saved_page_token(depart_code, arrive_code, depart_date)
         client = _net.new_client(self.config.get("tls_impersonate", "chrome"),
-            headers={
-                "User-Agent": self._ua() or UA,
-                "Accept-Language": "zh-CN,zh;q=0.9",
+            headers=profile_headers(self.fingerprint(), {
                 "Origin": "https://m.tuniu.com",
                 "Referer": "https://m.tuniu.com/",
-            },
+            }),
             timeout=25,
             follow_redirects=True,
         )
@@ -805,12 +824,7 @@ class TuniuCrawler(BaseCrawler):
         ok=False 时 data 为带类型的 IntlFailure（timeout/error/
         parse_error），blocked 仅保留给外层退避加倍。"""
         client = _net.new_client(self.config.get("tls_impersonate", "chrome"),
-            headers={
-                "User-Agent": self._ua() or UA,
-                "Accept-Language": "zh-CN,zh;q=0.9",
-                "sec-ch-ua-platform": '"iOS"',
-                "sec-ch-ua-mobile": "?1",
-            },
+            headers=profile_headers(self.fingerprint(), {}),
             timeout=25,
             follow_redirects=True,
         )
@@ -1195,31 +1209,220 @@ class TuniuCrawler(BaseCrawler):
             self._sleep()
         return results
 
+    def _intl_city_codes(self, client):
+        """HotCity 字典：IATA → 途牛数字城码（RT 页/接口都用数字码）。"""
+        cached = getattr(self, "_city_code_map", None)
+        if cached is not None:
+            return cached
+        mp = {}
+        try:
+            import uuid
+            r = client.get(
+                "https://m.tuniu.com/api/intlFlight/product/HotCity",
+                params={"d": json.dumps({"traceId": uuid.uuid4().hex})},
+                headers={"Referer": "https://m.tuniu.com/flight/",
+                         "Accept": "application/json"})
+            data = (r.json() or {}).get("data") or {}
+            groups = [data.get(k) or [] for k in
+                      ("domesticHotCityList", "intlHotCityList",
+                       "intlHotCityListBackup")]
+            groups += list((data.get("domesticIndexCityList") or {}).values())
+            groups += list((data.get("intlIndexCityList") or {}).values())
+            for lst in groups:
+                for c in lst if isinstance(lst, list) else []:
+                    iata = str((c or {}).get("cityIataCode") or "").upper()
+                    code = (c or {}).get("cityCode")
+                    if iata and code:
+                        mp[iata] = code
+        except Exception as e:  # noqa: BLE001
+            self.logger.warning("[tuniu][intl-rt] 城码字典失败: %s", e)
+        self._city_code_map = mp
+        return mp
+
+    @staticmethod
+    def _parse_intl_rt_products(products, date: str, ret_date: str):
+        """queryFlight productList → 往返行；只认 avgTotalPrice（页面含税总价）。"""
+        out = {}
+        for p in products or []:
+            if not isinstance(p, dict):
+                continue
+            try:
+                price = float(p.get("avgTotalPrice") or 0)
+            except (TypeError, ValueError):
+                continue
+            if not (PRICE_MIN <= price <= PRICE_MAX):
+                continue
+            segs = p.get("segmentList") or []
+            fno = str(p.get("flightNos") or "")
+            first = segs[0] if segs else {}
+            dep = str(p.get("dTime") or "")[-5:]
+            arr = str(p.get("aTime") or "")[-5:]
+            if not fno and isinstance(first, dict):
+                fno = str(first.get("flightNo") or "")
+            key = (fno, price)
+            if key in out:
+                continue
+            out[key] = {
+                "airline": str(p.get("airlineName") or ""),
+                "flight": fno,
+                "dep": dep,
+                "arr": arr,
+                "depTime": dep,
+                "arrTime": arr,
+                "code": fno,
+                "name": str(p.get("airlineName") or ""),
+                "date": date,
+                "intl": True,
+                "flightKey": fno,
+                "depAirport": str(p.get("dPortName") or ""),
+                "arrAirport": str(p.get("aPortName") or ""),
+                "price": price,
+                "priceLabel": "往返含税总价",
+                "basis": "product_round_trip_total",
+                "totalBasis": "product_round_trip_total",
+                "tripType": "RT",
+                "depDate": date,
+                "backDate": ret_date,
+                "returnDate": ret_date,
+                "returnFlight": "",
+                "transferCity": str(p.get("transferCity") or ""),
+                "segments": len(segs),
+                "retDiffFlag": p.get("retDiffFlag"),
+                "source": "intelProduct/queryFlight",
+            }
+        return list(out.values())
+
+    def _fetch_intl_rt(self, from_city: str, to_city: str,
+                       dates: List[str], ret_date: str) -> List[FlightPrice]:
+        """途牛 H5 国际往返：HotCity 数字城码 → RT 列表页 token →
+        queryFlight 两段 segment → productList.avgTotalPrice。
+
+        国内 r769 判据保留：209 个航班里 202/209 精确满足
+        B = A + L_ret（B−A 中位数=返程最低价），所以国内 fare 是总价。
+        国际只采渠道自算的往返含税总价，不做两段单程相加；无产品时如实
+        记 empty/error，不拿单程列表价冒充。
+        """
+        fc0, tc0 = (airport_city_code(from_city.upper()),
+                    airport_city_code(to_city.upper()))
+        results: List[FlightPrice] = []
+        client = _net.new_client(
+            self.config.get("tls_impersonate", "chrome"),
+            headers=profile_headers(self.fingerprint(), {}),
+            timeout=25, follow_redirects=True)
+        try:
+            codes = self._intl_city_codes(client)
+            fc, tc = codes.get(fc0), codes.get(tc0)
+            if not fc or not tc:
+                self.path_note("往返", "error",
+                               detail="国际往返缺少数字城码（%s/%s）"
+                                      % (fc0, tc0))
+                return []
+            for date in dates:
+                t0 = time.time()
+                route = "%s-%s|%s-%s" % (fc, tc, tc, fc)
+                dates_q = "%s|%s" % (date, ret_date)
+                list_url = self.INTL_LIST_PG.format(
+                    route=route, date=dates_q)
+                api_hdrs = {"Referer": list_url, "Accept": "application/json",
+                            "X-Requested-With": "XMLHttpRequest"}
+
+                def _new_token():
+                    r = client.get(list_url)
+                    m = re.search(r'id="token"\s+value="([^"]+)"', r.text)
+                    return self._token_secret(m.group(1)) if m else None
+
+                secret = _new_token()
+                data = {}
+                for poll in range(6):
+                    if secret is None:
+                        self.path_note("往返", "error", date=date,
+                                       detail="途牛国际往返列表页未取到 token",
+                                       ms=int((time.time() - t0) * 1000))
+                        break
+                    body = {
+                        "systemId": 63,
+                        "segmentList": [
+                            {"departDate": date, "aCityCode": tc,
+                             "dCityCode": fc},
+                            {"departDate": ret_date, "aCityCode": fc,
+                             "dCityCode": tc}],
+                        "adultQuantity": 1, "childQuantity": 0,
+                        "babyQuantity": 0, "cabinClass": 0,
+                        "channelCount": 0, "selectFlightNos": "",
+                        "distributeId": "", "pollTag": poll,
+                        "token": secret}
+                    try:
+                        rr = client.get(
+                            self.INTL_QF_API,
+                            params={"d": json.dumps(body, ensure_ascii=False)},
+                            headers=api_hdrs)
+                        data = (rr.json() or {}).get("data") or {}
+                    except Exception as e:  # noqa: BLE001
+                        self.logger.warning(
+                            "[tuniu][intl-rt] queryFlight 异常: %s", e)
+                        break
+                    if data.get("needLogin"):
+                        self._last_challenge_intl = login_signal("needLogin")
+                        self.path_note("往返", "login", date=date,
+                                       detail="途牛国际往返需登录",
+                                       ms=int((time.time() - t0) * 1000))
+                        secret = None
+                        break
+                    msg = str(data.get("message") or "")
+                    if msg:
+                        if "token" in msg.lower():
+                            secret = _new_token()
+                            continue
+                        break
+                    plist = data.get("productList") or []
+                    rows = self._parse_intl_rt_products(
+                        plist, date, ret_date)
+                    if rows:
+                        best = min(rows, key=lambda r: r["price"])
+                        results.append(FlightPrice(
+                            platform=self.name,
+                            from_city=from_city, to_city=to_city,
+                            depart_date=date, price=float(best["price"]),
+                            airline=str(best.get("airline") or "")[:20],
+                            flight_no=str(best.get("flight") or ""),
+                            depart_time=str(best.get("dep") or ""),
+                            arrive_time=str(best.get("arr") or ""),
+                            extra=json.dumps(rows, ensure_ascii=False)))
+                        self.path_note(
+                            "往返", "ok", rows=len(rows), date=date,
+                            url=list_url,
+                            detail="途牛 H5 国际往返（avgTotalPrice 含税）",
+                            ms=int((time.time() - t0) * 1000))
+                        self.logger.info(
+                            "[tuniu][intl-rt] %s→%s 返 %s：%d 条，"
+                            "最低往返含税总价 ¥%.0f（%s）",
+                            from_city, to_city, ret_date, len(rows),
+                            best["price"], best.get("flight"))
+                        break
+                    if str(data.get("needQueryMore") or "") != "1":
+                        self.path_note("往返", "empty", date=date,
+                                       detail="途牛国际往返无产品",
+                                       ms=int((time.time() - t0) * 1000))
+                        break
+                    time.sleep(1.2)
+                else:
+                    self.path_note("往返", "timeout", date=date,
+                                   detail="途牛国际往返聚合超时",
+                                   ms=int((time.time() - t0) * 1000))
+                self._sleep()
+        finally:
+            try:
+                client.close()
+            except Exception:  # noqa: BLE001
+                pass
+        return results
+
     def fetch(self, from_city: str, to_city: str, dates: List[str],
               ret_date: str = "") -> List[FlightPrice]:
         self.path_reset()
-        # 往返：**国内已接**（r769 实测），国际仍未接。
-        #
-        # r769 决定性实测（同一进程内交替对照，勿再重查）：
-        # `listFlight` 的 `segmentList` 放两段（去程 + 反向回程日）时，
-        # 服务端返回的每条 fare 价就是**往返总价**——
-        #   * 209 个航班里 202 个精确满足 B = A + L_ret，其中 A 是同航班
-        #     单程价、L_ret 是返程日反向航线的最低价（当日 400）；
-        #   * B - A 的中位数**恰好等于 400**，没有一个航班满足 B ≈ A；
-        #   * 响应里没有任何字段回显返程日，所以不能靠字段认口径，
-        #     只能靠这个价差不变式。
-        # 这与「两段单程相加的估算」不同：加法是我做的，这里是渠道算的。
-        #
-        # 国际分支（`_fetch_intl`）仍是 unsupported：它的 productList 是
-        # 单段结构，没有对应的两段语义，未做实测。
+        # 往返：国内 listFlight 两段；国际 H5 queryFlight 两段。
         if ret_date and is_intl_route(from_city, to_city):
-            self.logger.warning(
-                "[tuniu] 国际往返暂不支持（返程 %s），未发起单程查询",
-                ret_date)
-            self.path_note(
-                "TRIP", "unsupported",
-                detail="国际往返暂不支持，未发起单程查询")
-            return []
+            return self._fetch_intl_rt(from_city, to_city, dates, ret_date)
         if is_intl_route(from_city, to_city):
             return self._fetch_intl(from_city, to_city, dates,
                                     ret_date=ret_date)
@@ -1236,21 +1439,30 @@ class TuniuCrawler(BaseCrawler):
         # 列表绕过去了，最终把一次成功的采集记成 login（用户登录也救不回
         # 来）。token 仍然拿，但只在 PC 没有明细时给接口用。
         if not ret_date:
+            _pc_dates, _far_pc = self._split_pc_dates(dates)
+            if _far_pc:
+                self.path_note(
+                    "PC", "unsupported", date=_far_pc[0],
+                    detail="距今天 >%d 天的 PC 不查（风控），远日期走 H5/API"
+                           % self.PC_MAX_AHEAD_DAYS)
             try:
-                pc_map = self._fetch_pc_dom(fc, tc, dates)
+                pc_map = (self._fetch_pc_dom(fc, tc, _pc_dates)
+                          if _pc_dates else {})
             except Exception as e:
                 self.logger.warning("[tuniu] PC 列表异常，回退 H5/API: %s", e)
                 pc_map = {}
             # 无痕 profile 会触发滑块；复用已保存的可信会话开可见窗口
-            # 再取一次（不破解验证码；仍被挑战则如实落 blocked）。
+            # 再取一次（仍被挑战则如实落 blocked）。
             missing = [d for d in dates if not (pc_map.get(d) or [])]
             # 可见窗口只在用户主动探针时兜底；定时监控不弹窗。
-            if missing and getattr(self, "probe_mode", False):
+            _pc_missing = [d for d in missing if d in set(_pc_dates)]
+            if _pc_missing and getattr(self, "probe_mode", False):
                 try:
-                    self.logger.info("[tuniu] PC 无明细，复用已保存会话可见窗口重试 %d 日", len(missing))
-                    headed = self._fetch_pc_dom(fc, tc, missing, headless=False,
+                    self.logger.info("[tuniu] PC 无明细，复用已保存会话可见窗口重试 %d 日", len(_pc_missing))
+                    headed = self._fetch_pc_dom(fc, tc, _pc_missing,
+                                                headless=False,
                                                 path_label="PC可见")
-                    for d in missing:
+                    for d in _pc_missing:
                         if headed.get(d):
                             pc_map[d] = headed[d]
                 except Exception as e:

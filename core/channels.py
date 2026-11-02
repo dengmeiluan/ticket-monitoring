@@ -19,13 +19,16 @@ BROWSER_CHANNELS = ("ctrip", "fliggy", "qunar", "tongcheng", "tuniu")
 
 # App 渠道（Android 模拟器 + adb）：需 android.enabled 且用户 platforms
 # 显式列出才会被实例化。
-APP_CHANNELS = ("app_zhixing", "app_qunar")
+APP_CHANNELS = ("app_zhixing", "app_qunar", "app_fliggy",
+                "app_ctrip", "app_tongcheng")
 
 # 显示名（中文）。App 渠道必须在这里，否则界面会露出裸 id（app_zhixing）。
 CHANNEL_CN = {
     "ctrip": "携程", "qunar": "去哪儿", "fliggy": "飞猪",
     "tongcheng": "同程", "tuniu": "途牛",
     "app_zhixing": "智行 App", "app_qunar": "去哪儿 App",
+    "app_fliggy": "飞猪 App",
+    "app_ctrip": "携程 App", "app_tongcheng": "同程 App",
 }
 
 
@@ -55,23 +58,28 @@ CHANNEL_DIMENSIONS = {
     #               fliggy = y（仅国际）：cheapestCalendar 收
     #               tripType=1+backDate，返回行自带 backDate 且与请求回程日
     #               同值；国内列表页只有单程，已加闸门。
-    #               tuniu = y（仅国内，r769 实测）：`listFlight` 的
-    #               segmentList 放两段（去程 + 反向回程日）时，每条 fare
-    #               价就是往返总价——209 个航班里 202 个精确满足
-    #               B = A + 返程日反向最低价，B−A 中位数恰等于该最低价；
-    #               没有一条满足 B ≈ A。国际 productList 是单段结构，
-    #               仍 unsupported。
-    #               ctrip / qunar / tongcheng = 未验证（"")：渠道产品都
-    #               有往返入口，但本仓库采集端未实现/未出数——ctrip 结果
-    #               页只给去程一列；qunar 只有单程通路；tongcheng 裸打 444
-    #               （r740）。不把"采集端没做"写成"渠道没有"。
-    #   multi_city: 七家都未验证（"")：渠道/App 都有多程入口，采集端
+    #               tuniu = y（r769 国内 `listFlight` 两段 fare 即往返总价；
+    #               r927 国际 H5 `queryFlight` 两段 segment 的
+    #               productList.avgTotalPrice 即页面「往返 含税」，35 条
+    #               ¥3010）。国内/国际都只采渠道总价，不做两段单程相加。
+    #               ctrip / qunar / tongcheng = y（均按渠道自算的往返总价
+    #               实测）：ctrip `round-…&containstax=1` 直出往返卡
+    #               （国内「往返总价」/国际「往返含税价」）；qunar touch
+    #               往返页去程卡给「往返总价 ¥N 起」（国际 H5 双列表
+    #               1999/空栏，未出数）；tongcheng `book1/roundtrips`
+    #               国内 atp 组合总价；国际登录后 book1 RT 页的
+    #               `ts/list` 直出 tp 含税总价（2026-11-03 实测）。
+    #               三家都只采渠道总价，未做两段单程相加。
+    #   multi_city: 十家都未验证（"")：渠道/App 都有多程入口，采集端
     #               未实现——不把"我们没做"伪装成"渠道没有"。
-    #   low_fare:   **七家都有发现源**（r805z 三方对照核过）——来源以
+    #   low_fare:   **九家都有发现源**（10 家中飞猪 App 明确暂无可用源；
+    #               r805z 三方对照 + 后续渠道核过）——来源以
     #               `core/specials.py::SPECIAL_CAPABILITY` 为单一事实源：
     #               ctrip 主题榜+低价日历 / qunar 官方 H5 低价日历 /
     #               fliggy PC 特价榜 / tongcheng H5 低价日历(90-180天) /
-    #               tuniu 特价榜单 / 两个 App 真机「低价机票」。
+    #               tuniu 特价榜单 / 四个 App 真机「低价机票」
+    #               （智行/去哪儿/携程/同程）。飞猪 App 在源表里是
+    #               `sources=[]`，矩阵记空——两条表必须同口径。
     #               旧注释写「只有 qunar 与 fliggy」是过期结论（该表当时
     #               还没收敛），与矩阵取值自相矛盾。
     "ctrip":     {"domestic": "y", "intl": "y", "calendar": "y", "detail": "y",
@@ -127,6 +135,48 @@ CHANNEL_DIMENSIONS = {
     "app_qunar":   {"domestic": "y", "intl": "y", "calendar": "y",
                     "detail": "y", "round_trip": "y", "multi_city": "",
                     "low_fare": "y"},
+    # 携程 App（2026-11-02 真机）：国内列表未登录可出完整明细，列表是
+    # React Native 无障碍树（第XXX航班… 字段），解析器与采集器已落地；
+    # 修复到达城市页「选择目的地」判据后连续两次端到端跑通
+    # （SHA→CAN 11-18 32 行 ¥480 / 11-19 33 行 ¥490），domestic/detail 升 y。
+    # 日历日格是自绘 View、dump 无文本；截图经 Windows OCR 可读逐日价，
+    # 2026-11-02 真机 calendar() 连续两次 SHA→PEK 61 天 ¥380–420
+    # （23:20/23:39，OCR 3.7/3.8s，全程 37.3/20.2s，app-calendar ok），
+    # calendar/low_fare 升 y。
+    # 国际档（2026-11-02/03 真机）：城市页「国际/中国港澳台」+ 中文搜索已通，
+    # SHA→NRT 价格日历连续两次 54/53 天有价（11-03..12-26，¥864–1530；
+    # 11-10 页面显示「查价」不计价，OCR 3.8/4.0s）；国际单程明细真机
+    # 38 条、最低 ¥935（11-19，42.8s，列表不暴露航班号）。
+    # 往返（2026-11-03 真机国际+国内）：双日期弹层 + 去/返双栏，去程卡价
+    # 即页脚「往返总价」（点第 2 条去程后 2146→2189 实证）；SHA→NRT
+    # 11-22/25 8 条 ¥2146，SHA→PEK 11-22/25 5 条 ¥760（返程 14:00→16:30
+    # +¥0）；返程卡可能晚一帧渲染，解析前等 10s。
+    "app_ctrip":  {"domestic": "y", "intl": "y", "calendar": "y",
+                   "detail": "y", "round_trip": "y", "multi_city": "",
+                   "low_fare": "y"},
+    # 同程 App（2026-11-02 真机）：原生表单/城市/日历 + WebView 结果页；
+    # CLI dump 卡 idle，用 uiautomator2 回退读到 6 行明细（SHA→PEK
+    # 2026-11-16，MU5185 ¥336/¥373）。2026-11-03 国际价格日历真机
+    # SHA→NRT 连续两次 14 天 ¥882–1495（app-calendar ok）；国际只走
+    # 日历（两月视野）；国际单程明细真机 6 条 ¥875（11-16，7.9s）。
+    # 国际往返（2026-11-03 真机）：双日期范围日历 + 去/返双栏，去程行
+    # 「含税总价」即页面往返总价（上海⇌东京 11-16/19，7 条去程、最低
+    # 9C8515 ¥2209，返程 9C6218 +¥0；返程栏 `+¥N` 是加价，不相加）。
+    # 旧结论「查询落营销/示例页」是首访教学浮层遮挡导致的误判。
+    # 国内往返另有边界（2026-11-03 真机）：国内档可填返程位、日期弹层也
+    # 是同一范围日历（页脚 ￥785），但查询后落**单程去程列表**（¥774 起、
+    # 无返程栏/无往返总价），不是往返总价页——国内往返未接，拿不到渠道
+    # 自算总价就不产出，绝不把单程列表价当往返价。
+    "app_tongcheng": {"domestic": "y", "intl": "y", "calendar": "y",
+                      "detail": "y", "round_trip": "y", "multi_city": "",
+                      "low_fare": "y"},
+    # 飞猪 App（2026-11-02 真机）：Flutter 画布 + Windows OCR；
+    # 固定竖屏后首页→机票→表单→城市/日期→结果页全链路连续两次跑通
+    # （BJS→SHA 11-16 / SHA→PEK 11-17，各 3 行）。只做国内单程；
+    # 日历只用于选日、不单独落价；国际/往返/多程/低价源未接。
+    "app_fliggy": {"domestic": "y", "intl": "", "calendar": "",
+                   "detail": "y", "round_trip": "", "multi_city": "",
+                   "low_fare": ""},
 }
 
 # App 渠道与哪个浏览器渠道**同源**（产地/账号体系）。这只是「谁和谁是
@@ -135,6 +185,9 @@ CHANNEL_DIMENSIONS = {
 APP_BROWSER_PEER = {
     "app_zhixing": "ctrip",     # 智行 = 携程系 App
     "app_qunar": "qunar",       # 去哪儿 App
+    "app_fliggy": "fliggy",     # 飞猪 App
+    "app_ctrip": "ctrip",       # 携程 App
+    "app_tongcheng": "tongcheng",  # 同程 App
 }
 
 
@@ -236,6 +289,7 @@ SURFACE_NOTES = {
                      "2026-11-02 06:40 用户实测：重新搜索时滑块出现，"
                      "人工通过后仍搜不到数据（站点软风控/空结果）。"
                      "生产从未有 PC ok，矩阵记未验证（不是渠道没有）；"
+                     "PC 只查今天起 30 天内，远日期直接走 H5/API（降低软风控）；"
                      "H5/API 仍是当前可信出数通路",
     ("tuniu", "h5"): "listFlight 接口（两段 segment 支持国内往返）",
 }
@@ -279,14 +333,20 @@ DIMENSION_NOTES = {
     ("qunar", "round_trip"): "国内 touch 往返页去程卡直接给产品「往返"
                              "总价 ¥N 起」（2026-11-02 实测 北京→上海 "
                              "¥808…¥2546，71 条）；返程卡的「补 ¥N」是"
-                             "加价，不落；国际往返页未验证，矩阵 y 指国内。"
-                             "未做两段单程相加",
-    ("tongcheng", "round_trip"): "国内往返已接通：frbook1 页的 "
-                                 "book1/roundtrips 接口直出 atp 组合总价"
-                                 "（2026-11-02 真报文 210/210 条 atp=lp+atpd），"
-                                 "裸 httpx 可取，未做两段单程相加；国际往返"
-                                 "仍需页面两步流，本通路未出数——矩阵 y 指"
-                                 "国内已验证，国际卡点在说明里",
+                             "加价，不落；国际往返匿名请求返回 1999 软拒"
+                             "（2026-11-03，touchDoubleInnerList data=null、"
+                             "页面 ¥0 空栏），带产品档案走同一 H5 双列表"
+                             "也未解析到往返总价（26s），仍显式拒绝，"
+                             "矩阵 y 指国内。未做两段单程相加",
+    ("tongcheng", "round_trip"): "国内往返走 frbook1 的 book1/roundtrips"
+                                 "（atp 组合总价，2026-11-02 真报文 210/210）；"
+                                 "国际往返走登录档案下 book1 RT 页的 "
+                                 "miflightapi/ts/list：每条 res 的 tp 是"
+                                 "「含税总价」，lng 带去/返两段（2026-11-03 "
+                                 "真机 SHA→HKG 11-20/23，41 条、最低 "
+                                 "HX231+HX0234 ¥1463）。只采渠道总价，"
+                                 "不做两段单程相加；国际未登录会跳 passport，"
+                                 "如实记 login",
     # 多程同理：浏览器站点**产品上都有**多程入口，是采集端没做（选多段 →
     # 逐段出价 → 合并口径是一整条独立链路）。写 n 不解释，读者会以为
     # 渠道没有多程产品。
@@ -330,12 +390,113 @@ DIMENSION_NOTES = {
                                  "区间长日历（月份标题+日格，向下翻更早月份）。"
                                  "仍是发现源：每天一条最低价、无航班号；驱动失败或"
                                  "日期不在特价窗口时记空并写明原因，不拿旧页面报价冒充",
+    ("app_ctrip", "domestic"): "2026-11-02 真机：修复到达城市页标题判据"
+                                "（「选择目的地」）后，SHA→CAN 连续两次："
+                                "11-18 32 行 ¥480/79.8s、11-19 33 行 ¥490/71.3s；"
+                                "此前 SHA→PEK 也已连续两次 31 行",
+    ("app_ctrip", "detail"): "结果列表字段齐全：航班号/时刻/机场/航司/价格；"
+                             "解析器只认 `第XXX航班出发时间/到达时间/价格/"
+                             "机场/航司`；修复城市页判据后连续两次 32/33 行复验",
+    ("app_ctrip", "intl"): "国际档价格日历连续两次 SHA→NRT 54/53 天"
+                           " ¥864–1530（OCR 3.8/4.0s；11-10 页面「查价」"
+                           "不计价）；国际单程明细真机 38 条、最低 ¥935"
+                           "（11-19，42.8s；列表不暴露航班号，不编造）；"
+                           "日历两月视野，12-27 之后未滚动",
+    ("app_ctrip", "calendar"): "2026-11-02 真机 calendar() 连续两次 SHA→PEK "
+                               "61 天（11-03..次年 01-02，¥380–420；23:20/23:39，"
+                               "OCR 3.7/3.8s，全程 37.3/20.2s，"
+                               "`app-calendar ok`）；日格自绘、dump 无文本，"
+                               "价格由 Windows OCR 截图解析"
+                               "（`app_ctrip_calendar.py`）",
+    ("app_ctrip", "low_fare"): "价格日历即逐日最低价源，已接特价雷达 "
+                               "`_app_ctrip_deals`；页面未标含税/优惠口径，"
+                               "雷达行标「口径未标注」，不假设含税；"
+                               "覆盖今天起 62 天",
+    ("app_ctrip", "round_trip"): "国内/国际往返真机端到端：去程卡价即页脚"
+                                 "「往返总价」（点第 2 条去程后页脚 "
+                                 "2146→2189 实证）；国际 SHA→NRT "
+                                 "11-22/25 8 条 ¥2146，国内 SHA→PEK "
+                                 "11-22/25 5 条 ¥760（返程 14:00→16:30 "
+                                 "+¥0）；返程小卡是差价，绝不相加",
+    ("app_ctrip", "multi_city"): "App 有多程入口；采集端未实现，矩阵记未验证，"
+                                 "不是渠道没有",
+    ("app_tongcheng", "domestic"): "2026-11-02 干净表单真机 SHA→PEK "
+                                   "2026-11-16 6 行（MU5185 ¥336/¥373、5.9s）；"
+                                   "城市页支持中文搜索（海口实测可选）；"
+                                   "连续复用/状态漂移后城市位可能打不开，"
+                                   "生产启用前先单跑复验；>60 天交浏览器 H5/PC",
+    ("app_tongcheng", "detail"): "国内/国际单程明细均已覆盖：结果页 "
+                                 "WebView 经 uiautomator2 读取，航班号/航司/"
+                                 "时刻/机场/舱位/机型/价格齐全；国内已验证"
+                                 "近期热门城市，国际 SHA→NRT 11-16 真机 6 条、"
+                                 "最低 ¥875（7.9s，实付价取最低）；"
+                                 "远期日期交浏览器",
+    ("app_tongcheng", "intl"): "国际档价格日历连续两次 14 天 ¥882–1495"
+                               "（`app-calendar ok`，1.7/2.1s）；国际单程明细"
+                               "真机 6 条、最低 ¥875（7.9s；实付价取最低，"
+                               "保留划线列表价）；国际往返见 round_trip",
+    ("app_tongcheng", "calendar"): "2026-11-02 真机 SHA→PEK 打开日期弹层，"
+                                   "一次读到 2026-11/12 两月逐日价"
+                                   "（日格 content-desc `5\\n¥360`）；"
+                                   "`calendar()`/`low_fare()` 已接同一数据面，"
+                                   "最多读今天起 60 天，更远交浏览器 H5/PC",
+    ("app_tongcheng", "round_trip"): "国际往返已接（2026-11-03 真机 上海⇌东京 "
+                                     "11-16/19）：范围日历选去/返日，结果页"
+                                     "去程行是「含税总价」即页面往返总价"
+                                     "（7 条去程、最低 9C8515 ¥2209），返程栏"
+                                     "`+¥N` 是加价（9C6218 +¥0、IJ005 +¥72），"
+                                     "整单总价取页脚「已选…」；首访教学浮层"
+                                     "「去程 + 返程 = 往返总价」点下一步即过。"
+                                     "端到端 fetch 复验 11-17/22：9 条、最低 ¥2420"
+                                     "（GK036；返程 MM877 +¥0，retLoaded=true，20.9s）。"
+                                     "返程栏异步渲染，最多等 30s；等不到仍按去程行"
+                                     "总价落账并标 retLoaded=false。"
+                                     "旧结论「落营销/示例页」是浮层遮挡误判。"
+                                     "国内往返：表单可填返程位、日期弹层有"
+                                     "「去程/返程/往返总价 ￥785」，但查询落单程"
+                                     "去程列表（¥774 起、无返程栏/总价），未接；"
+                                     "不把单程列表价当往返价。"
+                                     "国内档可填返程位，采集端同流程，尚未真机复验",
+    ("app_tongcheng", "multi_city"): "App 有多程入口；采集端未实现，矩阵记未验证，"
+                                     "不是渠道没有",
+    ("app_tongcheng", "low_fare"): "价格日历即逐日最低价源（同程 App 原生弹层，"
+                                   "不是另做的一条通路）；已接特价雷达 "
+                                   "`_app_tongcheng_deals`。页面未标含税/优惠口径，"
+                                   "雷达行标「口径未标注」，不假设含税；"
+                                   "只覆盖今天起 60 天",
+    ("app_fliggy", "domestic"): "2026-11-02 固定竖屏+OCR 全链路连续两次："
+                                "北京→上海 11-16、上海→北京 11-17 各 3 行，"
+                                "同日双日期 11-17/11-18 也跑通；航班/时刻/"
+                                "机场/价格可读；「限特定乘客」低价不当普通最低价。"
+                                "**只验证当月**；次月/更远显式 "
+                                "unsupported 交浏览器（不拿未验证路径冒充）。"
+                                "日历会记忆手动滚动位置，滚到次月后需人工回当月；"
+                                "连续自动化会触发「访问被拒绝」安全页，"
+                                "采集端记 blocked 停手，需人工恢复",
+    ("app_fliggy", "detail"): "结果页是 Flutter 画布，uiautomator 读不到；"
+                              "Windows OCR 读支付价/时刻/机场/航班号，"
+                              "解析器 `crawlers/app_fliggy_parse.py`",
+    ("app_fliggy", "intl"): "App 有国际机票入口；国际结果面尚未真机复验，"
+                            "不写 y",
+    ("app_fliggy", "calendar"): "日期弹层有逐日价，但采集端只用它选日，"
+                                "未单独落日历价",
+    ("app_fliggy", "round_trip"): "表单有单程/往返/多程；采集端只做单程，"
+                                  "未接往返总价，不拿单程价冒充",
+    ("app_fliggy", "multi_city"): "App 有多程入口；采集端未实现，矩阵记未验证，"
+                                  "不是渠道没有",
+    ("app_fliggy", "low_fare"): "App 有低价/特价入口；采集端未接逐日低价源，"
+                                "不写 y",
     ("fliggy", "round_trip"): "只有国际能出往返总价（cheapestCalendar 带 "
                               "backDate）；国内列表页是单程结构，已加闸门"
                               "拒绝而不是拿单程价冒充",
-    ("tuniu", "round_trip"): "只有国内能出往返总价（listFlight 两段 "
-                             "segment）；国际 productList 是单段结构，"
-                             "已显式记 unsupported",
+    ("tuniu", "round_trip"): "国内 listFlight 两段 segment 的 fare 即"
+                             "往返总价（209 个航班 202 个满足 "
+                             "B = A + L_ret，r769）；国际走 H5 RT 列表页 + "
+                             "queryFlight 两段 segment，productList."
+                             "avgTotalPrice 是页面「往返 含税」总价"
+                             "（2026-11-03 SHA→NRT 11-05/08，35 条、"
+                             "最低 ¥3010，3.8s）。国内/国际都只采渠道"
+                             "自算总价，不做两段单程相加",
 }
 
 # `round_trip=y` 但**只覆盖一端**的渠道，短标签（检索页「往返票」chip 用，
@@ -343,10 +504,9 @@ DIMENSION_NOTES = {
 # 改另一端，`test_r805ae` 把「有 scope 必有 note」钉住。
 DIMENSION_SCOPE = {
     ("fliggy", "round_trip"): "仅国际",
-    ("tuniu", "round_trip"): "仅国内",
-    ("tongcheng", "round_trip"): "仅国内",
     ("qunar", "round_trip"): "仅国内",
     ("app_qunar", "round_trip"): "仅国内",
+    ("app_tongcheng", "round_trip"): "仅国际",
 }
 
 
@@ -425,15 +585,60 @@ PATH_CN = {
     "app-search": "App 点搜索",
     # 登录是 App 渠道的硬前置（去哪儿尤其）
     "app-login": "App 登录",
+    # 往返档切换与双日期选择是独立的一段（r923+ 同程 App 往返接入）
+    "app-roundtrip": "App 往返",
     # 低价机票（发现源）：只出「每天一条最低价」，与明细分开记账
     "low-fare": "App 低价机票",
     "android-runtime": "模拟器运行时",
     "android-device": "模拟器设备",
+    "android-ocr": "系统 OCR",
+    "android-u2": "u2 界面快照",
     "snap-restore": "登录态快照恢复",
+    # 飞猪/同程/携程 App 的分段（r658 扫 path_note 字面量补出）
+    "app-form": "App 机票表单",
+    "app-city": "App 设城市",
+    "app-city-dep": "App 设出发城市",
+    "app-city-arr": "App 设到达城市",
+    "app-city-%s": "App 设城市",
+    "app-date": "App 选日期",
+    "app-calendar": "App 价格日历",
+    "app-block": "App 风控拦截",
 }
 
 
 def path_cn(p: str) -> str:
     """通路 id → 显示名；未知通路原样返回（宁缺勿错，不编造名字）。"""
     return PATH_CN.get(p) or p
+
+
+def channel_dims_payload() -> dict:
+    """`/api/channel-dims` 与静态演示烘焙共用的一份矩阵载荷。
+
+    以前接口和 `docs/demo_build.py` 各拼一份；演示站没烘这个接口，
+    配置页的能力矩阵在公开站上一直显示「加载失败」。这里收敛成单源。
+    """
+    def _surf(p: str) -> dict:
+        # 只有浏览器渠道有端面。App 渠道若也下发 surface_cells，前端
+        # hasOwnProperty 恒真会把「没有端面」画成「? 未验证」。
+        if not has_surface(p):
+            return {}
+        return {
+            "surface_cells": {s: surface_state(p, s) for s in SURFACES},
+            "surface_notes": {s: SURFACE_NOTES.get((p, s), "")
+                              for s in SURFACES},
+        }
+    return {
+        "ok": True, "dims": list(DIMENSIONS), "surfaces": list(SURFACES),
+        "channels": [
+            dict({"plat": p, "name": CHANNEL_CN.get(p, p),
+                  "cells": {d: dim_state(p, d) for d in DIMENSIONS},
+                  "dim_notes": {d: DIMENSION_NOTES.get((p, d), "")
+                                for d in DIMENSIONS},
+                  "dim_scopes": {d: DIMENSION_SCOPE.get((p, d), "")
+                                 for d in DIMENSIONS}},
+                 **_surf(p),
+                 peer=APP_BROWSER_PEER.get(p, ""),
+                 gaps=list(app_alignment_gaps(p)))
+            for p in CHANNEL_DIMENSIONS],
+    }
 

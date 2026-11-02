@@ -88,10 +88,12 @@ def test_zhixing_chip_is_visible_and_selectable(server):
               ?srxRadarChannelKeys():null,
           };
         }""")
-        assert len(info["keys"]) == 7, info
+        from core.channels import APP_CHANNELS, BROWSER_CHANNELS
+        expected = set(BROWSER_CHANNELS) | set(APP_CHANNELS)
+        assert set(info["keys"]) == expected, info
         assert "app_zhixing" in info["keys"], info
         assert info["zxVisible"], "智行 chip 在「用户与航线」面板里不可见"
-        assert "app_zhixing" in (info["navKeys"] or []), info
+        assert set(info["navKeys"] or []) == expected, info
         assert not errs, errs[:3]
     finally:
         b.close()

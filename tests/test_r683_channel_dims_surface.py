@@ -29,14 +29,24 @@ def test_endpoint_exists_in_post_chain():
     assert '"/api/channel-dims"' in src, "端点没接进请求链"
 
 
+def _channels_src():
+    with open(os.path.join(ROOT, "core", "channels.py"),
+              encoding="utf-8") as f:
+        return f.read()
+
+
 def test_endpoint_derives_from_single_source():
-    """必须 import core.channels，不能自己再写一份 7×7 表。"""
+    """必须走 core.channels 的单一载荷，不能自己再写一份矩阵。"""
     src = _webui_src()
     i = src.index('"/api/channel-dims"')
-    block = src[i:i + 1400]
+    assert "channel_dims_payload()" in src[i:i + 900], (
+        "端点没走 core.channels.channel_dims_payload")
+    payload = _channels_src()
+    j = payload.index("def channel_dims_payload")
+    block = payload[j:]
     for name in ("APP_BROWSER_PEER", "CHANNEL_DIMENSIONS", "DIMENSIONS",
                  "app_alignment_gaps"):
-        assert name in block, "端点没有读 %s，等于另抄一份" % name
+        assert name in block, "载荷没有读 %s，等于另抄一份" % name
 
 
 def test_payload_answers_alignment_question():

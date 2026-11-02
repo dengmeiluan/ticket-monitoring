@@ -19,6 +19,12 @@ def _const(name):
 BRAND = _const("SRX_BRAND_IMG")
 AIR = _const("SRX_AIR_IMG")
 META = _const("SRX_AIR_META")
+_AM = re.search(r"const SRX_BRAND_ALIAS=\{(.*?)\};", SRC, re.S)
+ALIAS = dict(re.findall(r"(\w+):'(\w+)'", _AM.group(1) if _AM else ""))
+
+
+def _brand_uri(p):
+    return BRAND.get(p) or BRAND.get(ALIAS.get(p, ""))
 
 
 def _png_ok(uri):
@@ -36,7 +42,10 @@ def test_every_channel_is_embedded_official_mark():
     """
     from core.channels import APP_CHANNELS, BROWSER_CHANNELS
     need = set(BROWSER_CHANNELS) | set(APP_CHANNELS)
-    assert need <= set(BRAND), "缺图标：%s" % sorted(need - set(BRAND))
+    missing = [p for p in need if not _brand_uri(p)]
+    assert not missing, "缺图标：%s" % sorted(missing)
+    for p in need:
+        assert _png_ok(_brand_uri(p)) > 1500, p
     for key, uri in BRAND.items():
         assert _png_ok(uri) > 1500, key
         assert not re.search(r"https?://", uri), key

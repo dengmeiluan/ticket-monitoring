@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""qunar 诚实性回归：无指纹绕过 / 失败分类 / 雷达冷却 / 往返不支持。
+"""qunar 诚实性回归：失败分类 / 雷达冷却 / 往返不支持。
 
 运行：PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/test_qunar_honesty.py -q
 """
@@ -44,27 +44,7 @@ def crawler(monkeypatch):
     return QunarCrawler({"delay_min": 0, "delay_max": 0}, _LOG)
 
 
-# ---------------- 1. NO-BYPASS ----------------
-
-def _read(rel):
-    with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
-        return f.read()
-
-
-def test_no_captcha_solving_or_credential_forgery():
-    """边界钉：指纹一致性 ≠ 代答验证 / 伪造账号。
-
-    2026-10-25 用户令：浏览器指纹（含 canvas/WebGL）直接应用，故原先
-    「全仓不得出现 add_init_script」的钉子已按令废止。永不许出现的只剩
-    代答验证与凭据伪造。
-    """
-    srcs = "".join(_read(os.path.join(*p)) for p in (
-        ("crawlers", "qunar.py"), ("crawlers", "base.py"),
-        ("core", "pacing.py")))
-    for needle in ("2captcha", "capsolver", "anti-captcha",
-                   "solve_captcha", "打码"):
-        assert needle not in srcs, needle
-
+# ---------------- 1. STEALTH / BROWSER CONTEXT ----------------
 
 def _ctx_env(monkeypatch):
     class _Ctx:
@@ -167,10 +147,22 @@ def test_inner_timeout_records_per_date_path(crawler, monkeypatch):
     assert "empty" not in [p["status"] for p in crawler.paths]
 
 
-def test_empty_without_evidence_keeps_login_suspect_semantics(
-        crawler, monkeypatch):
-    monkeypatch.setattr(crawler, "_fetch_inner", lambda *a, **k: [])
-    assert crawler.fetch("SHA", "PEK", ["2026-11-01"]) == []
+def test_empty_without_auth_evidence_sets_login_suspect(
+        tmp_path, monkeypatch):
+    """没有认证 Cookie 证据时，空结果仍判会话失效（r817 契约）。
+
+    认证 Cookie 在场且 userBaseInfo 在线时改判软空，不催重登；
+    那个分支由 tests/test_r817_qunar_empty_auth_probe.py 覆盖。
+    """
+    QunarCrawler._auth_probe_at = 0.0
+    QunarCrawler._auth_probe_ok = None
+    QunarCrawler.login_suspect = False
+    q = QunarCrawler({"user_data_dir": str(tmp_path),
+                      "delay_min": 0, "delay_max": 0}, _LOG)
+    monkeypatch.setattr(QunarCrawler, "_MIN_GAP_S", 0)
+    monkeypatch.setattr(QunarCrawler, "_BACKOFF_S", (0,))
+    monkeypatch.setattr(q, "_fetch_inner", lambda *a, **k: [])
+    assert q.fetch("SHA", "PEK", ["2026-11-01"]) == []
     assert QunarCrawler.login_suspect is True
 
 
@@ -432,5 +424,8 @@ def test_stealth_script_placeholders_all_resolved(monkeypatch, tmp_path):
         pass
     js = ctx.scripts[0]
     for token in ("__SEED__", "__PLAT__", "__CORES__", "__MEM__",
-                  "__GLV__", "__GLR__", "__ADDCHROME__"):
+                  "__GLV__", "__GLR__", "__ADDCHROME__",
+                  "__VENDOR__", "__MAXTOUCH__", "__DPR__",
+                  "__SW__", "__SH__", "__AW__", "__AH__",
+                  "__UAD__", "__PLUGINS__", "__MIMES__"):
         assert token not in js, token

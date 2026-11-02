@@ -24,8 +24,8 @@ def _src():
 def test_upgrade_path_removes_soft_reject():
     """代码里升级分支必须显式剔除本轮的 soft_reject。"""
     s = _src()
-    i = s.index('if _n >= 2:')
-    block = s[i:i + 1400]
+    i = s.index("if self._qn1999_is_login(")
+    block = s[i:i + 1800]
     assert '"soft_reject"' in block, block
     assert "_kept" in block and "self.paths =" in block, block
 
@@ -33,8 +33,8 @@ def test_upgrade_path_removes_soft_reject():
 def test_upgrade_only_touches_same_date():
     """只撤本轮同日的那条，不碰历史与其他日期。"""
     s = _src()
-    i = s.index('if _n >= 2:')
-    block = s[i:i + 1400]
+    i = s.index("if self._qn1999_is_login(")
+    block = s[i:i + 1800]
     assert 'p.get("date") == date' in block, block
 
 

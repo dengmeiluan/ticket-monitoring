@@ -22,7 +22,7 @@ from typing import List
 import httpx
 from core import net as _net
 
-from .base import BaseCrawler, iata2
+from .base import BaseCrawler, iata2, profile_headers
 from .challenge import classify_text
 from .qunar import QunarCrawler as _Q
 from core.intl import airport_city_code, is_intl_route
@@ -54,7 +54,9 @@ class FliggyCrawler(BaseCrawler):
     # 预热入口（L3）：PC 首页让 baxia 风控下发 cookie；H5 通道走自己的槽位
     warmup_url = "https://www.fliggy.com/"
     RISK_COOKIES = ("cna", "_m_h5_tk", "cookie2")
-    AUTH_COOKIES = ("cookie2",)
+    # cookie2 匿名 www.fliggy.com 就下发（2026-11-02 实测）；unb 是淘宝
+    # 用户号（登录后才有），用作采集态回写判据。
+    AUTH_COOKIES = ("unb",)
 
     URL_TPL = ("https://sjipiao.fliggy.com/flight_search_result.htm"
                "?tripType=0&depCity={fc}&arrCity={tc}&depDate={d}"
@@ -332,13 +334,14 @@ class FliggyCrawler(BaseCrawler):
                     self.config.get("tls_impersonate", "chrome"),
                     timeout=25, follow_redirects=True,
                               proxy=(self.proxy or None),
-                              headers={
-                                  # 校准 R1 实证：无 Referer 被 WAF 拒
-                                  # （「Referer is not safe」）
-                                  "Referer": "https://sijipiao.fliggy.com/"
-                                             "ie/flight_search_result.htm",
-                                  "User-Agent": self._ua() or "Mozilla/5.0",
-                              }) as client:
+                              headers=profile_headers(
+                                  self.fingerprint(),
+                                  {
+                                      # 校准 R1 实证：无 Referer 被 WAF 拒
+                                      # （「Referer is not safe」）
+                                      "Referer": "https://sijipiao.fliggy.com/"
+                                                 "ie/flight_search_result.htm",
+                                  })) as client:
                 r = client.get(self.INTL_CALENDAR_API, params=self._calendar_params(
                     fc, tc, leave_date, ret_date=ret_date))
             obj = self._unwrap_jsonp(r.text)

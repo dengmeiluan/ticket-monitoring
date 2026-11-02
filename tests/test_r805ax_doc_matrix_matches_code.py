@@ -136,3 +136,21 @@ def test_gate_catches_a_drifted_cell():
     gaps = _parse_gaps(base.replace("app_qunar=()",
                                     "app_qunar=('calendar',)"))
     assert _gaps_diffs(gaps), "抹掉缺口后判据没抓到"
+
+
+def test_app_channels_summary_matches_connected_gaps():
+    """摘要句与缺口表同源：表说已对齐，正文不能再写「还差」。
+
+    2026-11-03 实测漂移：`APP_CHANNELS.md` 顶部还写「去哪儿 App 还差
+    calendar/low_fare」，而同文件缺口表已是 `—`、矩阵两者均 y。
+    """
+    text = _doc("APP_CHANNELS.md")
+    checks = (("app_qunar", "去哪儿 App", ("calendar", "low_fare")),)
+    for plat, label, dims in checks:
+        missing = set(app_alignment_gaps(plat))
+        for dim in dims:
+            if dim in missing:
+                continue
+            assert ("还差 `%s`" % dim) not in text, (
+                "%s 的 %s 已接通（缺口表为 —），顶部摘要仍在说「还差」"
+                % (label, dim))

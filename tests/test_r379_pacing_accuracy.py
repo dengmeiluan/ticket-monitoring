@@ -331,7 +331,9 @@ class _FakePage:
 
 class _FakeCtx:
     def storage_state(self):
-        return {"cookies": [{"name": "cticket", "value": "x"}]}
+        # 两个替身渠道各取所需：ctrip=cticket、qunar=_q
+        return {"cookies": [{"name": "cticket", "value": "x"},
+                            {"name": "_q", "value": "x"}]}
 
 
 @contextmanager
@@ -382,6 +384,7 @@ class _OpenPage(_ClosePage):
 
 class _LoginCrawler(BaseCrawler):
     name = "qunar"
+    AUTH_COOKIES = ("_q",)
 
     def login_url(self):
         return "https://passport.example/login"

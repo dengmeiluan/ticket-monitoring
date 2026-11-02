@@ -11,6 +11,7 @@ import random
 import sqlite3
 from datetime import datetime, timedelta
 
+from core.channels import APP_CHANNELS
 from core.storage import SCHEMA, PriceStorage
 
 _PLATS = ["qunar", "ctrip", "fliggy", "tongcheng", "tuniu"]
@@ -19,10 +20,10 @@ _PLATS = ["qunar", "ctrip", "fliggy", "tongcheng", "tuniu"]
 #
 # `_PLATS` 只管价格种子：它的下标参与价格偏移计算（`base{...}` 只认 5 家），
 # 直接扩它会改掉演示价。但**健康卡与脉冲图**画的是「哪些渠道在跑」——
-# 真实账本每轮 7 家全在（app_qunar/app_zhixing 各 58/59 条），演示少画
-# 两个会让访客以为 App 渠道不参与采集。
+# 稳定 7 家 + 已注册的可选 App 渠道都要在场，演示少画会让访客以为
+# App 渠道不参与采集。
 # 两处必须同源：同一演示页两套渠道集合 = 读者看到互相矛盾的宇宙。
-DEMO_SCAN_PLATS = _PLATS + ["app_zhixing", "app_qunar"]
+DEMO_SCAN_PLATS = _PLATS + list(APP_CHANNELS)
 
 
 def _d(days):
@@ -428,11 +429,10 @@ def build_demo_db(path, seed=20260909):
                  r["dates"][0], min(dp, tp), "东航", "MU8369", ts_s,
                  json.dumps(extra, ensure_ascii=False)))
     # ---- 当轮富明细：近 30 分钟内，采集渠道 × 3 航线 ----
-    # 用 DEMO_SCAN_PLATS（7 家）而不是 _PLATS（5 家价格种子）：真实库里
-    # 两个 App 有明细行（48h app_zhixing 24 / app_qunar 6），生产 8765
-    # 明细页实测也真渲染出 app_zhixing 行。演示缺它们会让访客以为
-    # 「App 渠道不参与采集」，且连带让检索页的 App chip 恒为 0、
-    # 关注卡看不到 App 覆盖。
+    # 用 DEMO_SCAN_PLATS（浏览器 5 + 全部已注册 App）而不是 _PLATS：
+    # 真实库里 App 渠道有明细行，生产 8765 明细页也真渲染过 App 行。
+    # 演示缺它们会让访客以为「App 渠道不参与采集」，且连带让检索页的
+    # App chip 恒为 0、关注卡看不到 App 覆盖。
     for pi, plat in enumerate(DEMO_SCAN_PLATS):
         ts_s = (now - timedelta(minutes=4 + pi * 3)).strftime(
             "%Y-%m-%d %H:%M:%S")
@@ -442,7 +442,9 @@ def build_demo_db(path, seed=20260909):
             # 负偏移以体现差异，不改变任何浏览器渠道的既有价。
             base = {"qunar": 0, "ctrip": -30, "fliggy": 60,
                     "tongcheng": 90, "tuniu": 120,
-                    "app_zhixing": -45, "app_qunar": -60}[plat]
+                    "app_zhixing": -45, "app_qunar": -60,
+                    "app_fliggy": -40,
+                    "app_ctrip": -35, "app_tongcheng": -50}[plat]
             if r["to"] in _INTL_PLAN:
                 # R49 国际专用池（不共用国内 airlines/slots——行头
                 # 机场对错挂国内虹桥/天山即在此规避）
@@ -625,7 +627,9 @@ def demo_pulse(seed=11):
     # 分裂，读者会看到互相矛盾的两组渠道。
     _base = {"qunar": (70, 16), "ctrip": (18, 8), "fliggy": (24, 9),
              "tongcheng": (30, 12), "tuniu": (12, 7),
-             "app_zhixing": (20, 9), "app_qunar": (26, 10)}
+             "app_zhixing": (20, 9), "app_qunar": (26, 10),
+             "app_fliggy": (22, 9),
+             "app_ctrip": (15, 7), "app_tongcheng": (18, 8)}
     chans = {p: _base[p] for p in DEMO_SCAN_PLATS}
     rounds = []
     for i in range(40):

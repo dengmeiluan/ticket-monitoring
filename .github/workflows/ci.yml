@@ -46,7 +46,7 @@ jobs:
         run: python -m py_compile main.py webui.py report.py wizard.py core/*.py crawlers/*.py
       # 新渠道接线漏项（只登记了采集、没进健康/雷达/告警/前端表…）不再靠
       # 人对照 HANDOFF 清单：契约逐格读真实登记点，有缺口直接失败并点名。
-      - name: 渠道平台契约（7 渠道 × 11 轴，有缺口即失败）
+      - name: 渠道平台契约（10 渠道 × 11 轴，有缺口即失败）
         run: python -m core.channel_contract --strict
       - name: 全量测试（单测 + 推送链路演练 + 链接同源门禁 + 版本门禁）
         run: |

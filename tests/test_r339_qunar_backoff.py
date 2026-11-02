@@ -38,20 +38,26 @@ def q_cls():
     QunarCrawler._cooldown_until, QunarCrawler._last_done_ts = old_cd, old_done
 
 
-def test_qunar_suspect_skips_backoff_chain(q_cls, monkeypatch):
-    """login_suspect 在案 → 空结果单次放弃（不进 90/180/300 重试链）。"""
+def test_qunar_suspect_skips_backoff_chain(q_cls, monkeypatch, tmp_path):
+    """无认证证据 + login_suspect 在案 → 空结果单次放弃。
+
+    r817 起旧标记会先做会话探测；本用例用隔离空档案保证探测不发起，
+    仍守「确定性失效不进 90/180/300 重试链」。
+    """
     calls = []
 
     def _empty(a, b, d):
         calls.append(1)
         return None
 
-    c = q_cls({}, logging.getLogger("t339"))
+    q_cls._auth_probe_at = 0.0
+    q_cls._auth_probe_ok = None
+    c = q_cls({"user_data_dir": str(tmp_path)}, logging.getLogger("t339"))
     monkeypatch.setattr(c, "_fetch_one", _empty)
     q_cls.login_suspect = True
     q_cls._BACKOFF_S = (0, 0, 0)   # 三档全即时——未砍档则共试 4 次
     assert c.fetch("上海", "海口", ["2027-01-29"]) == []
-    assert len(calls) == 1, f"失效证据在案仍重试 {len(calls)} 次"
+    assert len(calls) == 1, f"无认证证据仍重试 {len(calls)} 次"
     assert q_cls.login_suspect is True   # 失效证据不清（引导重登）
 
 

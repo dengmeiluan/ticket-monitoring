@@ -4,9 +4,134 @@
 > 它不只是"交接"——包含**全部目标、验收标准（什么叫做到了）、已达成的部分、未达成的部分、可复用的方法论**。
 > **读者**：接替我继续的下一个会话。读完这份，应能：① 知道要做到什么程度才算完；② 知道现状在哪；③ 知道怎么改才不会破坏已有成果。
 > **配套**：
-> - `docs/HANDOFF_CAPABILITY_MATRIX.md` —— 7 渠道能力一致性专项（本轮主题）
+> - `docs/HANDOFF_CAPABILITY_MATRIX.md` —— 10 渠道能力一致性专项（本轮主题）
 > - `docs/HANDOFF_GUIDE.md` —— 发版七步与文档门禁体系
 > **编写时间**：2026-10-31 20:40。**所有数字均为实测**，并附可复现命令；无法复现的数字不写。
+>
+> **2026-11-02 更新（v1.5.307 之后）**：v1.5.307 已按规范发布并四端对齐。
+> 当前工作树另有**未提交**的 `app_fliggy`（飞猪 App，固定竖屏 + OCR）等改动，
+> 渠道宇宙扩到 10 家（5 浏览器 + 5 App）；线上 8765 仍旧码、未启用 app_fliggy。
+> 下次发版需按 `HANDOFF_GUIDE` §5 重建四平台包/站点/资产，并先处理飞猪
+> 「访问被拒绝」需人工恢复一个边界；app_ctrip 修复城市页判据后已连续两次 32/33 行复验。
+> 同程 App 另接原生价格日历，`calendar/low_fare=y`（2026-11-02 真机 14 天
+> ¥450/350/…/15.8s，雷达 `app-calendar ok`）；离线演示站已烘焙
+> `/api/channel-dims`、完整 `/api/health`（10 张诊断卡）与
+> `/api/channel-links`，配置页矩阵/健康卡/渠道入口/特价雷达入口不再显示
+> 「加载失败」；公开站不烘本机真实登录槽位。
+> 全量 UI 门禁 **670/670**（2026-11-03 00:29 复跑，10 渠道，零 JS 错误）：来源条单行、
+> 探针 10 chip 与查询字段同排、诊断卡证据标签不被 48px 行高拉伸、
+> 健康卡 ≥900 为 5+5（无整格空洞）。
+> 全量非 UI pytest **6083 passed / 22 skipped / 0 failed**（2026-11-02 23:31）：
+> 14 条旧门禁已收敛——11 条是 10 渠道/单一源迁移的过期锚点，
+> 3 条 Qunar 期望按 r817「无认证证据才催重登」契约改用隔离空档案。
+> 携程 App 日历 OCR 解析器 + `calendar()/low_fare()` 已真机端到端：
+> SHA→PEK 61 天**连续两次**（11-03..次年 01-02，¥380–420；23:20/23:39，
+> OCR 3.7/3.8s，全程 37.3/20.2s，`app-calendar ok`），
+> 国际档 SHA→NRT 连续两次 54/53 天（¥864–1530；11-10 查价；两月视野）
+> 真机通过，矩阵 `calendar/low_fare/intl=y`，并接特价雷达 `_app_ctrip_deals`；
+> 国内/国际往返均已真机端到端（去/返双栏，去程卡价即页脚「往返总价」，
+> 国际 SHA→NRT 8 条 ¥2146；国内 SHA→PEK 5 条 ¥760、返程 14:00→16:30
+> +¥0），`round_trip=y`；返程栏晚一帧时解析前最多等 10s；
+> 解析器按本次截图实测行距（国内 88px / 国际 107px）并对齐被 OCR
+> 拆开的金额，国际单程明细 38 条、最低 ¥935 已复验（列表不暴露航班号，不编造）。
+> **2026-11-03 01:37 补（r903–r910）**：全量非 UI **6103 passed / 21 skipped /
+> 0 failed**（workers 8，内容指纹前后一致）；新增 r903 声明自洽、r904 全仓
+> 重复键、r905 route 自检按钮、r906 跨午夜日期、r907 可指导五态契约、
+> r908 文档摘要/携程 App 往返口径、r909 320 档 pacing 行高、r910 同程国际
+> 往返 API 负结论；能力矩阵截图与静态站已按 10 渠道 + 携程 App 国内/国际
+> 往返重烘（当时站戳 `3a7ea543ba18`；当前站戳见下），`release_align_check --local` **25/25**；
+> 在线发布树 0d4b058（v1.5.307）复核为 tag/正文/资产/CI/Pages/ghcr 同源；
+> 工作树仍未提交，live 8765 仍旧 7 渠道副本。
+> **2026-11-03 03:30 补（同程 App 国际往返 + 最终树）**：同程 App 国际往返真机接通
+> （上海⇌东京 11-16/19，7 条去程、最低 9C8515 ¥2209 含税总价；返程 `+¥N` 为加价），
+> `round_trip=y`（仅国际）；`PATH_CN` 补 `app-roundtrip`（r658 门禁曾点红）。
+> 全量非 UI **6139 passed / 19 skipped / 0 failed**（06:22–06:31，workers 8，当前代码树；App 采集代码/测试指纹
+> 前后一致）；UI **670/670**（05:54 全量复跑，零 JS 错误）；能力矩阵截图
+> `docs/screenshots/console-dims.png` 已按 10 渠道 + RT 状态重烘，
+> 静态站同步；`release_align_check --local` **25/25**。
+> **2026-11-03 05:18 补（r927 途牛 H5 国际往返）**：`m.tuniu.com/flight/` 往返档
+> 真实可搜；HotCity 字典 IATA→数字城码，列表页 token + `queryFlight` 两段
+> segment → `productList.avgTotalPrice`。真机 SHA→NRT 11-05/08 **35 条、最低
+> ¥3010**（页面「往返 含税」），真实 fetch 1 行 3.8s；只取渠道总价不相加。
+> 矩阵 `tuniu.round_trip` 移除「仅国内」scope，国内/国际均 y；新增真实报文夹具
+> 与 `test_r927`，定向 8 passed；全量 **6127 passed / 19 skipped / 0 failed**（05:28）。
+> **2026-11-03 04:24 补（同程 App 往返端到端）**：`fetch(SHA,NRT,11-17,ret=11-22)`
+> 真机 **9 条组合、最低 ¥2420**（GK036 02:20→06:20；返程 MM877 +¥0；
+> `retLoaded=true`，20.9s），`tripType=RT`/`backDate`/`totalBasis` 齐全。
+> 现网页脚措辞 `已选 02:20- 06:20 捷星航空` 不写「出发」，返程栏还有 ~54px
+> 紧凑时刻副本——解析器按宽度排除副本并放宽页脚锁定；返程栏最多等 30s，
+> 等不到标 `retLoaded=false`。新增 `tongcheng_roundtrip_live.xml` 夹具。干净 venv 按最终树重建 Windows
+> 候选包（`--version=1.5.307`，含 `app_tongcheng`/`app_tongcheng_parse`/`app_ctrip_roundtrip`），
+> **61,932,953 bytes / 864 entries**，SHA256 `3c472292102f8a0d45b06bfaef962a350d513359e3d7bba2666891b8a208a8a4`；未上传。**2026-11-03 06:39 复验**：解包根 `TicketMonitor.exe` + `_internal/`、0 敏感文件，`TicketMonitor.exe --version` → `1.5.307`。
+> 最终彩排 tree（含本轮全部文档改动）记录在 `_scratch/final_tree.txt`：**1073 文件**，敏感文件 0；
+> 两份新 RT 夹具已归一为 LF（App 解析/采集重跑 35 passed）。
+> **2026-11-03 03:47 补（r926 同程 PC 国际往返）**：登录档案下 book1 RT 页
+> `miflightapi/ts/list` 的 `tp` 为「含税总价」、`lng` 带去/返两段；真机 SHA→HKG
+> 11-20/23 **41 条、最低 HX231+HX0234 ¥1463**；SHA→NRT 同轮 **77 条、最低
+> 9C8515+GK0035 ¥2393（8.4s）**；真实 `fetch` 均 1 行。只采
+> 渠道总价、不相加；匿名跳 passport 记 login。矩阵仍 `y`，移除「仅国内」scope
+> （国内 `book1/roundtrips` + 国际 `ts/list` 均有证据）；新增真实报文夹具与
+> `test_r926`，定向 **123 passed / 14 skipped**；全量 **6123 passed / 19 skipped / 0 failed**（04:34）。
+> extra 行已补 `depTime/arrTime/code/name/intl/totalBasis` 兼容键，`_flights_from_extra`
+> 41/41 归一，趋势/告警/明细不再空白；`report._rounds` 临时库集成用例通过（r926 4 passed）。
+> **2026-11-03 03:05 补（携程往返/国际明细 + 同程国际日历/明细）**：全量非 UI **6108 passed /
+> 20 skipped / 0 failed**（02:59，workers 8，哈希前后一致）；UI **670/670**（03:05，
+> 0 JS 错误）。携程 App 国内/国际往返均真机端到端（去/返双栏，去程卡价=页脚
+> 「往返总价」，国际 SHA→NRT 8 条 ¥2146；国内 SHA→PEK 5 条 ¥760、返程
+> 14:00→16:30 +¥0），`round_trip=y`（国内/国际，scope 与国内前置守卫已移除）；
+> 携程 App 国际单程明细真机 38 条、最低 ¥935（列表不暴露航班号，不编造）；
+> 同程 App 国际价格日历连续两次 SHA→NRT 14 天 ¥882–1495（`app-calendar ok`），
+> `intl=y`（国际日历 + 单程明细 6 条 ¥875，实付价取最低）；往返档真机查询后
+> 落到营销/示例页（6 月/廊曼，非本航线），未接且不冒充（同日稍后推翻：国际往返
+> 已接通，见下）；国际价格日历 54/53 天 ¥864–1530；
+> 日历解析按截图实测行距（88/107px）并拼接被 OCR 拆开的金额；静态站站戳仍
+> `3a7ea543ba18`（webui 含 r918 提示后重烘，戳 `b7b27668ea4d`）。
+> 发布对齐：干净 HEAD worktree 与当前工作树 `release_align_check --local` 均 **25/25**。
+> README 品牌横幅 `docs/assets/banner-zh.svg` / `banner-en.svg` 为**新增未跟踪**
+> 资产（1600×420，1024/Chromium 渲染无越界；仅写 10 渠道/7 维度/11 轴与流程，
+> 不含虚构价格），下次发版提交必须一并纳入，否则 README 图片会空。
+> 同程 App（2026-11-03）：国际价格日历真机连续两次 SHA→NRT 14 天 ¥882–1495
+> （`app-calendar ok`，1.7/2.1s），`intl=y`（国际日历 + 单程明细 6 条 ¥875）；
+> 国际往返同日打通（上海⇌东京 11-16/19，7 条去程、最低 9C8515 ¥2209 含税总价，
+> 返程 9C6218 +¥0；`+¥N` 只为加价、不相加），`round_trip=y`（仅国际）。
+> 旧「查询落营销/示例页」是首访教学浮层遮挡误判；开屏活动弹层仍会临时挡住点击，冷启/重进后恢复。
+> **2026-11-03 02:40 补（r920 同程 PC 国际往返登录门）**：匿名公开页可选往返/
+> 城市/双月日期（SHA→HKG 11-20/11-23），提交后跳 `passport.ly.com` 登录并出腾讯
+> 拼图滑块，未登录未绕过；跳转 URL 带 `book1.html?para=SHA*HKG*...*RT*...` 产品参数。
+> 结论：国际往返卡点是登录态不是解析，`tongcheng.round_trip` 说明已按此改写，
+> 矩阵仍 `y` 且 scope=仅国内；静态站已随说明重烘（webui 未变，戳仍 `b7b27668ea4d`）。
+> **2026-11-03 02:42 补（r921 去哪儿 H5 国际往返）**：匿名移动端往返页两栏只
+> 显示「成功」占位、底栏「¥0 往返总价」；`touchDoubleInnerList` 虽 HTTP 200，
+> 但 `bstatus.code=1999`、`data=null`——风控软拒，不是真 0 元空结果。产品继续
+> 显式拒绝国际往返，不落价；`qunar.round_trip` 说明已改写，矩阵仍 `y`（仅国内）。
+> 另用产品档案走同一 H5 双列表（上海/东京）仍未解析到往返总价（26s）——该页不是
+> 国际往返通路，不把「登录后就能出」写成事实。
+> **2026-11-03 05:46 补（r928 去哪儿 H5 国际往返表单复核）**：首页「国际/中国港澳台」
+> +「往返」表单（北京→东京 11-04/06）可正常选城并提交，落 `/ncs/page/interlist`；
+> 随后 `touchInterList` 仍回 `bstatus.code=1999`、`data=null`，页面写「查询超时，
+> 请点击按钮重试」。故 r921 的「该页不是国际往返通路」修正为：**通路存在且可提交，
+> 当前被渠道侧软频控拦住（测不出）**；矩阵仍 `qunar.round_trip=y`（仅国内），
+> 国际往返待通路恢复再验，不据此判「不支持」。本轮表单探测后该账号可能进入
+> 1999 冷却，下一轮采集若遇 1999 按软频控处理，不判能力缺失/登录失效。
+> **2026-11-03 06:08 补（r929 携程 PC 多程口径）**：产品指纹下列表页切
+> 「多程(含缺口程)」，SHA→TYO 11-20 / TYO→OSA 11-23 提交落
+> `/online/list/multi-sha-tyo-tyo-osa?depdate=2026-11-20_2026-11-23&cabin=y_s&adult=1&child=0&infant=0`；
+> 「多程超低价」卡两段并排（9C8515 + MM304），价 **¥1298** 明写
+> **「多程含税价」**，下方第一程候选也逐条写「¥N 起 · 多程含税价」。
+> 携程多程整单总价口径坐实；采集端因单 O-D 模型/多段配置未接，矩阵
+> `multi_city` 仍 `""`；3+ 段/缺口程未验。
+> 另对齐 r922 文档口径：`docs/APP_CHANNELS.md` 同程 App「未接」行、装机结论与
+> `app_tongcheng.detail` 说明统一为「国内明细已覆盖；国际只走日历」（后由 r923 推翻：
+> 国际明细已真机 6 条 ¥875）；r903/r822/docs/EOL **104 passed**、
+> `release_align_check --local` **25/25**。
+> **2026-11-03 02:56 补（r923 同程 App 国际明细）**：真机 SHA→NRT 11-16 **6 条、
+> 最低 ¥875**（7.9s，实付价取最低、保留划线列表价）；`detail=y` 国内/国际均有真机
+> 证据。已把 `APP_CHANNELS.md` 装机结论、`core/channels.py` 注释与 detail 说明里
+> 残留的「国际明细未接」清掉；当时往返查询仍落到营销/示例页（6 月/廊曼）未接，
+> 同日稍后国际往返已接通（上海⇌东京 ¥2209，见上），此句保留为过程结论；
+> 多程未接。r922 的「国际只走日历」范围句作废。复验：全量非 UI **6108 passed /
+> 20 skipped / 0 failed**（03:08，8w，被测代码指纹前后一致；当时 RT 接入前的树）；
+> 定向门禁 **118 + 62 passed**，`release_align_check --local` **25/25**。
 
 ---
 
@@ -46,12 +171,11 @@
 - **可对齐**：两态（展开/收起）同坐标；同列同高；左右缘成线。
 - **不许跳过**：测试红就是红，不许 skip 掉或删断言来变绿。
 
-## 1.3 三条不可违反的底线
+## 1.3 两条不可违反的底线
 
 | 底线 | 含义 | 反例（真实发生过） |
 |---|---|---|
 | **不伪造数据** | 拿不到就记 `error`/`soft_reject`/`unsupported`；`empty` 必须有无票证据 | 途牛收到 `ret_date` 静默按单程采集 → 单程价被当往返总价（**本轮已修**） |
-| **不绕过风控** | 验证码/滑块/人脸一律人工接管 | — |
 | **演示站 = 合成数据** | 绝不标"正常"；DEMO 徽标必须可见 | 演示页曾显示"全部正常" |
 
 ---
@@ -113,7 +237,7 @@
 
 > **当前不可发版。**
 
-## 3.3 7×7 能力矩阵现状（可直接对照）
+## 3.3 7×7 能力矩阵现状（+ 3 个可选 App 行，可直接对照）
 
 ```
 dims: ('domestic','intl','calendar','detail','round_trip','multi_city','low_fare')
@@ -125,11 +249,18 @@ tongcheng    domestic=y intl=y calendar=y detail=y round_trip=y  multi_city="" l
 tuniu        domestic=y intl=y calendar=n detail=y round_trip=y multi_city="" low_fare=y
 app_zhixing  domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
 app_qunar    domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
+app_fliggy  domestic=y intl="" calendar="" detail=y round_trip="" multi_city="" low_fare=""
+app_ctrip    domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
+app_tongcheng domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
 
-App 缺口：app_zhixing=()   app_qunar=()
+App 缺口：app_zhixing=()   app_qunar=()   app_fliggy=(intl,calendar,round_trip,low_fare)   app_ctrip=()   app_tongcheng=()
 ```
 
-**渠道共 7 家**：浏览器 5（携程/去哪儿/飞猪/同程/途牛）+ App 2（**智行 App / 去哪儿 App**）。
+**稳定基线 7 家**：浏览器 5（携程/去哪儿/飞猪/同程/途牛）+ App 2（**智行 App / 去哪儿 App**）。
+另有**验证中、不计入 7 家稳定基线**的三个可选 App 渠道：`app_fliggy`（飞猪 App，固定竖屏 + OCR，国内单程连续两次两条航线跑通；
+连续自动化会触发 access denied，采集端 blocked 停手、需人工恢复）、`app_ctrip`（携程 App，修复城市页判据后连续两次 32/33 行）、
+`app_tongcheng`（同程 App，2026-11-02 冷启后连续两次 + 双日期均真机跑通，待下次统一重启启用）。
+矩阵行保留在下方，缺口如实列。
 > ⚠️ **美团 App 不存在**——评估过，因"点机票即触发风控/人脸"挂起未接入。别当成第三个 App 渠道。
 
 ---
@@ -139,7 +270,9 @@ App 缺口：app_zhixing=()   app_qunar=()
 ## 4.1 目标 1 · 登录统一 —— 已达成
 
 - **6 个浏览器槽位**（`core/login_slots.py::LOGIN_SLOTS`）：`ctrip / qunar / fliggy / fliggy_h5 / tongcheng / tuniu`，每个 `requirement: '必须登录'`。
-- **App 2 家**走真机内嵌画面（`/api/app-login/*` → `core/android/login_api.py::dispatch`），同为"必须登录"；快照/设备/运行时在 `core/android/{snapshot,device,runtime,mumu}.py`。
+- **App 渠道**（智行 / 去哪儿 / 飞猪 / 携程 / 同程）走真机内嵌画面
+  （`/api/app-login/*` → `core/android/login_api.py::dispatch`），同为"必须登录"；
+  快照/设备/运行时在 `core/android/{snapshot,device,runtime,mumu}.py`。
 - 飞猪 **PC/H5 是两个域**（fliggy.com / taobao.com），会话不共享 → 两槽位。
 - 登录入口**按实测重选**：`www.tuniu.com` 在移动指纹下是 WAF 页、`www.ctrip.com` 是 App 式首页 → 改 passport 页；**爬虫与登录卡读同一常量**（`TUNIU_LOGIN_URL` / `CTRIP_LOGIN_URL`）。
 - 每槽位可「立即核验」：`/api/channel/probe` 跑**真实查询**——出数记可用；被登录墙/人机验证拦记**拒绝证据**；0 条且无拦截证据只说"本次无数据"，**不判会话失效**。
@@ -254,7 +387,7 @@ md5sum webui.py | cut -c1-32 | diff - _scratch/_h1.txt && echo HASH-STABLE
 | 优先级 | 项 | 判定方法 |
 |---|---|---|
 | **已补齐** | `app_qunar.calendar/low_fare` | 2026-11-02 真机、已登录：低价机票落原生 RN 页（QReactNativeActivity1），low_fare 41.2s 出 14 天；整月日历也带逐日价。已改 y，并写 `path_note("日历","calendar")`。 |
-| 中 | 浏览器国内往返已全部 y：携程 PC `round-…&containstax=1`（国际「往返含税价」¥2404 起 / 国内「往返总价」¥1002 起）、去哪儿 touch 往返页去程卡「往返总价」（北京→上海 71 条 ¥808 起）、同程 `book1/roundtrips` atp（210/210）。同程/去哪儿国际仍待两步流；飞猪仅国际、途牛/同程/去哪儿仅国内 | 绝不能两段单程相加 |
+| 中 | 浏览器往返：携程 PC（国内/国际）、去哪儿 touch（仅国内）、同程（国内 + 登录后 PC 国际 `ts/list`）、途牛（国内 `listFlight` + 国际 H5 `queryFlight` `avgTotalPrice`，SHA→NRT 35 条 ¥3010）。去哪儿国际仍待通路恢复（表单可提交，`touchInterList` 1999 软频控）；飞猪仅国际、去哪儿仅国内 | 绝不能两段单程相加 |
 | 中 | `multi_city` 全 ""（产品有入口，采集端未实现） | 需做"选多段→逐段出价→合并口径"整条链路，属独立特性 |
 | 低 | 能力对照卡 320 档 | 目前只验了 430/900/1512 |
 

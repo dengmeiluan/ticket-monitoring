@@ -23,6 +23,12 @@ def _const(name):
 BRAND = _const("SRX_BRAND_IMG")
 AIR = _const("SRX_AIR_IMG")
 META = _const("SRX_AIR_META")
+_AM = re.search(r"const SRX_BRAND_ALIAS=\{(.*?)\};", SRC, re.S)
+ALIAS = dict(re.findall(r"(\w+):'(\w+)'", _AM.group(1) if _AM else ""))
+
+
+def _brand_uri(p):
+    return BRAND.get(p) or BRAND.get(ALIAS.get(p, ""))
 SPRITE = re.search(r'<svg id="plSprite".*?</svg>', SRC, re.S).group(0)
 PLANE_MODEL_SRC = re.search(r"const SRX_PLANE_MODEL=(\{.*?\});\n", SRC, re.S).group(1)
 PLANE_CODE_SRC = re.search(r"const SRX_PLANE_CODE=(\{.*?\});\n", SRC, re.S).group(1)
@@ -64,7 +70,14 @@ def test_every_ota_mark_is_full_bleed_complete_official_png():
     """
     from core.channels import APP_CHANNELS, BROWSER_CHANNELS
     need = set(BROWSER_CHANNELS) | set(APP_CHANNELS)
-    assert need <= set(BRAND), "缺图标：%s" % sorted(need - set(BRAND))
+    missing = [p for p in need if not _brand_uri(p)]
+    assert not missing, "缺图标：%s" % sorted(missing)
+    for p in need:
+        im, _ = _png(_brand_uri(p))
+        assert im.size == (256, 256), (p, im.size)
+        for xy in ((0, 0), (255, 0), (0, 255), (255, 255)):
+            r, g, b, _ = im.getpixel(xy)
+            assert max(r, g, b) - min(r, g, b) > 8 or max(r, g, b) < 240, (p, xy)
     for key, uri in BRAND.items():
         im, _ = _png(uri)
         assert im.size == (256, 256), (key, im.size)

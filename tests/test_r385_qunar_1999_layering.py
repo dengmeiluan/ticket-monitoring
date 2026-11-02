@@ -62,16 +62,21 @@ def test_single_1999_is_soft_reject_not_login():
     assert "login_suspect = True" not in seg.split("if _n >= 2:")[0], seg
 
 
-def test_two_consecutive_1999_escalate_to_login():
+def test_two_consecutive_1999_escalate_only_without_auth_cookie():
+    # 连续 ≥2 且认证 Cookie 不在场才升 login；Cookie 在场时是限流/软拒。
+    assert QunarCrawler._qn1999_is_login(1, False) is False
+    assert QunarCrawler._qn1999_is_login(2, False) is True
+    assert QunarCrawler._qn1999_is_login(2, True) is False
     src = _src()
     i = src.find('if risk == "login":')
-    block = src[i:i + 2600]
+    block = src[i:i + 3000]
     assert "_qn1999_streak" in block
-    assert "if _n >= 2:" in block
-    # 只有连续分支置 login_suspect
-    j = block.find("if _n >= 2:")
-    assert "login_suspect = True" in block[j:j + 400], block[j:j + 400]
-    assert 'self.path_note("H5", "login"' in block[j:j + 500]
+    assert "self._qn1999_is_login(_n, _auth_present)" in block
+    assert "self._read_session_state()" in block
+    # 只有“无认证 Cookie + 连续 ≥2”分支置 login_suspect
+    j = block.find("if self._qn1999_is_login(")
+    assert "login_suspect = True" in block[j:j + 600], block[j:j + 600]
+    assert 'self.path_note("H5", "login"' in block[j:j + 700]
 
 
 def test_success_clears_1999_streak():

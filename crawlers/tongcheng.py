@@ -17,7 +17,7 @@ from typing import List
 from core.models import PRICE_MAX, PRICE_MIN, FlightPrice
 from core.citydata import CODE_NAME as _CODE_NAME
 from core.intl import airport_city_code, city_short_of, is_intl_route
-from .base import BaseCrawler, iata2, iata3
+from .base import BaseCrawler, iata2, iata3, profile_headers
 from .challenge import classify_text
 
 
@@ -26,6 +26,9 @@ class TongchengCrawler(BaseCrawler):
     login_suspect = False
     name = "tongcheng"
     use_mobile = True
+    # 登录后才下发（匿名实测 m.ly.com/www.ly.com 只有 longKey）；
+    # 作为采集态快照回写的认证证据，避免空壳/登出态覆盖登录快照。
+    AUTH_COOKIES = ("memberIdNew", "cnUser")
     # 确保 parse_error 可入账（不依赖 base 白名单版本；重复项去重）
     PATH_STATUS = tuple(dict.fromkeys(
         BaseCrawler.PATH_STATUS + ("parse_error",)))
@@ -543,6 +546,11 @@ class TongchengCrawler(BaseCrawler):
         results: List[FlightPrice] = []
         fc, tc = (airport_city_code(from_city.upper()),
                   airport_city_code(to_city.upper()))
+        # 国际往返（2026-11-03 实测）：登录档案下 book1 RT 页直接取
+        # miflightapi/ts/list；每条 res 的 tp 是含税总价、lng 带两段航班。
+        # 只采渠道自算总价，不做两段单程相加。
+        if ret_date:
+            return self._fetch_intl_rt(from_city, to_city, dates, ret_date)
         # r384：定时面先走窗历（单 HTTP/航线、90 天窗口、价格与页内
         # 签名日历逐日同值）——逐日启浏览器的 ts/calendar 需页会话
         # 签名，裸请求恒 444「非法链接」，这是同程国际长期零数据的
@@ -624,26 +632,211 @@ class TongchengCrawler(BaseCrawler):
                     "[tongcheng][intl] 窗历未出数，定时面不再启浏览器"
                     "（页内日历对该渠道恒 444）——本轮按 unsupported 记账")
                 return []
-        # 往返（ret_date 在场）：窗历是单程价。页内 ts/calendar 的
-        # AD/TT 只对站点自身请求生效，本通路取不到往返数据——先试
-        # 一次，仍无数据就如实记边界，绝不拿单程价冒充往返。
-        out = self._intl_browser_fallback(from_city, to_city, dates, fc, tc,
-                                          ret_date=ret_date)
-        if ret_date and not out:
-            self._intl_rt_note(dates)
-        return out
+        # 非往返：真实列表/日历兜底；RT 已在上面由 _fetch_intl_rt 分流。
+        return self._intl_browser_fallback(from_city, to_city, dates, fc, tc)
 
-    def _intl_rt_note(self, dates: List[str]):
-        """往返能力边界：只陈述本仓库能观测到的事实——经本通路取不到
-        往返价（页内日历门拒、窗历只有单程）。不推断"站点自身也只发
-        单程"（那需要看站点自己的 RT 请求，本仓库看不到）。"""
-        self.path_note("往返", "unsupported",
-                       detail="往返明细暂不支持（本通路取不到往返价，"
-                              "窗历仅单程）")
-        self.logger.warning(
-            "[tongcheng][intl] %s 本通路取不到往返价（页内日历门拒、"
-            "窗历仅单程），不拿单程价冒充往返",
-            ",".join(str(d) for d in dates))
+    def _intl_rt_url(self, fc: str, tc: str, date: str,
+                     ret_date: str) -> str:
+        """book1 国际往返结果页：para 用城市码，展示名用中文短名。"""
+        def _name(city: str) -> str:
+            return self.CITY_NAME.get(city) or city_short_of(city) or city
+        para = "%s*%s*%s*%s*RT*1_0_0*Y|S|C|F" % (
+            fc, tc, date, ret_date)
+        return ("https://www.ly.com/iflight/book1.html?para="
+                + urllib.parse.quote(para, safe="*|")
+                + "&departureCity=" + urllib.parse.quote(_name(fc))
+                + "&departureCityIsInter=0&departAirport&departAirportCode"
+                + "&arrivalCity=" + urllib.parse.quote(_name(tc))
+                + "&arrivalCityIsInter=1&arriveAirport&arriveAirportCode"
+                + "&advanced=false")
+
+    @staticmethod
+    def _parse_intl_rt_entry(e: dict, date: str, ret_date: str):
+        """一条 ts/list res → 往返行；只认带两段航班且 tp 为正的条目。"""
+        lng = str(e.get("lng") or "")
+        legs = lng.split("|")
+        if len(legs) != 2:
+            return None
+        try:
+            ret_flight, ret_day = legs[1].rsplit("_", 1)
+        except ValueError:
+            return None
+        if ret_day != str(ret_date).replace("-", ""):
+            return None
+        try:
+            price = float(e.get("tp") or e.get("avg") or 0)
+        except (TypeError, ValueError):
+            return None
+        if not (PRICE_MIN <= price <= PRICE_MAX):
+            return None
+        acs = e.get("acs") or []
+        if not acs:
+            return None
+        ac = acs[0] or {}
+        deps = e.get("dants") or [{}]
+        arrs = e.get("aants") or [{}]
+        dep = str(e.get("dt") or "")
+        arr = str(e.get("at") or "")
+        flight = str(ac.get("an") or "")
+        airline = str(ac.get("acn") or "")
+        return {
+            "airline": airline,
+            "flight": flight,
+            "dep": dep,
+            "arr": arr,
+            # 兼容报表/明细消费端的标准键（与其它渠道 extra 行同构）
+            "depTime": dep,
+            "arrTime": arr,
+            "code": flight,
+            "name": airline,
+            "date": date,
+            "intl": True,
+            "flightKey": str(e.get("flightKey") or ""),
+            "depAirport": str((deps[0] or {}).get("an") or ""),
+            "arrAirport": str((arrs[0] or {}).get("an") or ""),
+            "price": price,
+            "priceLabel": "往返含税总价",
+            "basis": "product_round_trip_total",
+            "totalBasis": "product_round_trip_total",
+            "tripType": "RT",
+            "depDate": date,
+            "backDate": ret_date,
+            "returnFlight": ret_flight,
+            "returnDate": ret_day,
+            "rType": str(e.get("rType") or ""),
+            "pair": lng,
+            "source": "miflightapi/ts/list",
+        }
+
+    def _fetch_intl_rt(self, from_city: str, to_city: str,
+                       dates: List[str], ret_date: str) -> List[FlightPrice]:
+        """国际往返：登录档案下 book1 RT 页 → ts/list 的 tp 含税总价。
+
+        每条 res 的 `lng` 是 `去程航班_日期|返程航班_日期`；`tp` 是页面
+        卡片的「含税总价」，与同一条目的去/返两段一起出现。只落这个
+        总价，绝不把两段单程相加。页面未登录会跳 passport，如实记 login。
+        """
+        fc, tc = (airport_city_code(from_city.upper()),
+                  airport_city_code(to_city.upper()))
+        results: List[FlightPrice] = []
+        bak = self.use_mobile
+        self.use_mobile = False
+        try:
+            with self.browser(headless=(False if self.probe_mode else None)) as ctx:
+                page = self.new_page(ctx)
+                payloads: list = []
+
+                def _on_resp(r):
+                    if "miflightapi/ts/list" not in r.url:
+                        return
+                    try:
+                        payloads.append(json.loads(r.text()))
+                    except Exception:  # noqa: BLE001
+                        pass
+
+                page.on("response", _on_resp)
+                for date in dates:
+                    t0 = time.time()
+                    url = self._intl_rt_url(fc, tc, date, ret_date)
+                    nav_err = None
+                    payloads.clear()
+                    try:
+                        page.goto(url, wait_until="domcontentloaded",
+                                  timeout=45000)
+                    except Exception as e:  # noqa: BLE001
+                        nav_err = (self._exc_status(e),
+                                   "往返页导航异常: %s" % e)
+                        self.logger.warning(
+                            "[tongcheng][intl-rt] 导航异常: %s", e)
+                    rows = {}
+                    deadline = time.monotonic() + 15
+                    while time.monotonic() < deadline:
+                        try:
+                            page.wait_for_timeout(1000)
+                        except Exception:  # noqa: BLE001
+                            break
+                        for pl in list(payloads):
+                            if not isinstance(pl, dict):
+                                continue
+                            data = pl.get("data") or {}
+                            for e in (data.get("res") or []):
+                                row = self._parse_intl_rt_entry(
+                                    e, date, ret_date)
+                                if not row:
+                                    continue
+                                key = (row["flight"], row["returnFlight"])
+                                old = rows.get(key)
+                                if old is None or row["price"] < old["price"]:
+                                    rows[key] = row
+                        done = any(
+                            isinstance(pl, dict)
+                            and (pl.get("data") or {}).get("done") == 1
+                            for pl in list(payloads))
+                        if rows and (done or time.monotonic() > deadline - 7):
+                            break
+                    url_now = str(getattr(page, "url", "") or "")
+                    if rows:
+                        best = min(rows.values(),
+                                   key=lambda r: r["price"])
+                        type(self).login_suspect = False
+                        results.append(FlightPrice(
+                            platform=self.name,
+                            from_city=from_city, to_city=to_city,
+                            depart_date=date,
+                            price=float(best["price"]),
+                            airline=str(best.get("airline") or ""),
+                            flight_no=str(best.get("flight") or ""),
+                            depart_time=str(best.get("dep") or ""),
+                            arrive_time=str(best.get("arr") or ""),
+                            extra=json.dumps(list(rows.values()),
+                                             ensure_ascii=False)))
+                        self.path_note(
+                            "往返", "ok", rows=len(rows), date=date,
+                            url=url_now,
+                            detail="同程 PC 国际往返列表（含税总价）",
+                            ms=int((time.time() - t0) * 1000))
+                        self.logger.info(
+                            "[tongcheng][intl-rt] %s→%s 返 %s：%d 条，"
+                            "最低往返含税总价 ¥%.0f（%s + %s）",
+                            from_city, to_city, ret_date, len(rows),
+                            best["price"], best.get("flight"),
+                            best.get("returnFlight"))
+                    else:
+                        try:
+                            body = page.inner_text("body")[:2500]
+                        except Exception:  # noqa: BLE001
+                            body = ""
+                        sig = classify_text(body, url_now)
+                        login = bool(
+                            "passport.ly.com" in url_now
+                            or (sig and sig.status == "login")
+                            or "请登录" in body)
+                        blocked = bool(
+                            re.search(r"验证码|安全验证|滑块|captcha", body)
+                            or (sig and sig.status == "blocked"))
+                        if nav_err:
+                            status, detail = nav_err
+                        elif login:
+                            type(self).login_suspect = True
+                            status, detail = "login", "同程国际往返需登录"
+                        elif blocked:
+                            status, detail = "blocked", "同程国际往返人机验证"
+                        elif re.search(r"没有符合|暂无.{0,8}航班|"
+                                       r"未找到.{0,8}航班", body):
+                            status, detail = "empty", "站点明确无可售往返"
+                        else:
+                            status, detail = (
+                                "error", "往返列表未解析到含税总价")
+                        self.path_note("往返", status, date=date,
+                                       detail=detail, url=url_now,
+                                       ms=int((time.time() - t0) * 1000))
+                        self.logger.warning(
+                            "[tongcheng][intl-rt] %s→%s 未出往返总价（%s）",
+                            from_city, to_city, detail)
+                    self._sleep()
+        finally:
+            self.use_mobile = bak
+        return results
 
     def _intl_browser_fallback(self, from_city: str, to_city: str,
                                dates: List[str], fc: str, tc: str,
@@ -972,16 +1165,11 @@ class TongchengCrawler(BaseCrawler):
         """
         import httpx
         fc, tc = from_city.upper(), to_city.upper()
-        try:
-            ua = str((self.fingerprint() or {}).get("ua") or "")
-        except Exception:
-            ua = ""
-        headers = {"Content-Type": "application/json",
-                   "Accept": "application/json, text/plain, */*",
-                   "Referer": "https://m.ly.com/",
-                   "tcplat": "518"}
-        if ua:
-            headers["User-Agent"] = ua
+        headers = profile_headers(self.fingerprint(), {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/plain, */*",
+            "Referer": "https://m.ly.com/",
+            "tcplat": "518"})
         out: List[FlightPrice] = []
         for i, date in enumerate(dates):
             if i:

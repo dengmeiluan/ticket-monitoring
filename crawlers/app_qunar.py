@@ -255,15 +255,30 @@ def _find_search_placeholder(xml: str):
 
 
 def _search_result_row(xml: str, city: str):
-    """搜索结果里的城市行：`上海（不限机场）  上海  中国  SHA`。
+    """搜索结果里的城市行：`海口 海南 中国 HAK` / `上海（不限机场）`。
 
-    真机 search 命中后会给一行「城市名（不限机场）」，下面是机场子项。
-    按 `city` 前缀 + 「不限机场」/三字码定位，避免点到机场行。
+    真机 search 命中后会给一行城市聚合行，下面是机场子项。三字码必须
+    通用（2026-11-02 18:15 真机：写死 `SHA` 时海口行 HAK 永远匹配不到，
+    搜索框已显示「海口」也不点，30 秒后记设到达城市失败）。
     """
-    for n in _nodes(xml):
-        t = n["text"] or ""
-        if t.startswith(city) and ("不限机场" in t or "SHA" in t):
+    nodes = _nodes(xml)
+    for n in nodes:
+        t = (n["text"] or "").strip()
+        if not t.startswith(city):
+            continue
+        if "不限机场" in t or re.search(r"(?<![A-Z])[A-Z]{3}(?![A-Z])", t):
             return n
+    # 城市名与三字码分属两个节点：同一行（纵向中心差 <40px）也认。
+    city_nodes = [n for n in nodes
+                  if (n["text"] or "").strip() == city]
+    code_nodes = [n for n in nodes
+                  if re.fullmatch(r"[A-Z]{3}",
+                                  (n["text"] or "").strip() or "")]
+    for n in city_nodes:
+        cy = (n["y1"] + n["y2"]) / 2.0
+        for c in code_nodes:
+            if abs(cy - (c["y1"] + c["y2"]) / 2.0) < 40:
+                return n
     return None
 
 
@@ -404,6 +419,53 @@ def _visible_months(xml: str):
     return [(y, m) for _, y, m in out]
 
 
+_CAL_DAY_RE = re.compile(r"q_flight_calendarDayItem#(\d{4}-\d{2}-\d{2})")
+
+
+def _visible_cal_days(xml: str, year: int, month: int) -> list:
+    """该月已渲染的日号（来自 day item 的 content-desc/resource-id）。"""
+    days = set()
+    for n in _nodes(xml):
+        for raw in (n.get("desc"), n.get("id")):
+            m = _CAL_DAY_RE.search(raw or "")
+            if not m:
+                continue
+            iso = m.group(1)
+            try:
+                if int(iso[:4]) == year and int(iso[5:7]) == month:
+                    days.add(int(iso[8:10]))
+            except ValueError:
+                continue
+    return sorted(days)
+
+
+def _calendar_scroll_dir(xml: str, target: str) -> str:
+    """目标日在日历里该往哪边翻：up / down / ""（等一帧）。
+
+    2026-11-02 21:58 真机：日历停在 11/29-30，目标 11/16 在同月但已滚
+    出视口；只看月份头会误判“目标月可见、格子只是没渲染”，一直等待。
+    """
+    try:
+        year, month, day = int(target[:4]), int(target[5:7]), int(target[8:10])
+    except (TypeError, ValueError, IndexError):
+        return ""
+    vis = _visible_months(xml)
+    days = _visible_cal_days(xml, year, month)
+    if days:
+        if day < days[0]:
+            return "up"
+        if day > days[-1]:
+            return "down"
+        return ""
+    if not vis:
+        return ""
+    if (year, month) < vis[0]:
+        return "up"
+    if (year, month) > vis[-1]:
+        return "down"
+    return ""
+
+
 def _save_tap_shot(dev, tag: str, root: str = ""):
     """点击疑似没生效时存一张**当时的屏幕截图**（PNG）。
 
@@ -498,7 +560,9 @@ class AppQunarCrawler(AppCrawler):
         ok, why = self._set_round_trip_form(dev, from_city, to_city,
                                             dep_date, ret_date)
         if not ok:
-            self.path_note("app-route", "blocked", detail=why,
+            # 导航失败不是「已确认验证码」：blocked 会被 pacing 归 captcha
+            # 并熔断 300s；真验证码由 _clear_blockers 识别后另记。
+            self.path_note("app-route", "timeout", detail=why,
                            ms=int((time.time() - started) * 1000))
             self.logger.warning("[%s] 往返导航失败：%s", self.name, why)
             return []
@@ -1260,16 +1324,15 @@ class AppQunarCrawler(AppCrawler):
             elif cell is not None:
                 dev.swipe(800, 600, 800, 1200, 400)     # 目标在上方
             else:
-                ty, tm = int(target[:4]), int(target[5:7])
-                vis = _visible_months(xml)
-                if vis and (ty, tm) < vis[0]:
+                _dir = _calendar_scroll_dir(xml, target)
+                if _dir == "up":
                     dev.swipe(800, 600, 800, 1200, 400)   # 目标在上方（更早）
-                elif vis and (ty, tm) > vis[-1]:
+                elif _dir == "down":
                     dev.swipe(800, 1200, 800, 600, 400)   # 目标在下方（更晚）
                 else:
-                    # 目标月份就在可见区间、却没解析出格子：多在转场中
+                    # 目标日在可见区间、却没解析出格子：多在转场中
                     # （现场实证：这一帧 day item 的 bounds 高度是 0）。
-                    # 此时**别滑**——滑走反而离开目标月份，等下一帧重量。
+                    # 此时**别滑**——滑走反而离开目标位置，等下一帧重量。
                     _sleep(2)
                     xml = dev.dump() or ""
                     if "选择日期" not in xml:

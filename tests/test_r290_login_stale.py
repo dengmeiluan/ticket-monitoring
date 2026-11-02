@@ -42,11 +42,17 @@ def q_cls():
     QunarCrawler._cooldown_until, QunarCrawler._last_done_ts = old_cd, old_done
 
 
-def test_qunar_sets_suspect_on_server_reject(q_cls, monkeypatch):
-    """三路径空结果（服务端按未登录软性返回空列表）置 login_suspect——
-    登录态卡片「会话可能失效」的证据源（产生点捕获，非日志解析）。"""
-    c = q_cls({}, logging.getLogger("t290"))
+def test_qunar_sets_suspect_on_server_reject(q_cls, monkeypatch, tmp_path):
+    """无认证 Cookie 证据 + 三路径空结果 → 置 login_suspect。
+
+    r817 起「认证 Cookie 在场且探测在线」改判软空、不催重登；本用例
+    用隔离空档案验证「确实没有登录证据」时仍会置失效标记。
+    """
+    q_cls._auth_probe_at = 0.0
+    q_cls._auth_probe_ok = None
+    c = q_cls({"user_data_dir": str(tmp_path)}, logging.getLogger("t290"))
     monkeypatch.setattr(c, "_fetch_one", lambda a, b, d: None)
+    q_cls._BACKOFF_S = (0,)
     assert c.fetch("上海", "海口", ["2027-01-29"]) == []
     assert q_cls.login_suspect is True
 

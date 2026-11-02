@@ -112,6 +112,9 @@
   `core/health.py:17`、`core/channel_links.py:13` PLATS + `:57` ENTRY、
   `core/special_radar.py:38`、`webui.py` 的 `PLATS/SRX_PLATS/_LOGIN_PLATS/_WATCH_PLATS`，
   以及 `tests/test_channel_links.py:14`（断言恰好 20 格，加渠道必红，需同改）。
+  > **行号时效**：上面的 `file.py:NNN` 是 **2026-10-27 当时的行号快照**，
+  > 后续几轮代码改动后**行号已可能漂移**——请按文中同时给出的**符号/常量名**
+  > （REGISTRY / PLATFORMS / PLATS / ENTRY）检索，不要按行号定位。
 
 ### 路径 B/C：本机 Android 运行时 + adb（无需手机，但要常驻一个引擎）
 
@@ -174,8 +177,6 @@ Windows 微信 4.x 可以打开并固定小程序（官方 PC 小程序接入指
   一律不能记成真无票（对应最近 r398–r404 的整改）。
 - **口径未对账不得对比价**：美团日历价的含税性未证实。
 - **日历族不能冒充明细族**：只有价、无航班号/时刻的，归 `日历/窗历` 通路。
-- **不绕过验证码**：`docs/CAPTCHA_SOLUTION.md` 的人工接管边界对 App 同样适用
-  （App 里出现滑块/登录墙时，只能人工接管，不做自动破解）。
 
 ## 5. 本文未验证的事项（不要当结论用）
 

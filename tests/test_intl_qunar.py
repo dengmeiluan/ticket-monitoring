@@ -54,7 +54,7 @@ def _route_row(**over):
 # ---- 风控态机 ----
 
 def test_risk_state_machine():
-    # Judge 状态机码表（report §6.1 源码实证）：只分流不绕过
+    # Judge 状态机码表（report §6.1 源码实证）：只分流
     assert _QN._parse_intl_response(_resp(bstatus=1999))[1] == "login"
     assert _QN._parse_intl_response(_resp(code=8))[1] == "login"
     # 校准 R8 生产 profile 实测形态：bstatus 2008 与 code 8 同现

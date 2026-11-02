@@ -29,8 +29,6 @@ import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEBUI = os.path.join(ROOT, "webui.py")
-ALL = ("ctrip", "qunar", "fliggy", "tongcheng", "tuniu",
-       "app_zhixing", "app_qunar")
 
 
 def _src():
@@ -69,14 +67,16 @@ def server():
     p.terminate()
 
 
-def test_demo_health_diag_covers_all_seven_channels(server):
+def test_demo_health_diag_covers_all_registered_channels(server):
+    from core.channels import APP_CHANNELS, BROWSER_CHANNELS, plat_cn
     op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     h = json.load(op.open("http://127.0.0.1:%d/api/health" % server))
     plats = [c.get("plat") for c in (h.get("diag") or [])]
-    assert set(plats) == set(ALL), plats
+    all_plats = tuple(BROWSER_CHANNELS) + tuple(APP_CHANNELS)
+    assert set(plats) == set(all_plats), plats
     by = {c["plat"]: c for c in h["diag"]}
-    for p in ("app_zhixing", "app_qunar"):
-        assert by[p].get("name") and by[p]["name"] != p, by[p]
+    for p in APP_CHANNELS:
+        assert by[p].get("name") == plat_cn(p), by[p]
 
 
 def test_health_grid_handles_six_and_eight_cards(server):
@@ -156,15 +156,19 @@ def test_health_grid_handles_six_and_eight_cards(server):
             b.close()
 
 
-def test_seven_diag_cards_stay_aligned_at_every_width(server):
-    """7 张诊断卡：一行看完、不留单张、同排按钮同一纵坐标。
+def test_diag_cards_stay_aligned_at_every_width(server):
+    """全部诊断卡：不留单张、同排按钮同一纵坐标、同排卡等宽。
 
     实测缺陷（r813f）：`data-n` 定列规则只写了 5 张，7 张退回 auto-fit，
     900/768 排成 3+3+**1（第 7 张独占 1/3 宽）**、1512 排成 5+2；卡宽
     175px 时「登录/Cookie/最近轮次」有的折两行、有的三行，同排「自检」
-    纵坐标差 17px。修法是给 n=7 显式列数 + 卡头/登录行定高地板。
+    纵坐标差 17px。修法是显式列数 + 卡头/登录行定高地板。卡数从
+    BROWSER_CHANNELS + APP_CHANNELS 派生，加渠道不用再改期望值。
     """
+    from core.channels import APP_CHANNELS, BROWSER_CHANNELS
     from playwright.sync_api import sync_playwright
+
+    n_cards = len(BROWSER_CHANNELS) + len(APP_CHANNELS)
 
     def measure(pg, width):
         pg.set_viewport_size({"width": width, "height": 1100})
@@ -187,16 +191,13 @@ def test_seven_diag_cards_stay_aligned_at_every_width(server):
         errs = []
         pg.on("pageerror", lambda e: errs.append(str(e)))
         try:
-            for width, want_rows in ((1512, 7), (1280, None), (1024, None),
-                                     (900, None), (768, None), (390, 1)):
+            for width in (1512, 1280, 1024, 900, 768, 390):
                 cards = measure(pg, width)
-                assert len(cards) == 7, (width, len(cards))
+                assert len(cards) == n_cards, (width, len(cards))
                 rows = {}
                 for c in cards:
                     rows.setdefault(c["top"], []).append(c)
                 counts = [len(v) for _, v in sorted(rows.items())]
-                if want_rows == 7:
-                    assert counts == [7], (width, counts)
                 if width > 700:
                     assert 1 not in counts, (
                         "%d 档有单张独占一行：%s" % (width, counts))
@@ -206,9 +207,9 @@ def test_seven_diag_cards_stay_aligned_at_every_width(server):
                         "%d 档同行「自检」纵坐标不一致：%s"
                         % (width, sorted({c["btn"] for c in v})))
                 if width <= 700:
-                    assert counts == [1] * 7, (width, counts)
+                    assert counts == [1] * n_cards, (width, counts)
             selfs = {c["self"] for c in cards}
-            assert {"app_zhixing", "app_qunar"} <= selfs, selfs
+            assert set(APP_CHANNELS) <= selfs, selfs
             assert not errs, errs[:3]
         finally:
             b.close()

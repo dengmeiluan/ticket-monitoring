@@ -45,13 +45,17 @@ def test_dimension_notes_explain_calendar_only_intl():
 
 
 def test_api_exposes_dim_notes():
-    src = io.open(os.path.join(ROOT, "webui.py"), encoding="utf-8").read()
+    src = io.open(os.path.join(ROOT, "core", "channels.py"),
+                  encoding="utf-8").read()
     assert "DIMENSION_NOTES" in src, (
-        "/api/channel-dims 没引用分域说明单一事实源")
+        "channel_dims_payload 没引用分域说明单一事实源")
     i = src.index('"channels": [')
-    seg = src[i:i + 700]
+    seg = src[i:i + 900]
     assert "dim_notes" in seg, (
-        "接口没下发 dim_notes：前端无从渲染，说明加了等于没加")
+        "载荷没下发 dim_notes：前端无从渲染，说明加了等于没加")
+    webui = io.open(os.path.join(ROOT, "webui.py"),
+                    encoding="utf-8").read()
+    assert "channel_dims_payload()" in webui, "接口没走单一矩阵载荷"
 
 
 def test_rendered_tooltip_carries_dim_note():

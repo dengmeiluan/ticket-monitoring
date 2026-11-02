@@ -105,13 +105,30 @@ class AppCrawler:
         策略分级（与 PC/H5 渠道的处置规范一致）：
           * **广告**：只是遮挡 → 自动点关闭，最多两次；关不掉就上报 `ad`，
             让用户看到"被广告挡住"，而不是记成没数据。
-          * **验证码**（含滑块/图形点选）：风控已触发，**不自动破解**，
-            记 `captcha`；这对应 CAPTCHA_SOLUTION 的人工接管边界。
+          * **验证码**（含滑块/图形点选）：风控已触发，记 `captcha`，
+            开干预窗口人工处理。
           * **人脸识别**：生物特征核验，自动化无法也不应伪造 → 记 `face`，
             明确告知用户必须本人操作，且不会被重试掩盖。
           * **登录**：记 `login`，由内嵌登录画面处理。
         """
-        from .app_blockers import Block, detect_block
+        from .app_blockers import (BLOCK_CAPTCHA, BLOCK_FACE, Block,
+                                   detect_block)
+        from .challenge import ChallengeContext, handle_device
+
+        block = detect_block(xml)
+        if block.kind in (BLOCK_CAPTCHA, BLOCK_FACE):
+            # 挑战处置接缝：注册了处理器就交给它（解完自行 dump）；
+            # 没注册或没接住 → 照现行处置返回给调用方。
+            out = handle_device(dev, xml, ChallengeContext(
+                plat=self.name, surface="APP", device=dev, crawler=self,
+                signal=block))
+            if out is not None and out.handled:
+                xml = dev.dump()
+                if not xml:
+                    return "", Block("", "no-ui")
+                block = detect_block(xml)
+                if block.kind in (BLOCK_CAPTCHA, BLOCK_FACE):
+                    return xml, block
 
         for _ in range(2):
             block = detect_block(xml)

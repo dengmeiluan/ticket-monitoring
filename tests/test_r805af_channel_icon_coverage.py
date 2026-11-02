@@ -39,11 +39,18 @@ def _plats():
 def test_every_platform_has_official_icon():
     src = io.open(os.path.join(ROOT, "webui.py"), encoding="utf-8").read()
     ids = _plats()
-    assert len(ids) == 7, "渠道数变了：%s（改声明时同步改本判据）" % ids
+    assert len(ids) == 10, "渠道数变了：%s（改声明时同步改本判据）" % ids
+    # App 与同品牌浏览器渠道可共用一张官方图（SRX_BRAND_ALIAS）。
+    m = re.search(r"const SRX_BRAND_ALIAS=\{([^}]*)\}", src)
+    aliases = dict(re.findall(r"([a-z_]+)\s*:\s*'([a-z_]+)'",
+                              m.group(1) if m else ""))
     for p in ids:
-        assert re.search(r'"%s":"data:image' % re.escape(p), src), (
-            "%s 没有官方图标（SRX_BRAND_IMG 缺这个 key）——用户要求全站"
-            "渠道都带官方图标" % p)
+        key = p if re.search(r'"%s":"data:image' % re.escape(p), src) \
+            else aliases.get(p)
+        assert key and re.search(r'"%s":"data:image' % re.escape(key or ""),
+                                 src), (
+            "%s 没有官方图标（SRX_BRAND_IMG 缺这个 key，也无别名）——"
+            "用户要求全站渠道都带官方图标" % p)
 
 
 def test_frontend_has_no_second_name_table():
@@ -119,7 +126,7 @@ def test_name_and_id_resolve_to_same_key_and_icon():
                 }""")
             finally:
                 b.close()
-        assert len(got) == 7, "渠道数变了：%d" % len(got)
+        assert len(got) == 10, "渠道数变了：%d" % len(got)
         bad = [r for r in got if r["byId"] != r["id"]]
         assert not bad, "id 映射不回自己：%s" % bad
         bad2 = [r for r in got if r["byName"] != r["id"]]
@@ -182,7 +189,8 @@ def test_no_visible_channel_name_without_official_icon_anywhere():
     op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     base = "http://127.0.0.1:%d" % port
     CENSUS = r"""() => {
-      const NAMES=['携程','去哪儿','飞猪','同程','途牛','智行 App','去哪儿 App'];
+      const NAMES=['携程','去哪儿','飞猪','同程','途牛','智行 App','去哪儿 App',
+                   '飞猪 App','携程 App','同程 App'];
       const vis=el=>{const r=el.getBoundingClientRect();
         if(r.width<=0||r.height<=0)return false;
         const st=getComputedStyle(el);
