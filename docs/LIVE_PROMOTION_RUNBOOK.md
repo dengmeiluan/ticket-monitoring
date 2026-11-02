@@ -14,7 +14,7 @@
 | live 配置 | `_release_final_72d/config.yaml` 与主树 `config.yaml` **diff=0** |
 | 数据/日志/登录态 | live 树的 `data`、`logs`、`user_data` 都是**主树的符号链接**（同一份文件） |
 | live 当前能力 | 7 渠道旧代码；`/api/health.enabled_platforms` = qunar/tongcheng/tuniu/ctrip/app_zhixing/app_qunar（无 fliggy） |
-| 主树候选 | 10 渠道 + App/浏览器国际往返；全量非 UI **6139 passed / 19 skipped / 0 failed**；UI **670/670**；`release_align_check --local` **25/25**；候选包 SHA256 `3c472292102f8a0d45b06bfaef962a350d513359e3d7bba2666891b8a208a8a4` |
+| 主树候选 | 10 渠道 + App/浏览器国际往返；全量非 UI **6147 passed / 19 skipped / 0 failed**（2026-11-03 07:03）；UI **670/670**（07:08）；`release_align_check --local` **25/25**；候选包 SHA256 `3c472292102f8a0d45b06bfaef962a350d513359e3d7bba2666891b8a208a8a4` **构建早于 r931 矩阵窄档修复，切换前必须按最终树重建并重算 SHA** |
 
 因为数据/日志/登录态共享，切换**不需要迁移数据库、日志或登录快照**；旧 live 树保留作回滚。
 
