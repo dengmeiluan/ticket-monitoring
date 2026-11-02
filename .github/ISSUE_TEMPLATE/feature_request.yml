@@ -1,0 +1,29 @@
+name: 功能建议
+description: 提出新想法或改进建议
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 想解决什么问题？
+      placeholder: 描述你遇到的场景与痛点，而不是直接给方案
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望的方案
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 现有替代方案
+      description: 目前你是怎么绕过这个问题的？
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 范围确认
+      options:
+        - label: 我理解本项目坚持「自托管、无外部服务依赖、单文件内嵌控制台」的克制形态
+          required: true

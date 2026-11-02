@@ -1,0 +1,235 @@
+# ===== 机票监控 配置样例 =====
+# 推荐用法：网页 ⚙️ 配置页修改（保存即热生效，零重启），本文件只是落盘格式。
+# 航线/阈值/通知/扫描周期/端口/无头模式等全部热加载；
+# 仅 output.db_path / output.log_path 与 web.host 为启动级（改动需重启进程）。
+#
+# 上手提示：
+# - 通知通道全部默认关闭（enabled: false）——填好自己的凭据再打开，
+#   避免「抄样例起跑」就每轮向无效 webhook 推送报错。
+# - 时间类值一律加引号（'02:00'）：YAML 裸冒号值有被解析成数字的坑。
+# - 飞猪渠道价格为税前裸价：系统对飞猪报价 +100 元（税垫）参与达标
+#   判定，展示价不动——「飞猪价更低却没达标」即此原因。
+users:
+- name: 你的名字
+  routes:
+  - from: SHA
+    from_name: 上海
+    to: URC
+    to_name: 乌鲁木齐
+    dates:
+    - '2026-12-01'            # 出发日期（未来某天）；可多日期：再加分隔列表即可，各日期独立监控
+    alert_threshold: 0        # 旧总阈值（保留兼容，一般用下面两个分项）
+    alert_direct: 1900        # 直飞心理价位（0=不启用）
+    alert_transfer: 1700      # 中转心理价位（0=不启用）
+    transfer_arrival_max: '02:00'   # 中转最晚到达（次日该时刻前）
+    # 以下为可选约束（按需打开）：
+    # transfer_layover_min: 90      # 中转最短衔接分钟（需托运建议 ≥90）
+    # transfer_baggage: direct      # 仅认两段含免费托运的直挂班次
+    # dep_time_min: '17:00'         # 出发时段下限（空=不限）
+    # dep_time_max: '23:59'         # 出发时段上限
+  # ┌ 特价机票监控（可选，发现模式）：只填出发地+心理价，自动盯
+  # │ 途牛特价榜 + 携程特价搜索榜 + 携程低价日历 + 飞猪榜四源；发现新低先跨渠道核实、以真实
+  # │ 可买价推送（含返程配对与购买深链）。网页配置页「🎯 特价监控」
+  # │ 卡片同款；不配 specials 键即关闭。
+  # specials:
+  # - from: SHA
+  #   from_name: 上海
+  #   max_price: 400          # 心理价位（榜单/日历价低于此值才核实推送）
+  #   days: 30                # 只认未来 N 天内出发（1-180）
+  #   round_trip: true        # 返程配对（往返特价直收+单程自动反向配对）
+  #   round_trip_days: 7      # 返程窗：去程日期后 N 天内（0-30）
+  #   interval_rounds: 4      # 每 N 个扫描轮跑一次发现（默认 4）
+  platforms:
+  - qunar
+  - fliggy
+  - tongcheng
+  - tuniu
+  - ctrip
+  notifier:
+    digest: true             # 每轮行情心跳推送（关闭后日报也不发）
+    storm_repeat: 3          # 新达标风暴连推条数（1=关闭）
+    # 渠道级告警：连续 N 轮零数据主动推一条（被节流跳过的轮次不计）
+    channel_alert:
+      enabled: true
+      rounds: 3          # 连续几轮零数据算故障
+      cooldown_h: 6      # 同一渠道两次告警的最小间隔（小时）
+    report_hour: 9           # 每日该时刻图文日报（需 digest: true）
+    quiet_start: '23:00'     # 免打扰开始（可选；时段内静默心跳/电话/风暴）
+    quiet_end: '07:00'       # 免打扰结束（支持跨零点）
+    win_toast: true          # Windows 右下角弹窗（达标本机触达，心跳不弹）
+    image_host:
+      # provider: ghimg（GitHub 图库，需 repo+token，当前推荐）/
+      #           smms（需 token）/ freeimage（免注册，但端点已被对方封禁，
+      #           代码内置连败熔断，仅作历史兼容）
+      provider: ghimg
+      # repo: ''             # provider=ghimg 时的 GitHub 仓库（owner/name）
+      # token: ''            # ghimg 的 GitHub Token 或 smms 的 API token
+    push_drop_min: 30        # 降价再推阈值（￥）
+    push_rise_min: 50        # 涨价再推阈值（￥）
+    # 未达标心跳正文形态（三态可选，默认 slim=推荐）：
+    #   slim = 轻量摘要（每航线一行核心价 + 明细总表图）——防钉钉
+    #          正文重复检测，推送状态真实成功【推荐】
+    #   full = 全量图文（行情 KPI+走势图+总表，信息最全）——正文
+    #          超钉钉重复检测阈值，状态将恒显示失败但消息照常送达
+    #   auto = 全量优先，连续失败 3 次自动降为 slim（健壮：最终
+    #          一定能恢复成功状态）
+    # heartbeat_style: slim
+    dingtalk:
+      enabled: false         # 填好 webhook 后改 true
+      webhook: ''            # https://oapi.dingtalk.com/robot/send?access_token=...
+      secret: ''             # 机器人安全设置选「加签」时填 SEC 开头密钥
+      at_mobile: ''          # 达标强提醒 @ 的手机号（空=不@）
+    serverchan:
+      enabled: false         # Server酱·微信推送（sct.ftqq.com）
+      send_key: ''
+      channel: ''
+    email:                   # SMTP 邮件（与钉钉并联，HTML 正文）
+      enabled: false         # 163/QQ 网页版设置开 SMTP 服务拿「授权码」
+      host: smtp.163.com     # QQ 邮箱用 smtp.qq.com
+      port: 465              # SMTP_SSL（勿改 25/587）
+      user: ''               # 发件账号（完整邮箱，须与授权码同账号）
+      password: ''           # SMTP 授权码（非登录密码）
+      to: ''                 # 收件邮箱，多个逗号分隔（填自己=自发自收）
+    # emails:                # 多邮件通道（列表；与上面 email 二选一，
+    #   - enabled: false     #   同时在场均以 emails 为准防双发）
+    #     host: smtp.163.com
+    #     port: 465
+    #     user: ''           # 每项独立发件账号+授权码+收件人
+    #     password: ''
+    #     to: ''             # 163 通道发 163 自己、QQ 通道发 QQ 自己
+    #   - enabled: false
+    #     host: smtp.qq.com
+    #     port: 465
+    #     user: ''
+    #     password: ''
+    #     to: ''
+    ntfy:
+      enabled: false         # ntfy.sh 强提醒（达标专用，手机装 ntfy App）
+      topic: ''              # 订阅主题名（相当于密码，勿用常见词）
+      # server: https://ntfy.sh
+      # priority: 5
+    aliyun:
+      enabled: false         # 阿里云云监控事件通知（达标电话/短信）
+      url: ''
+      user: ''               # AccessKey ID
+      password: ''           # AccessKey Secret
+      # rule_name: ''        # 云监控事件通知规则名（默认监控报警规则）
+schedule:
+  interval_minutes: 30
+  jitter_minutes: 5
+  run_on_start: true
+  # ── 节流四件（1/3/5 区，保存即热生效）──────────────────────────
+  # 夜间静默窗：只管「抓取」，不影响推送（推送免打扰在 notifier.quiet_*）。
+  # 留空=关闭；跨零点自动识别（如 23:00 → 07:00）。
+  scan_quiet_start: '01:00'
+  scan_quiet_end: '07:00'
+  # 两级 TTL：现价贴近心理价位→快层；远离→降频到慢层（省下的是大头）。
+  # fast_ttl 建议 < interval−jitter，否则早到的轮次会被 TTL 挡掉。
+  fast_ttl_min: 15
+  slow_ttl_min: 120
+  near_ratio: 0.15
+  near_days: 3               # 出发 ≤N 天进快层（TTL 减半）          # |现价−阈值|÷阈值 ≤ 此值算「贴近」
+  stagger_seconds: 25       # 同轮各渠道起跑错开（5 家均分），防同秒齐发
+crawler:
+  headless: true
+  timeout_seconds: 45
+  delay_min: 5
+  delay_max: 15
+  # ── 请求预算（5 区）：同一渠道的节流，0=不限 ──────────────────
+  rate:
+    min_gap_s: 3            # 两次请求最小间隔（秒）；qunar 内部另有 8s
+    per_minute: 0           # 每分钟上限（滑动窗口）；0=不限
+  # ── 熔断（2 区）：命中 429/风控/验证后「停手」，不是换姿势重试 ──
+  breaker:
+    enabled: true
+    base_s: 300             # 首次冷却；连续命中按 2 倍阶梯递增
+    cap_s: 3600             # 单次冷却上限
+    login_cooldown_s: 900   # 登录墙冷却（固定，不随命中次数增长）
+  # ── 成功率保护（自动降频）：近 24h 查询率低于 70% 自动拉长该渠道 TTL
+  #    （低于 40% 拉 3 倍，样本不足 5 次不判）。关掉后仍统计成功率，
+  #    但不再自动降频——只在「宁可多打也不接受变慢」时才关。
+  health_penalty_enabled: true
+  # 上面那组阈值（成功率≥ok 不降频、<ok 且 ≥slow 拉 slow_factor 倍、
+  # <slow 拉 slowest_factor 倍、样本 < min_samples 不判）全部可调；
+  # 留空即用默认 0.7 / 0.4 / 1.5 / 3.0 / 5。
+  health_min_samples: 5
+  health_ok_ratio: 0.7
+  health_slow_ratio: 0.4
+  health_slow_factor: 1.5
+  health_slowest_factor: 3.0
+  # ── 首页预热（L1/L3）：每轮每渠道先打一次首页再查深链 ──────────
+  # 深链直入是最强的机器指纹（无 referer、无风控下发的 cookie）。
+  # 只对声明了 warmup_url 的渠道生效；ctrip 与同程在 fetch 内部自带预热。
+  warmup:
+    enabled: true
+    platforms: [qunar, fliggy, tuniu]
+  # 指纹一致性（L3）：抹掉 navigator.webdriver 等「自动化浏览器」标记。
+  # 只让页面看到一个普通 Chrome——不伪造账号、不破解验证、不改 IP。
+  stealth: true
+  # HTTP 出口的 TLS/JA3 指纹（core/net.py）：有 curl_cffi 时按此指纹发起请求，
+  # 缺依赖自动退回 httpx。设为空串可整渠道强制走 httpx（排障用）。
+  # 可选值见 curl_cffi 文档，默认 chrome。
+  tls_impersonate: chrome
+  # 登录/验证窗口默认沿用该 profile 的 PC/H5 身份（指纹幂等）。
+  # 仅当手机 profile 的滑块无法用鼠标完成时，才开启强制桌面登录；
+  # 代价是登录指纹与采集指纹不一致。
+  login_desktop: false
+  # ── 按渠道绑出口（可选）：不同渠道走不同端口/节点，一家被限不牵连另一家 ──
+  # 例：proxy_map: {qunar: 'http://127.0.0.1:7897', ctrip: 'http://127.0.0.1:7891'}
+  # 空=跟随 crawler.proxy。国内站建议国内节点（境外出口=风控升档）。
+  proxy_map: {}
+  # ── 每渠道最小采集间隔（分钟；0=跟随全局 TTL）──────────────────
+  # 慢渠道不要被全局 30 分钟的节奏催；qunar 这类高风控可给 45–60。
+  # 同轮最多几个渠道浏览器并发（0=跟随渠道数）。5 家同秒齐发
+  # 最容易被判成"同一来源多路机器人"，2 是实测较稳的档。
+  max_concurrency: 2
+  cadence:
+    qunar: 0
+    fliggy: 0
+    ctrip: 0
+    tongcheng: 0
+    tuniu: 0
+  # 会话年龄看门狗：profile 超过 N 天没更新就强制预热续期（0=关）
+  session_max_days: 14
+  # 命中人机验证时自动弹出验证窗口（同一采集会话；不代答验证）。
+  # 同渠道 10 分钟只开一次，默认关——上班时间被弹窗打断的人可以关掉。
+  auto_verify: false
+  # 浏览器内核目录（可选，留空=默认装系统盘用户目录约 500MB）：配置后
+  # chromium 缓存安装与查找全部指向该目录（如 D:/pw-cache），重启生效。
+  # browser_dir: ''
+  # 采集代理（可选）：填本机代理端口后，浏览器与特价发现层的出口统一
+  # 走它——出口 IP 可变（IP 级限流绕行；途牛特价榜城市=出口 IP 城市）。
+  # 例：http://127.0.0.1:7897（Clash Verge 默认混合端口）。
+  # 注意：国内站+境外出口=风控风险升档，建议选国内直落节点或负载均衡组。
+  # proxy: http://127.0.0.1:7897
+  user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0
+    Safari/537.36
+  mobile_user_agent: ''
+  debug: true
+  debug_dir: debug
+  user_data_dir: user_data
+output:
+  db_path: data/prices.db
+  log_path: logs/monitor.log
+web:
+  port: 8765
+  # 监听地址：127.0.0.1=仅本机可访问；0.0.0.0=局域网可达（手机看推送
+  # 详情页的前提）——改后需重启进程生效
+  # host: 127.0.0.1
+  # 详情页基址（钉钉「完整详情（点击直达）」的可达性取决于它）：
+  # 手机要看请配本机局域网地址，如 http://192.168.1.8:8765
+  # base_url: ""
+
+# ── App 渠道（可选）────────────────────────────────────────────
+# 无 Web 面、只能经 Android App 取数的渠道（如智行）需要本机跑一个
+# 安卓模拟器，由框架通过 adb 驱动。**默认关闭**：不启用时框架不 import、
+# 不检测设备、界面不显示，与没有这个功能完全一致。
+# 启用步骤见 docs/APP_CHANNELS.md；需 Windows + MuMu + VT。
+android:
+  enabled: false           # 总开关；false 时下面所有字段都不生效
+  provider: mumu           # 目前仅支持 mumu
+  install_dir: ""          # 空=自动探测 D:\Program Files\Netease\MuMu 等常见位置
+  vm_index: 0              # 多开实例序号
+  boot_timeout_s: 180      # 冷启动实测 24–36s，留足余量
+  action_timeout_s: 60     # 单条 adb 命令超时
+  snapshot: true           # 登录态快照：网页登录一次后自动保存并在下次采集前恢复

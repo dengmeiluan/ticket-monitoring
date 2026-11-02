@@ -1,0 +1,28 @@
+# 镜像只装运行时源码；本地产物/内部件/密钥载体一律不进构建上下文
+.git
+.github
+_scratch
+debug
+logs
+data
+user_data
+_build
+_rel
+docs
+tests
+__pycache__
+**/__pycache__
+*.pyc
+# 密钥载体绝不入镜像（构建上下文会被缓存/推送到 registry）
+config.yaml
+scripts
+HANDOFF.md
+TicketMonitor.spec
+
+ghtoken.txt
+dist_package
+user_data_free
+*.zip
+build
+dist
+_scratch
