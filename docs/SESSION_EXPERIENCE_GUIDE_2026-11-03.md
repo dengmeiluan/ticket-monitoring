@@ -134,11 +134,12 @@
   - `test/uitest` 各 `timeout-minutes: 45`；`ci-ok` 聚合 `needs: [test, uitest]`。
   - `pip`/Playwright 缓存保留；`fetch-depth: 0` + 补拉 tag；Chromium + Noto CJK 安装保留。
 - `tools/ci_shard.py`：`--snapshot <junit>` 从全量 JUnit 生成按文件耗时快照；`--stats N` 统计并自检；`--print N K` 给 shell 选片。
-- `tests/ci_durations.json`：已按 clean gate JUnit 重算；当前快照覆盖 **863/865** 个测试文件（总 ~2981.5s），四组耗时 **1.00** 均衡；新文件按 20s 自动进组，快照不要求全覆盖。
+- `tests/ci_durations.json`：已按 clean gate JUnit 重算；当前快照覆盖 **863/866** 个测试文件（总 ~3001.5s），四组耗时 **1.00** 均衡；新文件按 20s 自动进组，快照不要求全覆盖。
 - **最终绿（真实 GitHub）**：`41644097180`（`0f782f9`，含 numpy/vendor 修复）test 4 片 **242/225/341/244s 全绿**、UI 367s、`ci-ok` success，整轮 **6m14s**；第 2 片文件数最多（341）所以最慢（5m41s），其余约 4 分钟。
 - 实测参考：旧 CI `test` 单 job `-n 4` 约 **11 分 31 秒**（2026-11-03 01:40:09→01:51:40）；UI job 约 **6 分 05 秒**。4 片真实 GitHub 首跑（`bc96947`，2026-11-03 13:11Z 起）：shard 1/3 绿（249s/283s）、shard 0/2 红（214s/233s），UI 381s——test lane 墙钟已从 11 分半降到 **约 5 分钟**；红的根因与切片无关，见下条。
 - **本地绿 / CI 红的环境差异（已实证）**：`crawlers/slider.py` 用可选 `import numpy`，本地全局环境有 numpy，CI 只装 `requirements.txt` 而当时未声明 numpy → `find_gap()` 恒返回空候选，r914/r916 四条同时红。修复=把 `numpy>=1.26` 写进 `requirements.txt`（CI、release-build、Docker 同一来源），并给缺依赖加一次性告警 + 负控（屏蔽 numpy 时仍红、装上才绿），不把测试改成 skip。
 - 分片串行排障口径：先看失败片日志的 `FAILED` 行，再判断是本片代码问题还是并行 WIP 的跨片问题；本次第二红（`android.vendor.apply` 无 UI 落点 + 加固 ok 被只读探测拖红）就是并行提交引入、与 numpy 无关。
+- 第三红（`b345486`）：`test_swr_returns_stale_immediately` 在 CI 慢机假红——SWR 分支触发的后台重建线程先在断言前发布新 payload，`out == {"v":"stale"}` 变成新状态。产品语义没问题，修测试：当测里把 `_state_rebuild_async` 换成记录器，分别断言「立即回旧值」和「确实排了重建」，线程本身由 `test_async_build_does_not_hold_lock` 真跑覆盖。教训：断言不要依赖不可控线程调度。
 
 ### 2.4 多程（能力矩阵当前口径）
 
