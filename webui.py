@@ -12770,6 +12770,40 @@ function togChart(i){if(!S||!S.users.length)return;
    +'<div class="monroute-svg">'+(spark||'<div class="empty">近 7 天没有该航线的真实采集点；完成扫描后再看。</div>')+'</div>'
    +'<div class="monroute-foot"><span>'+dot(0)+dot(1)+'</span><span class="sp"></span><button type="button" data-mroute="'+i+'">查看关注航线走势</button></div></article>';
  }
+ function _csvCell(v){let s=String(v==null?'':v);
+  if(/^[=+\-@]/.test(s))s="'"+s;
+  return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+ function mcCsvRows(m){
+  const rows=[['route','segments','total_price','threshold','platform','fetched_at','legs']];
+  const label=String(m.label||((m.from||'')+'→'+(m.to||'')));
+  const chain=(m.segments||[]).map(x=>x.from+'-'+x.to+'@'+x.date).join('|');
+  const l=m.latest||{};
+  const legs=((l.legs||[]).map(x=>String(x.flight_no||'')+(
+   x.dep?(' '+x.dep+(x.arr?'-'+x.arr:'')):'')).filter(Boolean).join(' / '));
+  const hist=(m.history||[]).filter(p=>p&&p[1]!=null
+   &&Number.isFinite(Number(p[1])));
+  const at=String(l.fetched_at||'').replace('T',' ');
+  if(!hist.length){
+   if(at)rows.push([label,chain,l.price,Number(m.threshold)||0,
+    l.platform||'',at,legs]);
+   return rows;}
+  hist.forEach(p=>{const t=String(p[0]||'').replace('T',' ');
+   rows.push([label,chain,Number(p[1]),Number(m.threshold)||0,
+    l.platform||'',t,(t===at?legs:'')]);});
+  return rows;}
+ function mcExport(i){
+  const u=S&&S.users&&S.users[U],m=u&&u.mcRoutes&&u.mcRoutes[i];
+  if(!m)return;
+  const rows=mcCsvRows(m);
+  const csv='\ufeff'+rows.map(r=>r.map(_csvCell).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],
+   {type:'text/csv;charset=utf-8'}));
+  a.download='multicity-'+String(m.label||'route')
+   .replace(/[^A-Za-z0-9_-]+/g,'_')+'.csv';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast('已导出多程整单历史 '+(rows.length-1)+' 行','ok');}
  function monMCCard(m,i){
   const l=m.latest,p=(l&&Number(l.price)>0)?Number(l.price):null;
   const hit=p!=null&&Number(m.threshold)>0&&p<=Number(m.threshold);
@@ -12800,6 +12834,7 @@ function togChart(i){if(!S||!S.users.length)return;
    +'<div class="monroute-foot"><span>'+(l&&l.fetched_at?('最近采于 '+he(l.fetched_at)):'整单总价只取渠道页面，不由段价相加')
    +'</span><span class="sp"></span>'
    + (src?('<a class="mcsrc" href="'+esc(src)+'" target="_blank" rel="noopener noreferrer" title="打开渠道多程结果页（新窗口）">来源</a>'):'')
+   + ((hist.length||l)?('<button type="button" onclick="mcExport('+i+')" title="导出整单历史 CSV（只含真实落库点）">导出 CSV</button>'):'')
    +'<button type="button" data-mc="'+i+'" onclick="switchView(\'cfg\');showCfgPanel(\'users\')">配置多程行程</button></div></article>';
  }
  function renderMonRoutes(){
