@@ -384,6 +384,12 @@ python docs/screenshot.py         # regenerate README screenshots (start the dem
 python docs/demo_build.py         # rebake the static demo site (docs/site)
 ```
 
+CI splits the full pytest suite across **four runners** using the recorded per-file
+durations in `tests/ci_durations.json` (`tools/ci_shard.py`; a pre-run `--stats 4`
+check proves the shard union equals every test file, with new files auto-assigned;
+`ci-ok` aggregates the pytest and UI lanes). The UI self-check remains a separate
+parallel job.
+
 ## FAQ
 
 **Q: Does leaving the page open cost much?**

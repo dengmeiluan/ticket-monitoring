@@ -427,6 +427,10 @@ python docs/screenshot.py         # README 截图再生成（先起演示服：p
 python docs/demo_build.py         # 重烘在线演示站（docs/site）
 ```
 
+CI 把全量 pytest 按 `tests/ci_durations.json` 的历史耗时拆到 **4 台 runner 并行**
+（`tools/ci_shard.py`；跑测前先 `--stats 4` 自检分片并集=全部测试文件，新增文件
+自动进组；`ci-ok` 聚合 pytest 与 UI 两条泳道）；UI 自检仍是独立并行岗。
+
 踩坑与解法沉淀见 [docs/LESSONS.md](docs/LESSONS.md)；界面统一的做法与验收判据见 [docs/UI_UNIFICATION_PLAYBOOK.md](docs/UI_UNIFICATION_PLAYBOOK.md)；提交贡献前请读 [CONTRIBUTING.md](CONTRIBUTING.md)（TDD 纪律与发版流程）。安全相关问题请走 [SECURITY.md](SECURITY.md) 的私密通道。
 
 ## FAQ
