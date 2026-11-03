@@ -33,8 +33,8 @@
   可溯源/过期首段不提醒/整单历史 sparkline/CSV 导出/2 段矩阵升 y）；live 8765 于
   **2026-11-03 08:58** 切到 `_release_ab04`（Release `ab04c22`，webui sha12
   `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r956 尚未入该树。
-- **门禁**：tracked collect **6336**。2026-11-03 19:17 main（`2580a8b` + 端面恢复/配置落点 WIP）
-  全量 **6317 passed / 19 skipped / 0 failed**（workers 8，508.17s，共 6336）；
+- **门禁**：tracked collect **6354**。2026-11-03 19:49 main `460bf0d`
+  全量 **6335 passed / 19 skipped / 0 failed**（workers 8，573.04s，共 6354）；
   源码哈希 pin 通过，语法检查 ok。CI 已把全量 pytest 拆到 4 台 runner：
   `tools/ci_shard.py` 按 `tests/ci_durations.json` 历史耗时贪心均分，跑测前
   `--stats 4` 自检并集=全部 `tests/test_*.py`（新增文件按 20s 自动进组）+ workflow
@@ -69,6 +69,13 @@
   再等 12s。矩阵 scope 仍「仅 2 段」（含缺口程）；3+ 段仍无组合卡。
   配置卡/概览/CSV/提醒标题统一按断点显示 `SHA→TYO / OSA→SHA`，
   不再画成 `SHA→TYO→SHA`。
+- **画中画工作台（2026-11-03 19:30）**：App 登录从 520px 弹窗改为近全屏工作台
+  （`min(1180px,96vw) × min(92dvh,1000px)`，设备按 9:16 顶满），可切专注、可缩成
+  可拖动浮窗继续轮询；内联文字输入、返回/桌面/最近/退格、长按/滚轮；只读
+  `GET /api/app-login/info` 返回分辨率/前台 App/会话统计。共享 `lgCloseModal`
+  现在按 `data-kind=app` 路由到 `appLoginClose`，遮罩/Esc 不会只藏窗继续轮询。
+  真渲染门禁：1512/390 尺寸、浮窗拖拽/恢复、专注进出、浏览器弹窗仍 520px、
+  输入/tap/swipe、零 pageerror；UI **670/670**。
 - **唯一声明源**：`core/channels.py`。新增渠道/维度先跑 `python -m core.channel_contract --strict`
   与 `test_r903/r904/r905`；声明字典禁止重复键，hint 承诺的按钮必须真实渲染。
 - **发布状态**：Release `v1.0` → `ab04c22`（v1.5.307，10 渠道正文/四资产 digest 4/4/CI/Pages 同源）；ghcr `sha-ab04c22` digest `9b72acb1a6b9…`，`latest` = `sha-934e108` digest `c8fe5de9383c…`（latest 跟随更新 HEAD，非同 digest；要 Release 同源请 pin `sha-ab04c22`）；live 8765 已切 `_release_ab04`；
