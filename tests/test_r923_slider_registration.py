@@ -67,14 +67,22 @@ def test_auto_false_means_no_handler(tmp_path):
 
 
 def test_auto_simple_registers_handler(tmp_path):
+    """开 `simple` 要挂上处理器——**超集优先**（滑块 + 算数 + 文字）。
+
+    r924 之后挂的是 ``solver-handler``（`captcha.SolverHandler`），它是
+    ``slider.SliderHandler`` 的超集；两个名字都接受，因为挂不上超集时会
+    退回旧实现（老行为仍可用）。
+    """
     _crawler(tmp_path, slider={"auto": "simple"})
     h = challenge.current_handler()
-    assert h is not None and getattr(h, "name", "") == "slider-handler"
+    assert h is not None
+    assert getattr(h, "name", "") in ("solver-handler", "slider-handler")
 
 
 def test_auto_true_registers_handler(tmp_path):
     _crawler(tmp_path, slider={"auto": True})
-    assert getattr(challenge.current_handler(), "name", "") == "slider-handler"
+    assert getattr(challenge.current_handler(), "name", "") in (
+        "solver-handler", "slider-handler")
 
 
 # ---------------------------------------------------------------------------
