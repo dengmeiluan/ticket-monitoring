@@ -55,7 +55,7 @@ Release cadence:
 1. **Freeze** parallel writers; confirm `webui.py`, backend, tests and docs are the same coherent state. Do not build from a moving worktree.
 2. **Integrate** the complete feature backend, tests and pins. Run, and only proceed when all are green:
    - `python tools/test_all.py --workers 8` (default parallel gate: syntax + pytest via xdist + UI self-check side by side)
-   - `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/ -q` (serial fallback; same test set, CI-identical command)
+   - `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/ -q` (serial fallback; same test set as CI, which splits the same files across 4 shards)
    - `python docs/uitest.py`
    - the project’s live 8765 acceptance
    - the channel × domestic/international matrix
