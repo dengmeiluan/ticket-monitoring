@@ -33,9 +33,16 @@
   可溯源/过期首段不提醒/整单历史 sparkline/CSV 导出/2 段矩阵升 y）；live 8765 于
   **2026-11-03 08:58** 切到 `_release_ab04`（Release `ab04c22`，webui sha12
   `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r956 尚未入该树。
-- **门禁**：tracked collect **6214**；含未跟踪并行 WIP 的实收 **6255**。全量非 UI
-  **6236 passed / 19 skipped / 0 failed**（2026-11-03 14:46，workers 8，683.41s，
-  共 6255）。此前 7 红全部闭合：6 项单飞全绿（r319 proxy / r660 负控 / r845×2 /
+- **门禁**：tracked collect **6274**。2026-11-03 16:25 CI 同款 4 片并发实测
+  **6230 passed / 44 skipped / 0 failed**（0/1/3 片在 `62888c4`、第 2 片在
+  `47731c9`；两提交只差 r793 的测试守卫，产品代码相同；四片合计 6274，各片
+  源码哈希前后一致）。CI 已把全量 pytest 拆到 4 台 runner：`tools/ci_shard.py`
+  按 `tests/ci_durations.json` 历史耗时贪心均分，跑测前 `--stats 4` 自检
+  并集=全部 `tests/test_*.py`（新增文件按 20s 自动进组，不漏跑）；`test/uitest`
+  各加 45 分钟超时，`ci-ok` 聚合两泳道。分片暴露的两处环境竞态已改成注入/
+  skip（r290 配置注入、r793 空账本守卫），不再记产品红。此前 14:46 workers 8 的
+  **6236 passed / 19 skipped / 0 failed**（含未跟踪并行 WIP，共 6255）为旧口径。
+  此前 7 红全部闭合：6 项单飞全绿（r319 proxy / r660 负控 / r845×2 /
   r999×2，xdist 竞争）；r601 配置可达性已补 9 个页面控件 + 保存写回 + 钳制
   （见 r958），r601 **4 passed**、配置往返 **12 passed**、真渲染 9 控件零 pageerror
   （14:20）。矩阵升 y 由 **138 定向 passed** 覆盖（13:33）；r952 已修掉此前的
