@@ -82,7 +82,7 @@
   像素门禁 `test_app_zhixing_icon_has_no_promo_banner`。
 - **唯一声明源**：`core/channels.py`。新增渠道/维度先跑 `python -m core.channel_contract --strict`
   与 `test_r903/r904/r905`；声明字典禁止重复键，hint 承诺的按钮必须真实渲染。
-- **发布状态**：Release `v1.0` → `e65cee1`（2026-11-03 09:54 由 `ab04c22` 重指，多 4 个提交；v1.5.307，10 渠道正文/四资产 digest 4/4；CI/release-build/Pages 在 `e65cee1` 均 success）；ghcr `sha-e65cee1` = `latest` digest `5fb025bb3488…`（同 digest）；`sha-ab04c22` 仍可拉取（digest `9b72acb1a6b9…`）但已不对应 Release；公开站点戳 `code:5045a4437de8` 由更新后的 main 部署（release 树 webui 为 `6c85a00f14c1`）；live 8765 仍是 `_release_ab04`（`ab04c22` 树）；
+- **发布状态**：Release `v1.0` → `e65cee1`（2026-11-03 09:54 由 `ab04c22` 重指，多 4 个提交；v1.5.307，10 渠道正文/四资产 digest 4/4；CI/release-build/Pages 在 `e65cee1` 均 success；**该轮四平台包构建早于 `numpy` 依赖声明（21:10），冻结包内滑块缺口检测会静默无候选——下一次发版必须按最终 `requirements.txt` 重建四平台包并重算资产 SHA/正文**）；ghcr `sha-e65cee1` = `latest` digest `5fb025bb3488…`（同 digest）；`sha-ab04c22` 仍可拉取（digest `9b72acb1a6b9…`）但已不对应 Release；公开站点戳 `code:5045a4437de8` 由更新后的 main 部署（release 树 webui 为 `6c85a00f14c1`）；live 8765 仍是 `_release_ab04`（`ab04c22` 树）；
   工作树未提交/未发布，推送、tag、Release、Pages、live 切换均需明确授权。
   live 切换的可执行步骤与回滚见 `docs/LIVE_PROMOTION_RUNBOOK.md`。
 - **本文结构**：§1–§12 是执行口径；§12 之后是历次门禁与时序台账，**不是当前状态**；
@@ -3059,6 +3059,17 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · `app_tongcheng.detail` 说明改为「国内明细已覆盖……国际明细未覆盖（国际只走原生日历）」，让 `detail=y` 的覆盖范围在提示里可判断。（后续国际明细已通，当前说明见 `core/channels.py`。）
   · 门禁 r903/r822/docs/EOL **104 passed**，`release_align_check --local` **25/25**；静态演示站已重烘。
   · r920–r922 只改能力说明与文档，未改采集逻辑；r919 候选 zip 的说明字符串已落后，发版前必须按最终树重建，不能直接当发布资产。
+
+- r923b 同程 H5 日期控件交互复验（2026-11-03 22:00）：
+  · 临时 mobile profile + 已保存 cookie 打开 `m.ly.com/ft/touch/index`，
+    点 `.date-choose` 真开「选择日期」弹层；页面 XHR
+    `wx.17u.cn/mihawkapi/calendar/lowestPrice` 返回 180 天逐日价
+    （11-03 ¥520 / 11-04 ¥350 / 11-05 ¥360 …）。
+  · 采集端 `fetch_tongcheng_calendar`（`queryCalendarLowestPrice`）同批
+    返回 **180 行且价格逐日完全一致**；两条端点并存，生产仍走窗历，
+    页面新端点留作漂移备选。
+  · 结论：H5 端面与采集日历同源，矩阵 `calendar=y`；不是“页面能用但
+    采集端没验证”。悬停已补这条证据。
 
 - r923 同程 App 国际单程明细复验与说明收敛（2026-11-03）：
   · 真机 SHA→NRT 2026-11-16 **6 条、最低 ¥875（7.9s，实付价取最低、保留划线列表价）**；`_scratch/tc_intl_result.xml` 内可见春秋 9C8515 / 捷星 GK036 / 乐桃 MM876 等，`app_tongcheng.intl` 已记录。

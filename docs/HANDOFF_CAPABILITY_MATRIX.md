@@ -45,6 +45,8 @@ label/提醒改动由全量 pytest 覆盖；含矩阵 ctrip 多程 ✓ 仅 2 段
 在 `e65cee1` 均 success；ghcr `sha-e65cee1` = `latest` digest `5fb025bb3488…`（**同 digest**），
 `sha-ab04c22` 仍可拉取（digest `9b72acb1a6b9…`）但已不对应 Release；公开站点戳
 `code:5045a4437de8` 来自更新后的 main（release 树 webui 为 `6c85a00f14c1`）；
+**资产缺口**：`e65cee1` 四平台包构建早于 numpy 依赖声明，冻结包内滑块缺口检测
+会静默无候选；下一次发版必须按最终 `requirements.txt` 重建四平台包并重算 SHA；
 0 open issues / 0 open PRs。Release 正文/资产/tag 已同源。
 **发布状态**：Release `v1.0` → `e65cee1`（10 渠道正文，四资产 digest 4/4）；
 live 8765 已于 2026-11-03 08:58 切到 `_release_ab04`（`ab04c22` 树，PID 47952，webui sha12
