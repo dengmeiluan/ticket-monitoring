@@ -199,9 +199,19 @@ MuMu 12 若自带「手机型号」自定义，可以先用它打底（改成任
   真实值（900×1600/320dpi），**不动 `wm size`**，所以坐标不受影响，只是让
   「机型声明」和「真实屏幕」不再自相矛盾。真要改屏幕见
   `docs/YIELD_AND_SESSION_STRATEGY.md` §3.7（要配 `dev.set_design()`）。
-* **ABI**：默认不动。要动先跑 `core.android.abi_canary.run(...)`（带自动回滚），
-  判定 ok 后再把 `identity.spoof_abi` 设成 `auto`。理由：MuMu 是 x86+ARM 转译，
-  写死 arm64 会让加固 so 走进不支持的指令，仓库里有过 `Runtime.load0` ANR 死锁。
+* **ABI**：默认不动。要动先跑 `core.android.abi_canary`（带自动回滚），
+  判定 ok 后再把 `identity.spoof_abi` 设成 `auto`。
+
+  **2026-11-03 实机实测（MuMu / Android 15）**：`resetprop` 无（未装 Magisk）、
+  `setprop ro.*` 返回 0 但值不变、`mount -o remount,rw /` 被拒
+  （`'/dev/block/sda6' is read-only`）——**三条写入通道全堵，当前不可行**。
+  好消息是 5 个目标包的 `primaryCpuAbi` 全是 `arm64-v8a`（本来就是 arm64 包），
+  所以一旦补上 Magisk，改 `ro.product.cpu.abi` 不会改变 so 选择，风险很低。
+
+  ```powershell
+  python scripts\abi_preflight.py            # 只读预检（随时可跑，含能力探测）
+  python scripts\abi_preflight.py --canary   # 真跑（重启框架，挑空闲窗口）
+  ```
 
 ---
 

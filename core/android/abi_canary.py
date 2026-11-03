@@ -320,21 +320,6 @@ def preflight(dev, packages=None) -> dict:
     rep["props"] = props
     rep["capabilities"] = capabilities(dev)
 
-    # 第一道闸：这台机器到底能不能改 ro.*（2026-11-03 的 MuMu 三条路全堵）
-    if not rep["capabilities"].get("can_write_ro"):
-        rep["risk"] = _PREFLIGHT_STOP
-        rep["why"] = ("这台实例改不了 ro.*：%s。ABI 伪装技术上不可行——"
-                      "要做得先给 MuMu 装 Magisk（提供 resetprop）。"
-                      % (rep["capabilities"].get("note") or "无写入通道"))
-        return rep
-
-    blob = ",".join([props["abilist"], props["abilist64"],
-                     props["abilist32"]])
-    if "arm64-v8a" not in blob:
-        rep["why"] = ("系统 abilist 里没有 arm64-v8a（native_bridge=%s）；"
-                      "写 arm64 必然崩" % (props["native_bridge"] or "无"))
-        return rep
-
     pkgs = [str(p) for p in (packages or []) if p]
     if not pkgs:
         from .stealth import KNOWN_APPS
@@ -349,6 +334,23 @@ def preflight(dev, packages=None) -> dict:
             "primary": (m.group(1) if m else ""),
             "secondary": (s.group(1) if s else ""),
         }
+
+    # 第一道闸：这台机器到底能不能改 ro.*（2026-11-03 的 MuMu 三条路全堵）
+    # 放在包探测之后：报告要能一次把「机器什么样」+「包什么样」都摆出来，
+    # 操作员才知道是「机器不支持」还是「包的 so 不匹配」。
+    if not rep["capabilities"].get("can_write_ro"):
+        rep["risk"] = _PREFLIGHT_STOP
+        rep["why"] = ("这台实例改不了 ro.*：%s。ABI 伪装技术上不可行——"
+                      "要做得先给 MuMu 装 Magisk（提供 resetprop）。"
+                      % (rep["capabilities"].get("note") or "无写入通道"))
+        return rep
+
+    blob = ",".join([props["abilist"], props["abilist64"],
+                     props["abilist32"]])
+    if "arm64-v8a" not in blob:
+        rep["why"] = ("系统 abilist 里没有 arm64-v8a（native_bridge=%s）；"
+                      "写 arm64 必然崩" % (props["native_bridge"] or "无"))
+        return rep
 
     found = [r for r in rep["packages"].values() if r["installed"]]
     if not found:

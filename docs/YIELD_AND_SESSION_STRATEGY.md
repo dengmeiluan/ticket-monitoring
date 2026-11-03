@@ -268,8 +268,45 @@ android:
     spoof_abi: auto     # auto=必须有 ok 判定；true=无条件写（不推荐）；null/false=不动
 ```
 
+判定 ok 之后才允许长期启用：
+
+```yaml
+android:
+  identity:
+    spoof_abi: auto     # auto=必须有 ok 判定；true=无条件写（不推荐）；null/false=不动
+```
+
 `auto` 的语义是「**只有这台实例 + 这个包被验证过，才写 ABI**」——比"文档说可以"
 可靠得多，也是这条唯一负责的做法。
+
+#### 实测结论（2026-11-03，MuMu 实例 0 / Android 15）
+
+先跑只读预检，结果如下：
+
+| 项 | 实测值 | 含义 |
+|---|---|---|
+| `ro.product.cpu.abi` | `x86_64` | 这就是风控读的 `Build.CPU_ABI` |
+| `abilist64` | `x86_64,arm64-v8a` | 系统**有** arm64 运行时 |
+| `ro.dalvik.vm.native.bridge` | `libnb.so` | MuMu 自带 ARM 转译 |
+| 5 个目标包 `primaryCpuAbi` | 全部 `arm64-v8a` | **它们本来就是 arm64 包** |
+| `resetprop` | 无（未装 Magisk） | ro.* 改不了 |
+| `setprop ro.*` | 返回 0 但**值不变** | 静默失败（最坑） |
+| `mount -o remount,rw /` | `'/dev/block/sda6' is read-only` | 块设备只读，`touch` 失败 |
+
+**结论：在这台实例上 ABI 伪装技术上不可行** —— 三条写入通道全堵。
+（顺带纠正一个此前的担忧：因为目标包本来就是 arm64，改 `ro.product.cpu.abi`
+**不会**改变 so 选择，历史那次 `Runtime.load0` ANR 的前提在此配置下不成立。）
+
+要推进只剩一条路：**给 MuMu 装 Magisk**（提供 `resetprop` 内存态写入）。
+装完再跑：
+
+```powershell
+python scripts/abi_preflight.py            # 应变成 risk=low
+python scripts/abi_preflight.py --canary   # 真跑，自动回滚 + 落判定
+```
+
+`abi_canary.capabilities()` 会把上面三条通道各探一次并写进报告，所以下次不用
+再手工试一遍——它会直接告诉你"是机器不支持"还是"包的 so 不匹配"。
 
 ---
 

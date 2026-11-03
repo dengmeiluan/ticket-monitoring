@@ -2428,7 +2428,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
    padding:10px;border-radius:28px;background:#05070a;
    border:1px solid #2b3542;box-shadow:0 18px 50px rgba(0,0,0,.38)}
  .appstage .appscr{height:100%;max-height:none;min-height:0;aspect-ratio:9/16;
-   width:auto;background:#000;border-radius:20px}
+   width:auto;background:#000;border-radius:var(--r)}
  .appstage .appscr img{height:100%;width:auto;max-height:100%;max-width:100%}
  .appstatus{display:flex;align-items:center;gap:8px;min-height:18px;
    font-size:11px;color:#9fb0c6}
@@ -2447,7 +2447,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  #lgModal[data-kind="app"].appfocus .apprail{display:none}
  #lgModal[data-kind="app"].appfocus .appworkspace{grid-template-columns:1fr}
  #lgModal[data-kind="app"].appfocus .appstage{padding:4px}
- #lgModal[data-kind="app"].appfocus .appdevice{border-radius:18px}
+ #lgModal[data-kind="app"].appfocus .appdevice{border-radius:var(--r)}
  .appfloat{position:fixed;z-index:235;width:min(360px,86vw);height:min(640px,82vh);
    height:min(640px,82dvh);display:none;flex-direction:column;background:var(--card);
    color:var(--tx);border:1px solid var(--line2);border-radius:14px;
@@ -2464,7 +2464,7 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  .appfloat-stage .appdevice{height:100%;width:auto;padding:4px;border-radius:14px;
    border:1px solid #2b3542;box-shadow:none}
  .appfloat-stage .appscr{height:100%;max-height:none;min-height:0;aspect-ratio:9/16;
-   width:auto;background:#000;border-radius:10px}
+   width:auto;background:#000;border-radius:var(--r2)}
  .appfloat-stage .appscr img{height:100%;width:auto;max-height:100%;max-width:100%}
  .appfloat-stage .appstage{height:100%;width:100%;min-height:0;padding:0;
    border:0;border-radius:0;background:transparent;gap:2px}
