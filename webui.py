@@ -534,6 +534,23 @@ def _normalize_mc_users(users):
     return users
 
 
+def _mc_chain_label(segs):
+    """多程链头：段间断点用「/」断开（开口程不画成假闭环）。"""
+    segs = list(segs or [])
+    if not segs:
+        return ""
+    out = str(segs[0].get("from") or "")
+    prev = out
+    for s in segs:
+        f = str(s.get("from") or "")
+        t = str(s.get("to") or "")
+        if f and prev and f != prev:
+            out += " / " + f
+        out += "→" + t
+        prev = t
+    return out
+
+
 def _multicity_history(db_path, segments_key, limit=96):
     """多程整单历史点（只读）：[[ISO 时刻, 总价], ...] 升序。
 
@@ -31720,8 +31737,7 @@ def _user_state(u):
             _latest0 = None
         mc_routes.append({
             "key": _key0,
-            "label": _segs0[0]["from"] + "".join(
-                "→" + s["to"] for s in _segs0),
+            "label": _mc_chain_label(_segs0),
             "from": _segs0[0]["from"], "to": _segs0[-1]["to"],
             "from_name": _fn0, "to_name": _tn0,
             "segments": _segs0,

@@ -33,10 +33,10 @@
   可溯源/过期首段不提醒/整单历史 sparkline/CSV 导出/2 段矩阵升 y）；live 8765 于
   **2026-11-03 08:58** 切到 `_release_ab04`（Release `ab04c22`，webui sha12
   `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r956 尚未入该树。
-- **门禁**：tracked collect **6276**。2026-11-03 16:25 CI 同款 4 片并发实测
+- **门禁**：tracked collect **6277**。2026-11-03 16:25 CI 同款 4 片并发实测
   **6230 passed / 44 skipped / 0 failed**（0/1/3 片在 `62888c4`、第 2 片在
   `47731c9`；两提交只差 r793 的测试守卫，产品代码相同；四片合计 6274；此后
-  新增开工况就绪轮询与开口程链头断点测试 2 项，共 6276，定向已验，全量待
+  新增开工况就绪轮询与开口程链头断点测试 3 项，共 6277，定向已验，全量待
   重跑；各片源码哈希前后一致）。CI 已把全量 pytest 拆到 4 台 runner：`tools/ci_shard.py`
   按 `tests/ci_durations.json` 历史耗时贪心均分，跑测前 `--stats 4` 自检
   并集=全部 `tests/test_*.py`（新增文件按 20s 自动进组，不漏跑）；`test/uitest`

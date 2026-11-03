@@ -288,3 +288,12 @@ def test_config_post_round_trips_stealth_android(config_server):
     assert saved["crawler"]["browser_channel"] == ""
     assert saved["android"]["identity"]["use_root"] is None
     assert saved["android"]["identity"]["reboot"] == "zygote"
+
+
+def test_mc_chain_label_marks_open_jaw_discontinuity():
+    """概览/CSV 的链头同样不能把开口程画成假闭环。"""
+    open_jaw = [{"from": "SHA", "to": "TYO", "date": "2026-11-20"},
+                {"from": "OSA", "to": "SHA", "date": "2026-11-26"}]
+    assert webui._mc_chain_label(open_jaw) == "SHA→TYO / OSA→SHA"
+    assert webui._mc_chain_label(SEGS_A) == "SHA→TYO→OSA"
+    assert webui._mc_chain_label([]) == ""
