@@ -3,6 +3,9 @@ PyYAML>=6.0
 APScheduler>=3.10.4
 httpx>=0.27.0
 Pillow>=10.0
+# 滑块缺失检测（crawlers/slider.py::find_gap）的唯一实现依赖；
+# 未声明时源码/发行包/镜像里该能力会静默返回空候选（CI 曾因此假红）。
+numpy>=1.26
 zstandard>=0.22.0
 tzdata>=2024.1
 # 可选：curl_cffi 提供 Chrome 的 TLS/JA3 指纹（core/net.py 优先用它发 HTTP，
