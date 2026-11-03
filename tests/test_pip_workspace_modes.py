@@ -28,7 +28,8 @@ def test_modes_focus_minimize_restore_exist():
                   "appfocus", "APP_LOGIN.mode", "appheadic"):
         assert token in src, token
     # App 图标走独立 squircle 质感层；浏览器方标保持原 .bic-ota
-    assert "bic bic-app " in src and "bic bic-ota " in src
+    assert ".bic-app{" in src and "bic bic-ota " in src
+    assert "bic-app " in src
     assert "srxPlatIcon(plat)" in src
 
 

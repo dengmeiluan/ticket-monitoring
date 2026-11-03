@@ -23806,7 +23806,8 @@ function srxPlatIcon(p,cls,lazy){
  const im=SRX_BRAND_IMG[p]||SRX_BRAND_IMG[SRX_BRAND_ALIAS[p]]||'';
  const nm=platCN(p);
  const isApp=String(p).indexOf('app_')===0;
- const c=isApp?('bic bic-app '+(cls||'')):('bic bic-ota '+(cls||''));
+ /* App 保留 bic-ota 基类（既有选择器/门禁不破），再叠 bic-app 质感层。 */
+ const c='bic bic-ota '+(isApp?'bic-app ':'')+(cls||'');
  /* 无官方图标时，字符牌只在「它不能从名字里猜出来」时才画：
     牌面取名字首字，若名字本身就以这个字开头（「智 智行 App」
     「携 携程」），牌面等于把第一个字抄一遍，纯噪声。
