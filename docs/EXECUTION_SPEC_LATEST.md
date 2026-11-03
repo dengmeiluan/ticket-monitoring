@@ -45,9 +45,9 @@
   同程 App round_trip=国际；r905 新增的行内自检按钮另由 `test_r905` 真渲染 +
   `test_r640` 三档行高覆盖）；能力线 9 文件 **63 passed**（2026-11-03 09:55）；
   `channel_contract --strict` **10 家 × 11 轴无缺口**（2026-11-03 10:13）；
-  `release_align_check --local` **25/25 PASS**（2026-11-03 12:40）；静态站已按
-  `80c63eb` 重烘（站点戳 `code:ccfc38542bf3`，12:37，5,659,402 bytes）。站点
-  尚未发布/部署，推送后 Pages 才会更新。
+  `release_align_check --local` **25/25 PASS**（2026-11-03 13:03）；静态站已按
+  当前树重烘（站点戳 `code:338493de3e01`，13:03，5,659,629 bytes）。站点尚未
+  发布/部署，推送后 Pages 才会更新。
 - **唯一声明源**：`core/channels.py`。新增渠道/维度先跑 `python -m core.channel_contract --strict`
   与 `test_r903/r904/r905`；声明字典禁止重复键，hint 承诺的按钮必须真实渲染。
 - **发布状态**：Release `v1.0` → `ab04c22`（v1.5.307，10 渠道正文/四资产 digest 4/4/CI/Pages 同源）；ghcr `sha-ab04c22` digest `9b72acb1a6b9…`，`latest` = `sha-934e108` digest `c8fe5de9383c…`（latest 跟随更新 HEAD，非同 digest；要 Release 同源请 pin `sha-ab04c22`）；live 8765 已切 `_release_ab04`；

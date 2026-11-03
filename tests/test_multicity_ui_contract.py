@@ -20,7 +20,7 @@ def test_config_page_has_mc_editor():
                   "function mcSegSet(", "function mcAddSeg(",
                   "function mcDelSeg(", "srow mcrow",
                   "添加多程行程", "多程仅携程 PC 可采",
-                  "整单心理价"):
+                  "3+ 段当前未接通", "整单心理价"):
         assert token in page, token
 
 

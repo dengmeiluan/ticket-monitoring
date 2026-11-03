@@ -22536,6 +22536,7 @@ function mcCardHTML(i,j,r){
       ${s.length>2?`<button class="ropbtn" title="删除第 ${k+1} 段" onclick="mcDelSeg(${i},${j},${k})">删除段</button>`:''}
     </div>`).join('')}</div>
     <button class="btn2 mcadd" ${s.length>=4?'disabled':''} onclick="mcAddSeg(${i},${j})">${ic('plus')} 加一段（最多 4 段）</button>
+    ${s.length>2?'<div class="shint" style="color:var(--warn);margin:6px 0 0">3+ 段当前未接通：实测结果页无「多程超低价」组合卡，保存后可能无数据</div>':''}
    </div></div>
   <div class="srow"><div class="slab"><b>整单心理价</b><div class="shint">低于即触发强提醒；只按渠道整单总价判定（不按段价折算）· 0=只采集不提醒</div></div>
    <div class="sctl"><span class="sunit" style="font-weight:700">￥整单</span><input type="number" min="0" step="50" class="keyin" value="${esc(r.alert_threshold||0)}" onchange="setRoute(${i},${j},'alert_threshold',this.value)"></div></div>
