@@ -60,9 +60,9 @@
   同程 App round_trip=国际；r905 新增的行内自检按钮另由 `test_r905` 真渲染 +
   `test_r640` 三档行高覆盖）；能力线 9 文件 **63 passed**（2026-11-03 09:55）；
   `channel_contract --strict` **10 家 × 11 轴无缺口**（2026-11-03 10:13）；
-  `release_align_check --local` **25/25 PASS**（2026-11-03 20:22，HEAD `c985ce0`，
-  tracked 6370 / UI 670）；静态站 `code:4179e3223c14` 已与当前 webui 对齐；
-  站点尚未发布/部署，推送后 Pages 才会更新。
+  `release_align_check --local` **25/25 PASS**（2026-11-03 21:31，clean 克隆 `81611e7`，
+  tracked 6394 / UI 670）；静态站 `code:5045a4437de8` 已按当前 webui 重烘并随
+  `0f782f9` 推送，线上 Pages 匿名请求实测同戳。
 - **多程开口程（2026-11-03 16:41 实测）**：profile 副本 + 临时库跑
   SHA→TYO 11-20 / OSA→SHA 11-26，页面「多程超低价」组合卡自报
   **「多程含税价 ¥2184」**（legs 9C8515 + MM079），`tripType=MC`、
