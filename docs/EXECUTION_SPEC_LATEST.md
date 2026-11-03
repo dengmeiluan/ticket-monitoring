@@ -33,9 +33,9 @@
   可溯源/过期首段不提醒/整单历史 sparkline/CSV 导出/2 段矩阵升 y）；live 8765 于
   **2026-11-03 08:58** 切到 `_release_ab04`（Release `ab04c22`，webui sha12
   `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r956 尚未入该树。
-- **门禁**：tracked collect **6278**。2026-11-03 17:16 clean HEAD `d5d9071`
-  全量非 UI **6234 passed / 44 skipped / 0 failed**（workers 8，412.05s，共 6278；
-  源码哈希 pin 通过，语法检查 ok）。CI 已把全量 pytest 拆到 4 台 runner：
+- **门禁**：tracked collect **6336**。2026-11-03 19:17 main（`2580a8b` + 端面恢复/配置落点 WIP）
+  全量 **6317 passed / 19 skipped / 0 failed**（workers 8，508.17s，共 6336）；
+  源码哈希 pin 通过，语法检查 ok。CI 已把全量 pytest 拆到 4 台 runner：
   `tools/ci_shard.py` 按 `tests/ci_durations.json` 历史耗时贪心均分，跑测前
   `--stats 4` 自检并集=全部 `tests/test_*.py`（新增文件按 20s 自动进组）+ workflow
   片数/选片/loadfile/ci-ok/取消旧跑一致性；`test/uitest` 各加 45 分钟超时，
@@ -3183,6 +3183,17 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · 门禁：`tests/test_r916_tuniu_calendar.py` 5 条 + r805z/r805ax/r677/
     special radar **56 passed**；`core.channel_contract --strict` 10×11
     无缺口；文档矩阵 HANDOFF 两处 n→y；站点待重烘/对齐。
+
+- r917 同程 H5 端面恢复 + WIP 配置落点（2026-11-03 19:17）：
+  · H5：48h 新鲜度会把「定时任务近期走 PC/窗历」误判成未验证
+    （同程 H5 历史 35 次 ok/1224 行，最近 11-01 17:07；2026-11-03
+    手工 UI 复验国内/国际价格日历可用）。端面规则放宽为近 30 天账本，
+    `tongcheng.h5` 恢复 y，悬停保留最近成功时间与主路。
+  · 并行 WIP 配置落点：策略闸门、滑块 daily_cap/max_fails/
+    device_distance/single_shot、identity.align_display/spoof_abi 共 7 键
+    补页面控件 + 保存写回/钳制；r601/r606/r958 与配置往返 **13 passed**。
+  · 全量（含 WIP）**6317 passed / 19 skipped / 0 failed**（508.17s，共 6336）；
+    UI 门禁与站点重烘/对齐随后跑。
 
 - r956 矩阵 ctrip.multi_city 升 y（仅 2 段）（2026-11-03 13:10）：
   · 依据 r954 生产行 ¥1476（IJ004+MM304）与配置/采集/概览/来源/提醒/历史/导出

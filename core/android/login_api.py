@@ -177,6 +177,31 @@ def handle_key(registry, plat: str, body: dict) -> Tuple[dict, int]:
     return {"ok": True}, 200
 
 
+def handle_info(registry, plat: str) -> Tuple[dict, int]:
+    """GET /api/app-login/info?plat=x —— 工作台状态栏的只读设备快照。
+
+    只服务进行中的登录会话；分辨率/前台供画面状态与「模拟器」感，
+    不触发任何写操作。设备读取失败降级为 0/空串，不把整个工作台打挂。
+    """
+    sess = registry.get(plat)
+    if sess is None:
+        return _err("没有进行中的登录会话", 409)
+    out = {"ok": True, "session": sess.view(), "package": sess.package,
+           "width": 0, "height": 0, "foreground": ""}
+    dev = sess.runtime.device() if sess.runtime else None
+    if dev is not None:
+        try:
+            w, h = dev.window_size()
+            out["width"], out["height"] = int(w or 0), int(h or 0)
+        except Exception:
+            pass
+        try:
+            out["foreground"] = str(dev.current_activity() or "")
+        except Exception:
+            pass
+    return out, 200
+
+
 def handle_state(registry, plat: str, snapshot_info=None,
                  needs_login=None) -> Tuple[dict, int]:
     """GET /api/app-login/state?plat=x
@@ -273,6 +298,8 @@ def dispatch(registry, method: str, path: str, query: dict,
     if method == "GET":
         if sub == "frame":
             return handle_frame(registry, plat)
+        if sub == "info":
+            return handle_info(registry, plat)
         if sub == "state":
             return handle_state(registry, plat, ctx.get("snapshot_info"),
                                 ctx.get("needs_login"))

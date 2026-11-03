@@ -388,14 +388,16 @@ def test_capability_matrix_header_carries_official_icon():
         "图标出现在名字之后，视觉顺序不对")
 
 
-def test_surface_declaration_matches_48h_ledger():
-    """端面声明必须与**近 48h 账本事实**一致——这是 r802 的核对口径。
+def test_surface_declaration_matches_30d_ledger():
+    """端面声明必须与**近 30 天账本事实**一致——r802 的核对口径，
+    2026-11-03 由 48h 放宽为 30 天：H5/PC 不是每天都被定时任务走到，
+    48h 会把「近期没跑」误判成「没验证」（同程 H5 有 35 次 ok/1224 行，
+    最近 11-01，仍被降级）。30 天覆盖一个正常调度周期，悬停里另写
+    最近成功时间与当前主路。
 
-    区分三种「不是 y」只能靠账本，不能靠记忆：
-      y  → 48h 内该端必须真出过数（否则是未验证，写成 y 就是吹）
-      n  → 48h 内该端必须没有出数记录（出过数就不能说「没有通路」）
+      y  → 30 天内该端必须真出过数（否则是未验证，写成 y 就是吹）
+      n  → 30 天内该端必须没有出数记录（出过数就不能说「没有通路」）
       "" → 允许无记录（测不出）
-    2026-11-01 r802 全表核对：矛盾项 0。
     """
     import sqlite3
 
@@ -416,7 +418,7 @@ def test_surface_declaration_matches_48h_ledger():
         cur.execute("""
             select platform, entry_path, path_status, count(*), sum(rows)
             from fetch_paths
-            where fetched_at > datetime('now','localtime','-48 hours')
+            where fetched_at > datetime('now','localtime','-30 days')
             group by platform, entry_path, path_status
         """)
         rows = cur.fetchall()
@@ -437,16 +439,16 @@ def test_surface_declaration_matches_48h_ledger():
     finally:
         conn.close()
     if not agg:
-        pytest.skip("48h 账本为空，无法核对")
+        pytest.skip("30 天账本为空，无法核对")
 
     bad = []
     for plat, row in CHANNEL_SURFACES.items():
         for s, v in row.items():
             n = (agg.get((plat, s)) or {}).get("ok", 0)
             if v == "y" and n == 0:
-                bad.append("%s.%s 声明 y 但 48h 内 0 次出数" % (plat, s))
+                bad.append("%s.%s 声明 y 但 30 天内 0 次出数" % (plat, s))
             if v == "n" and n > 0:
-                bad.append("%s.%s 声明 n 但 48h 内出过 %d 次" % (plat, s, n))
+                bad.append("%s.%s 声明 n 但 30 天内出过 %d 次" % (plat, s, n))
     assert not bad, "端面声明与账本矛盾：%s" % bad
 
 

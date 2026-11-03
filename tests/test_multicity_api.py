@@ -290,6 +290,40 @@ def test_config_post_round_trips_stealth_android(config_server):
     assert saved["android"]["identity"]["reboot"] == "zygote"
 
 
+def test_config_post_round_trips_slider_and_identity_flags(config_server):
+    """r916：policy_gate / slider.* / identity.align_display|spoof_abi 真写回。"""
+    import io
+    import yaml
+    base, cfg_path = config_server
+    payload = {"users": [], "globals": {
+        "policy_gate": False,
+        "daily_cap": 7, "max_fails": 4, "device_distance": 300,
+        "single_shot": True,
+        "align_display": False, "spoof_abi": "auto"}}
+    code, out = _post(base, payload)
+    assert code == 200 and out.get("ok"), out
+    saved = yaml.safe_load(io.open(cfg_path, encoding="utf-8"))
+    crw = saved.get("crawler") or {}
+    assert crw["policy_gate"] is False
+    sl = crw.get("slider") or {}
+    assert sl["daily_cap"] == 7 and sl["max_fails"] == 4
+    assert sl["device_distance"] == 300 and sl["single_shot"] is True
+    ident = (saved.get("android") or {}).get("identity") or {}
+    assert ident["align_display"] is False
+    assert ident["spoof_abi"] == "auto"
+
+    bad = {"users": [], "globals": {
+        "daily_cap": 99, "max_fails": 0, "device_distance": 1,
+        "spoof_abi": "bogus"}}
+    code, out = _post(base, bad)
+    assert code == 200 and out.get("ok"), out
+    saved = yaml.safe_load(io.open(cfg_path, encoding="utf-8"))
+    sl = saved["crawler"]["slider"]
+    assert sl["daily_cap"] == 20 and sl["max_fails"] == 1
+    assert sl["device_distance"] == 40
+    assert saved["android"]["identity"]["spoof_abi"] == "auto"
+
+
 def test_mc_chain_label_marks_open_jaw_discontinuity():
     """概览/CSV 的链头同样不能把开口程画成假闭环。"""
     open_jaw = [{"from": "SHA", "to": "TYO", "date": "2026-11-20"},

@@ -288,3 +288,23 @@ def test_state_survives_snapshot_info_error():
 
     body, code = la.handle_state(AppLoginRegistry(), "app_zhixing", boom)
     assert code == 200 and body["saved"] is False
+
+
+def test_info_reports_device_and_session_for_workspace():
+    """工作台状态栏要读设备分辨率/前台 App/会话统计（只读）。"""
+    reg = AppLoginRegistry()
+    ctx, rt = _ctx()
+    login_api.handle_create(reg, "app_zhixing", PACKAGES,
+                            ctx["runtime_factory"])
+    body, code = login_api.handle_info(reg, "app_zhixing")
+    assert code == 200 and body["ok"] is True, body
+    assert body["width"] == 900 and body["height"] == 1600, body
+    assert body["foreground"].startswith("cn.suanya.zhixing"), body
+    assert body["session"]["status"] == "pending", body
+    assert body["package"] == "cn.suanya.zhixing", body
+
+
+def test_info_without_live_session_is_409():
+    reg = AppLoginRegistry()
+    body, code = login_api.handle_info(reg, "app_zhixing")
+    assert code == 409 and body["ok"] is False, body

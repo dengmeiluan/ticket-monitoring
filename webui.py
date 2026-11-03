@@ -2400,6 +2400,89 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
    border-radius:var(--r8);padding:2px 8px;font-size:11px;cursor:pointer}
  .appsw-b.on{border-color:var(--acc);color:var(--acc);cursor:default}
  .appsw-b:disabled{opacity:1}
+ /* App 登录工作台（r961）：只作用于 data-kind=app；浏览器登录弹窗仍是窄窗。
+    默认近全屏，专注态隐藏控制轨，浮窗态把同一块画面移出弹窗继续轮询。 */
+ #lgModal[data-kind="app"]{width:min(1180px,96vw);height:min(92vh,1000px);
+   height:min(92dvh,1000px);max-height:92dvh;overflow:hidden}
+ #lgModal[data-kind="app"].open{display:flex;flex-direction:column}
+ #lgModal[data-kind="app"].appfocus{width:min(96vw,1400px);height:96dvh;max-height:96dvh}
+ #lgModal[data-kind="app"] .lgmodal-h{padding:8px 12px;gap:8px;flex-wrap:wrap}
+ #lgModal[data-kind="app"] .lgmodal-h b{font-size:13px}
+ #lgModal[data-kind="app"] .lgmodal-b{padding:10px;min-height:0;flex:1;display:flex}
+ .applive,.appres,.appsess{font-size:10px;color:var(--mut);white-space:nowrap}
+ .applive{display:inline-flex;align-items:center;gap:4px}
+ .applive:before{content:"";width:6px;height:6px;border-radius:50%;
+   background:var(--ok);box-shadow:0 0 0 3px rgba(var(--okrgb),.12)}
+ .appheadops{margin-left:auto;display:flex;gap:6px;align-items:center}
+ .apphbtn{border:1px solid var(--line2);background:transparent;color:var(--tx2);
+   border-radius:var(--r3);height:28px;padding:0 9px;font-size:11px;
+   cursor:pointer;white-space:nowrap}
+ .apphbtn.on{border-color:var(--acc);color:var(--acc)}
+ .appworkspace{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:12px;
+   flex:1;min-height:0;width:100%}
+ .appstage{min-width:0;min-height:0;display:flex;flex-direction:column;gap:8px;
+   padding:10px;border:1px solid var(--line);border-radius:12px;
+   background:radial-gradient(70% 55% at 50% 18%,#1a2433 0%,#0a0d12 72%)}
+ .appdevice{position:relative;flex:1;min-height:0;display:flex;align-items:center;
+   justify-content:center;padding:10px;border-radius:28px;background:#05070a;
+   border:1px solid #2b3542;box-shadow:0 18px 50px rgba(0,0,0,.38)}
+ .appstage .appscr{height:100%;max-height:none;min-height:0;aspect-ratio:9/16;
+   width:auto;background:#000;border-radius:20px}
+ .appstage .appscr img{height:100%;width:auto;max-height:100%;max-width:100%}
+ .appstatus{display:flex;align-items:center;gap:8px;min-height:18px;
+   font-size:11px;color:#9fb0c6}
+ .appstatus .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+   white-space:nowrap}
+ .apprail{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;
+   padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--bg2)}
+ .apprail-sec{display:flex;flex-direction:column;gap:6px}
+ .apprail-lb{font-size:10px;letter-spacing:.04em;color:var(--mut);text-transform:uppercase}
+ .apptextrow{display:flex;gap:6px}
+ .apptextrow input{flex:1;min-width:0;height:30px;padding:0 8px;border:1px solid var(--line2);
+   border-radius:var(--r3);background:var(--card);color:var(--tx);font-size:12px}
+ .appkeys{display:flex;flex-wrap:wrap;gap:6px}
+ .appkeys .btn2,.apprail .btn2{flex:0 0 auto;white-space:nowrap}
+ .apprail .appsw{margin:0}
+ #lgModal[data-kind="app"].appfocus .apprail{display:none}
+ #lgModal[data-kind="app"].appfocus .appworkspace{grid-template-columns:1fr}
+ #lgModal[data-kind="app"].appfocus .appstage{padding:4px}
+ #lgModal[data-kind="app"].appfocus .appdevice{border-radius:18px}
+ .appfloat{position:fixed;z-index:235;width:min(360px,86vw);height:min(640px,82vh);
+   height:min(640px,82dvh);display:none;flex-direction:column;background:var(--card);
+   color:var(--tx);border:1px solid var(--line2);border-radius:14px;
+   box-shadow:0 18px 60px rgba(0,0,0,.38);overflow:hidden}
+ .appfloat.open{display:flex}
+ .appfloat-h{display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:move;
+   user-select:none;border-bottom:1px solid var(--line);font-size:12px}
+ .appfloat-h b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .appfloat-h button{border:1px solid var(--line2);background:transparent;color:var(--tx2);
+   border-radius:var(--r3);height:24px;padding:0 7px;font-size:11px;cursor:pointer;
+   white-space:nowrap}
+ .appfloat-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+   background:#05070a;padding:6px}
+ .appfloat-stage .appdevice{height:100%;width:auto;padding:4px;border-radius:14px;
+   border:1px solid #2b3542;box-shadow:none}
+ .appfloat-stage .appscr{height:100%;max-height:none;min-height:0;aspect-ratio:9/16;
+   width:auto;background:#000;border-radius:10px}
+ .appfloat-stage .appscr img{height:100%;width:auto;max-height:100%;max-width:100%}
+ .appfloat-bar{display:flex;gap:6px;padding:6px 8px;border-top:1px solid var(--line);
+   flex-wrap:wrap}
+ .appfloat-bar .btn2{flex:0 0 auto;white-space:nowrap}
+ @media(max-width:900px){
+  #lgModal[data-kind="app"]{width:100vw;height:100dvh;max-height:100dvh;
+    border:0;border-radius:0}
+  #lgModal[data-kind="app"] .lgmodal-b{padding:8px;overflow:auto}
+  .appworkspace{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;
+    height:auto;min-height:100%}
+  .appstage{height:min(56dvh,560px);flex:none}
+  .apprail{overflow:visible}
+  .appheadops{gap:4px}
+ }
+ @media(max-width:520px){
+  .apphbtn{padding:0 7px}
+  .appstage{height:min(52dvh,500px)}
+  .appfloat{width:min(320px,88vw);height:min(560px,78dvh)}
+ }
  .lglanes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
  .lglane{border:1px solid var(--line);border-radius:var(--r10);padding:9px 10px;
    display:flex;flex-direction:column;gap:5px;background:var(--bg2)}
@@ -17749,7 +17832,8 @@ let LG_LASTFOCUS=null;
    实现：250ms 拉帧（服务端内容哈希去重，静止时几乎全是 304），
    点击按原始分辨率回传，服务端再换算。
    不用 <canvas>：<img> 足够，且避免每帧重绘开销。 */
-let APP_LOGIN={plat:null,timer:null,smooth:false,burstUntil:0,dead:false,err:0};
+let APP_LOGIN={plat:null,timer:null,smooth:false,burstUntil:0,dead:false,err:0,
+ mode:'workspace',locked:false,floatPos:null,drag:null,infoAt:0,wheelAt:0};
 /* 画面轮询自适应：刚操作过就快取（120ms，像模拟器一样跟手），静置 2s 后
    降到 700ms——每帧都要 adb screencap，恒 250ms 会跟采集抢资源（实测把
    App 的 dump 拖到 ~20s，见 r805bm）。 */
@@ -17768,23 +17852,40 @@ function appPlatName(p){
 function appLoginOpen(plat){
  const m=$('lgModal'),k=$('lgMask');if(!m||!k)return;
  APP_LOGIN.plat=plat;LG_LASTFOCUS=document.activeElement;
+ APP_LOGIN.mode='workspace';
+ const _oldFloat=$('appFloat');if(_oldFloat)_oldFloat.remove();
  m.innerHTML='<div class="lgmodal-h"><b>'+he(appPlatName(plat))+' 登录</b>'
-  +'<span>直接在画面里操作</span>'
-  +'<button type="button" class="x" onclick="appLoginClose()" aria-label="关闭">✕</button></div>'
-  +'<div class="lgmodal-b">'
-  +'<div class="lgmodal-note">在下面的手机画面里点击、输入手机号与验证码；完成后点「我已登录完成」。</div>'
-  +appLoginSwitchHTML(plat)
-  +'<div class="appscr" id="appScr"><div class="appscr-wait" id="appWait">正在启动 App…</div>'
+  +'<span class="applive" id="appLive">实时画面</span>'
+  +'<span class="appres" id="appRes">—</span>'
+  +'<span class="appsess" id="appSess">启动中</span>'
+  +'<span class="appheadops">'
+  +'<button type="button" class="apphbtn" id="appFocusBtn" onclick="appLoginFocus()">专注</button>'
+  +'<button type="button" class="apphbtn" onclick="appLoginMinimize()">缩小浮窗</button>'
+  +'<button type="button" class="x" onclick="appLoginClose()" aria-label="关闭">✕</button></span></div>'
+  +'<div class="lgmodal-b"><div class="appworkspace">'
+  +'<div class="appstage" id="appStageHost">'
+  +'<div class="appdevice"><div class="appscr" id="appScr"><div class="appscr-wait" id="appWait">正在启动 App…</div>'
   +'<img id="appImg" alt="App 实时画面" style="display:none">'
-  +'<div class="appscr-hit" id="appHit" title="点击操作"></div></div>'
-  +'<div class="appscr-bar"><span class="grow" id="appTip">准备中</span>'
-  +'<button class="btn2" id="appRetryBtn" style="display:none" onclick="appLoginRetry()">重新连接</button>'
-  +'<button class="btn2" id="appTextBtn" onclick="appLoginText()">输入文字</button>'
-  +'<button class="btn2" onclick="appLoginKey(\'KEYCODE_DEL\')">退格</button>'
+  +'<div class="appscr-hit" id="appHit" title="点击操作；拖动=滑动；长按=按住"></div></div></div>'
+  +'<div class="appstatus"><span class="grow" id="appTip">准备中</span><span id="appMeta">—</span></div>'
+  +'</div>'
+  +'<aside class="apprail">'
+  +'<div class="apprail-sec"><span class="apprail-lb">渠道</span>'+appLoginSwitchHTML(plat)+'</div>'
+  +'<div class="apprail-sec"><span class="apprail-lb">输入到手机</span><div class="apptextrow">'
+  +'<input id="appTextInput" maxlength="200" placeholder="手机号 / 验证码"'
+  +' onkeydown="if(event.key===\'Enter\'){event.preventDefault();appLoginTextSend()}">'
+  +'<button type="button" class="btn2" onclick="appLoginTextSend()">发送</button></div>'
+  +'<div class="shint">先点画面里的输入框，再发送</div></div>'
+  +'<div class="apprail-sec"><span class="apprail-lb">设备键</span><div class="appkeys">'
   +'<button class="btn2" onclick="appLoginKey(\'KEYCODE_BACK\')" title="返回上一屏（登录后停在子页时用）">返回</button>'
   +'<button class="btn2" onclick="appLoginKey(\'KEYCODE_HOME\')" title="回桌面（App 卡死或停在别处时用）">桌面</button>'
-  +'<button class="btn2" onclick="appLoginFinish(this)">我已登录完成</button></div>'
-  +'</div>';
+  +'<button class="btn2" onclick="appLoginKey(\'KEYCODE_APP_SWITCH\')" title="最近任务">最近</button>'
+  +'<button class="btn2" onclick="appLoginKey(\'KEYCODE_DEL\')">退格</button></div></div>'
+  +'<div class="appscr-bar">'
+  +'<button class="btn2" id="appRetryBtn" style="display:none" onclick="appLoginRetry()">重新连接</button>'
+  +'<button class="btn2" id="appTextBtn" onclick="appLoginTextFocus()">输入文字</button>'
+  +'<button class="btn2" id="appFinishBtn" onclick="appLoginFinish(this)">我已登录完成</button></div>'
+  +'</aside></div></div>';
  m.classList.add('open');k.classList.add('open');
  // #lgModal 是浏览器弹窗与 App 画面**共用**的容器：不标归属的话，
  // 两者会互相覆盖（浏览器弹窗把它写成 fliggy 画面、App 又整个换掉）。
@@ -17793,12 +17894,9 @@ function appLoginOpen(plat){
     从携程卡片切到智行后整窗重建，可读名称却仍是飞猪——屏幕阅读器会把
     智行的画面念成飞猪。 */
  m.setAttribute('aria-label', appPlatName(plat)+' 登录画面');
- /* 读屏名称随渠道走：静态 HTML 上的 aria-label 写死「飞猪双端登录」，
-    从携程卡片切到智行后整窗重建，可读名称却仍是飞猪——屏幕阅读器会把
-    智行的画面念成飞猪。 */
- 
- if(typeof srxLockBody==='function')srxLockBody();
+ appLoginLock(true);
  appLoginStart(plat);
+ appLoginInfo(plat);
 }
 function appLoginSwitchHTML(cur){
  /* 渠道切换：两个 App 渠道都要登录，但同一台设备只能有一个 App 在前台。
@@ -17821,36 +17919,176 @@ function appLoginSwitch(plat){
  appLoginStop();
  appLoginOpen(plat);
 }
+/* 弹窗与浮窗共用一个 body 锁计数；最小化释放一次、恢复再锁一次，
+   避免直接调用 srxUnlockBody 把其它弹窗的锁也减掉。 */
+function appLoginLock(on){
+ if(on&&!APP_LOGIN.locked){
+  if(typeof srxLockBody==='function')srxLockBody();
+  APP_LOGIN.locked=true;
+ }else if(!on&&APP_LOGIN.locked){
+  if(typeof srxUnlockBody==='function')srxUnlockBody();
+  APP_LOGIN.locked=false;
+ }
+}
+function appLoginSess(t){
+ const e=$('appSess');if(e)e.textContent=t;
+ const f=$('appFloatState');if(f)f.textContent=t;
+}
+function appLoginMeta(w,h,fg){
+ if(w&&h){
+  const e=$('appRes');if(e)e.textContent=w+'×'+h;
+  const f=$('appFloatRes');if(f)f.textContent=w+'×'+h;
+  const img=$('appImg');
+  if(img&&!img.naturalWidth){img.dataset.size=w+'×'+h}
+ }
+ const m=$('appMeta');
+ if(m)m.textContent=fg?('前台 '+String(fg).split('/')[0]):'';
+}
+function appLoginInfo(plat){
+ plat=plat||APP_LOGIN.plat;if(!plat)return;
+ APP_LOGIN.infoAt=Date.now();
+ fetch('/api/app-login/info?plat='+encodeURIComponent(plat),{cache:'no-store'})
+  .then(r=>r.json()).then(j=>{
+   if(!j||!j.ok||APP_LOGIN.plat!==plat)return;
+   appLoginMeta(j.width,j.height,j.foreground||'');
+   if(j.session&&j.session.status)appLoginSess(appLoginStatusCn(j.session.status));
+  }).catch(()=>{});
+}
+function appLoginFocus(force){
+ const m=$('lgModal');if(!m||m.dataset.kind!=='app')return;
+ const on=(force===undefined)?!m.classList.contains('appfocus'):!!force;
+ m.classList.toggle('appfocus',on);
+ const b=$('appFocusBtn');
+ if(b){b.classList.toggle('on',on);b.textContent=on?'退出专注':'专注'}
+ APP_LOGIN.mode=on?'focus':'workspace';
+ appLoginTip(on?'专注模式 · Esc 退出':'画面已连接 · 点画面即可操作');
+}
+function appFloatClamp(x,y,w,h){
+ const pad=8;
+ return {x:Math.max(pad,Math.min(Math.max(pad,innerWidth-w-pad),x)),
+         y:Math.max(pad,Math.min(Math.max(pad,innerHeight-h-pad),y))};
+}
+function appLoginFloatEnsure(){
+ let f=$('appFloat');
+ if(f)return f;
+ f=document.createElement('div');
+ f.id='appFloat';f.className='appfloat';f.setAttribute('role','dialog');
+ f.setAttribute('aria-modal','false');f.setAttribute('aria-label','App 登录浮窗');
+ f.innerHTML='<div class="appfloat-h" id="appFloatDrag">'
+  +'<b id="appFloatName">App</b><span id="appFloatRes"></span>'
+  +'<span id="appFloatState">浮窗中</span>'
+  +'<button type="button" onclick="appLoginRestore()">放大</button>'
+  +'<button type="button" onclick="appLoginClose()" aria-label="关闭浮窗">✕</button></div>'
+  +'<div class="appfloat-stage" id="appFloatStage"></div>'
+  +'<div class="appfloat-bar">'
+  +'<button class="btn2" onclick="appLoginKey(\'KEYCODE_BACK\')">返回</button>'
+  +'<button class="btn2" onclick="appLoginKey(\'KEYCODE_HOME\')">桌面</button>'
+  +'<button class="btn2" onclick="appLoginRetry()">重新连接</button>'
+  +'<button class="btn2" onclick="appLoginRestore(true)">输入</button>'
+  +'<button class="btn2" onclick="appLoginFinish(this)">我已登录完成</button></div>';
+ document.body.appendChild(f);
+ $('appFloatDrag').addEventListener('pointerdown',appFloatDragStart);
+ try{
+  const p=JSON.parse(localStorage.getItem('appFloatPos')||'null');
+  if(p&&isFinite(p.x)&&isFinite(p.y))APP_LOGIN.floatPos=p;
+ }catch(e){}
+ return f;
+}
+function appLoginFloatPlace(){
+ const f=$('appFloat');if(!f)return;
+ const w=f.offsetWidth||340,h=f.offsetHeight||600;
+ const pos=APP_LOGIN.floatPos||{x:innerWidth-w-18,y:innerHeight-h-18};
+ const p=appFloatClamp(pos.x,pos.y,w,h);
+ f.style.left=p.x+'px';f.style.top=p.y+'px';
+}
+function appFloatDragStart(ev){
+ if(ev.target&&ev.target.closest&&ev.target.closest('button'))return;
+ const f=$('appFloat');if(!f)return;
+ const r=f.getBoundingClientRect();
+ APP_LOGIN.drag={dx:ev.clientX-r.left,dy:ev.clientY-r.top};
+ try{ev.currentTarget.setPointerCapture(ev.pointerId)}catch(e){}
+ ev.preventDefault();
+}
+function appFloatDragMove(ev){
+ if(!APP_LOGIN.drag)return;
+ const f=$('appFloat');if(!f)return;
+ const p=appFloatClamp(ev.clientX-APP_LOGIN.drag.dx,
+  ev.clientY-APP_LOGIN.drag.dy,f.offsetWidth,f.offsetHeight);
+ f.style.left=p.x+'px';f.style.top=p.y+'px';
+}
+function appFloatDragEnd(){
+ if(!APP_LOGIN.drag)return;
+ const f=$('appFloat');APP_LOGIN.drag=null;
+ if(!f)return;
+ APP_LOGIN.floatPos={x:parseFloat(f.style.left)||0,y:parseFloat(f.style.top)||0};
+ try{localStorage.setItem('appFloatPos',JSON.stringify(APP_LOGIN.floatPos))}catch(e){}
+}
+function appLoginMinimize(){
+ const m=$('lgModal'),k=$('lgMask'),stage=$('appStageHost');
+ if(!m||!stage||m.dataset.kind!=='app')return;
+ const f=appLoginFloatEnsure();
+ $('appFloatName').textContent=appPlatName(APP_LOGIN.plat)+' 登录';
+ $('appFloatStage').appendChild(stage);
+ m.classList.remove('open');m.classList.remove('appfocus');
+ if(k)k.classList.remove('open');
+ appLoginLock(false);
+ APP_LOGIN.mode='float';
+ f.classList.add('open');f.setAttribute('aria-hidden','false');
+ appLoginFloatPlace();
+ appLoginTip('浮窗中 · 点画面继续操作');
+}
+function appLoginRestore(focusText){
+ const m=$('lgModal'),k=$('lgMask'),stage=$('appStageHost');
+ const f=$('appFloat');
+ if(f)f.classList.remove('open');
+ if(m&&stage){
+  const ws=m.querySelector('.appworkspace');
+  if(ws&&stage.parentElement!==ws)ws.insertBefore(stage,ws.firstChild);
+  m.classList.add('open');m.classList.remove('appfocus');
+  if(k)k.classList.add('open');
+  appLoginLock(true);APP_LOGIN.mode='workspace';
+  appLoginTip('画面已连接 · 点画面即可操作');
+  if(focusText)setTimeout(()=>{appLoginTextFocus()},50);
+ }
+}
 function appLoginClose(){
  appLoginStop();
  const m=$('lgModal'),k=$('lgMask');
- if(m){m.classList.remove('open')}
+ if(m){m.classList.remove('open','appfocus');delete m.dataset.kind}
  if(k){k.classList.remove('open')}
- if(typeof srxUnlockBody==='function')srxUnlockBody();
- APP_LOGIN.plat=null;
+ const f=$('appFloat');
+ if(f){f.classList.remove('open');f.remove()}
+ appLoginLock(false);
+ APP_LOGIN.plat=null;APP_LOGIN.mode='workspace';
  if(LG_LASTFOCUS&&LG_LASTFOCUS.focus)try{LG_LASTFOCUS.focus()}catch(e){}
 }
+document.addEventListener('pointermove',e=>{if(APP_LOGIN.drag)appFloatDragMove(e)});
+document.addEventListener('pointerup',()=>{if(APP_LOGIN.drag)appFloatDragEnd()});
+document.addEventListener('pointercancel',()=>{if(APP_LOGIN.drag)appFloatDragEnd()});
+window.addEventListener('resize',()=>{
+ const f=$('appFloat');if(f&&f.classList.contains('open'))appLoginFloatPlace();
+});
 function appLoginStop(){
  if(APP_LOGIN.timer){clearTimeout(APP_LOGIN.timer);APP_LOGIN.timer=null}
 }
 function appLoginTip(t){const e=$('appTip');if(e)e.textContent=t}
 function appLoginStart(plat){
- APP_LOGIN.dead=false;APP_LOGIN.err=0;
+ APP_LOGIN.dead=false;APP_LOGIN.err=0;appLoginSess('启动中');
  const rb=$('appRetryBtn');if(rb)rb.style.display='none';
  const wait=$('appWait');if(wait){wait.textContent='正在启动 App…';wait.style.display='flex';}
  fetch('/api/app-login',{method:'POST',headers:{'Content-Type':'application/json'},
    body:JSON.stringify({plat:plat})})
   .then(r=>r.json()).then(j=>{
    if(!j.ok){appLoginFail('启动失败：'+(j.err||'未知原因'));return}
-   appLoginTip('已启动，正在取画面…');
-   appLoginLoop(plat);
+   appLoginSess('会话进行中');appLoginTip('已启动，正在取画面…');
+   appLoginInfo(plat);appLoginLoop(plat);
   }).catch(e=>appLoginFail('启动失败：'+e));
 }
 /* 会话断了（服务重启 / 切了渠道 / 过期）必须说清楚：帧接口 404/409 时
    停轮询、藏起旧帧、给出「重新连接」。旧实现把错误全吞掉，界面会永远
    停在最后一帧并写着「画面已连接」——用户点不动也不知道为什么。 */
 function appLoginFail(msg){
- APP_LOGIN.dead=true;
+ APP_LOGIN.dead=true;appLoginSess('连接中断');
  appLoginStop();
  const img=$('appImg');if(img)img.style.display='none';
  const wait=$('appWait');if(wait){wait.textContent=msg;wait.style.display='flex';}
@@ -17879,7 +18117,10 @@ function appLoginLoop(plat){
     if(wait)wait.style.display='none';
     /* 取到首帧就把提示换掉：停在「正在取画面…」会让用户以为卡住了 */
     APP_LOGIN.got=1;APP_LOGIN.err=0;
+    if(img.naturalWidth)appLoginMeta(img.naturalWidth,img.naturalHeight);
+    appLoginSess('已连接');
     appLoginTip('画面已连接 · 点画面即可操作');
+    if(!APP_LOGIN.infoAt||Date.now()-APP_LOGIN.infoAt>15000)appLoginInfo(plat);
    }
   })
   .catch(e=>{
@@ -17940,7 +18181,23 @@ function appLoginPtrMove(ev){
 }
 function appLoginPtrUp(ev){
  const d=APP_DRAG;APP_DRAG=null;
- if(!d||d.moved<10)return;            /* 小位移：交给 click 当点击 */
+ if(!d)return;
+ const held=Date.now()-d.t0;
+ if(d.moved<10){
+  /* 长按 = 同坐标 swipe（adb input swipe 同点即按住）；短按交给 click。 */
+  if(held>=600){
+   APP_DRAG_AT=Date.now();
+   const plat=APP_LOGIN.plat;
+   if(plat)fetch('/api/app-login/swipe',{method:'POST',
+     headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({plat:plat,x1:d.x0,y1:d.y0,x2:d.x0,y2:d.y0,
+       dur:Math.max(600,Math.min(2000,held))})})
+    .then(r=>r.json()).then(j=>{if(!j.ok)appLoginTip(j.err||'长按失败')})
+    .catch(()=>{});
+   appLoginMark();
+  }
+  return;
+ }
  APP_DRAG_AT=Date.now();
  const plat=APP_LOGIN.plat,p=appImgMap(ev,$('appImg'));
  if(!plat||!p)return;
@@ -17952,16 +18209,25 @@ function appLoginPtrUp(ev){
   .catch(()=>{});
  appLoginMark();
 }
-function appLoginText(){
+function appLoginText(t){
  const plat=APP_LOGIN.plat;if(!plat)return;
- const t=prompt('输入要填进手机的内容（手机号 / 验证码）：');
+ if(t===undefined){
+  const el=$('appTextInput');
+  if(el&&String(el.value||'').trim())t=el.value;
+ }
+ if(t===undefined){t=prompt('输入要填进手机的内容（手机号 / 验证码）：')}
  if(t===null||t==='')return;
  fetch('/api/app-login/input',{method:'POST',
    headers:{'Content-Type':'application/json'},
    body:JSON.stringify({plat:plat,text:t})})
   .then(r=>r.json()).then(j=>{
    appLoginMark();
-   if(j.ok){appLoginTip('已输入');return}
+   if(j.ok){
+    appLoginTip('已输入');
+    const el=$('appTextInput');
+    if(el&&el.value===t)el.value='';
+    return;
+   }
    /* 「输入文字」在**没有聚焦输入框**时，adb 照样回成功、字却掉在地上
       （r805ab 真机：城市页输入 bei，两帧 sha1 相同、视图树零变化）。
       后端现在会在输入后回读视图树，没出现就回 ok:false——提示要给
@@ -17969,6 +18235,15 @@ function appLoginText(){
    appLoginTip('没输进去：先在手机画面里点一下输入框，再点「输入文字」');
   })
   .catch(()=>{});
+}
+function appLoginTextFocus(){
+ const el=$('appTextInput');
+ if(el){el.focus();try{el.select()}catch(e){};return}
+ appLoginText();
+}
+function appLoginTextSend(){
+ const el=$('appTextInput');
+ appLoginText(el?String(el.value||''):undefined);
 }
 function appLoginKey(key){
  const plat=APP_LOGIN.plat;if(!plat)return;
@@ -17990,6 +18265,26 @@ function appLoginFinish(btn){
   }).catch(e=>{appLoginTip('失败：'+e);
    if(btn){btn.disabled=false;btn.textContent='我已登录完成'}});
 }
+/* 桌面滚轮 = 画面内滑动（城市列表/日历/结果列表）；只拦设备画面，
+   页面其它区域照常滚动。 */
+function appLoginWheel(ev){
+ if(!ev.target||ev.target.id!=='appHit')return;
+ const plat=APP_LOGIN.plat,img=$('appImg');
+ if(!plat||!img||APP_LOGIN.dead)return;
+ const p=appImgMap(ev,img);if(!p)return;
+ ev.preventDefault();
+ if(Date.now()-(APP_LOGIN.wheelAt||0)<160)return;
+ APP_LOGIN.wheelAt=Date.now();
+ const step=ev.deltaY>0?-140:140;
+ const nh=img.naturalHeight||1600;
+ const ny=Math.max(0,Math.min(nh-1,p.y+step));
+ fetch('/api/app-login/swipe',{method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({plat:plat,x1:p.x,y1:p.y,x2:p.x,y2:ny,dur:220})})
+  .catch(()=>{});
+ appLoginMark();
+}
+document.addEventListener('wheel',appLoginWheel,{passive:false,capture:true});
 document.addEventListener('click',e=>{
  const hit=e.target&&e.target.id==='appHit';if(hit)appLoginTap(e);
 },true);
@@ -18020,13 +18315,22 @@ function lgOpenFliggy(){
  const x=_LASTKBD?m.querySelector('.x'):null;if(x)try{x.focus()}catch(e){}
 }
 function lgCloseModal(){
- const m=$('lgModal'),k=$('lgMask');if(!m||!m.classList.contains('open'))return;
+ const m=$('lgModal'),k=$('lgMask');
+ if(m&&m.dataset.kind==='app'){appLoginClose();return}
+ if(!m||!m.classList.contains('open'))return;
  m.classList.remove('open');if(k)k.classList.remove('open');
  if(typeof srxUnlockBody==='function')srxUnlockBody();
  if(LG_LASTFOCUS&&LG_LASTFOCUS.focus)try{LG_LASTFOCUS.focus()}catch(e){}
 }
 document.addEventListener('keydown',e=>{
- if(e.key==='Escape'){const m=$('lgModal');if(m&&m.classList.contains('open'))lgCloseModal()}
+ if(e.key!=='Escape')return;
+ const m=$('lgModal');
+ if(m&&m.dataset.kind==='app'){
+  if(m.classList.contains('appfocus')){appLoginFocus(false);return}
+  appLoginClose();return;
+ }
+ if(APP_LOGIN.mode==='float'){appLoginClose();return}
+ if(m&&m.classList.contains('open'))lgCloseModal();
 });
 function renderLoginCards(force){
  const box=$('loginRows');if(!box)return;
@@ -20869,6 +21173,11 @@ function buildForm(){if(!CFG)return;let h='',gh='';
   +glcell('指纹一致性','glbStl','GLB.stealth=this.checked',GLB.stealth!==false,'抹掉 navigator.webdriver 等「自动化浏览器」标记；只让页面看到普通 Chrome','check')
   +glcell('拟人化动作','glbHum','GLB.humanize=this.checked',GLB.humanize!==false,'预热阶段鼠标轨迹/分段滚动/停留；采集中不插动作','check')
   +glcell('拟人化轮数','glbHumR','GLB.humanize_rounds=Math.max(1,Math.min(6,parseInt(this.value)||2))',esc(GLB.humanize_rounds||2),'1–6；轮数越多越像人，耗时也越长',null,'轮')
+  +glcell('策略闸门','glbPolicyGate','GLB.policy_gate=this.checked',GLB.policy_gate!==false,'统一策略总开关（默认开）；关闭后只记账不自动处置','check')
+  +glcell('滑块每日上限','glbSliderCap','GLB.daily_cap=Math.max(0,Math.min(20,parseInt(this.value)||0))',esc(GLB.daily_cap==null?3:GLB.daily_cap),'0–20 · 每渠道每天最多自动尝试次数；0=不自动尝试','number',null,'3')
+  +glcell('滑块连续失败','glbSliderFails','GLB.max_fails=Math.max(1,Math.min(10,parseInt(this.value)||2))',esc(GLB.max_fails==null?2:GLB.max_fails),'1–10 · 连续失败几次拉黑 7 天','number',null,'2')
+  +glcell('滑块拖动距离','glbSliderDist','GLB.device_distance=Math.max(40,Math.min(1000,parseInt(this.value)||260))',esc(GLB.device_distance==null?260:GLB.device_distance),'40–1000 px · App 侧默认拖动距离','number',null,'260')
+  +glcell('滑块只试首选','glbSliderOne','GLB.single_shot=this.checked',!!GLB.single_shot,'勾选=只试首选偏移；不勾=顺次试前 3 个候选','check')
   +glcell('会话锁等待','glbWait','GLB.profile_wait_s=Math.max(0,Math.min(120,parseFloat(this.value)||0))',esc(GLB.profile_wait_s==null?0:GLB.profile_wait_s),'抢不到浏览器资料锁时最多等待 · 0=立刻让位（登录窗/探针占用时等一会儿比丢整轮划算）',null,'秒')
   +glcell('浏览器内核','glbBch','GLB.browser_channel=(this.value||"").trim()',esc(GLB.browser_channel||''),'空=Playwright Chromium；chrome=系统真 Chrome（重启生效）','text',null,'空 = 自带 Chromium')
   +glcell('命中验证自动开窗','glbAV','GLB.auto_verify=this.checked',!!GLB.auto_verify,'命中人机验证时自动弹出验证窗口（同一会话），同渠道 10 分钟只开一次','check')
@@ -20930,6 +21239,8 @@ function buildForm(){if(!CFG)return;let h='',gh='';
   +glcell('重启方式','glbAndReboot','GLB.android=Object.assign({},GLB.android||{},{identity:Object.assign({},(GLB.android||{}).identity||{},{reboot:(function(v){v=(v||"zygote").trim().toLowerCase();return ["zygote","full","none"].includes(v)?v:"zygote"})(this.value)})})',esc(((GLB.android||{}).identity||{}).reboot||'zygote'),'zygote=stop;start（8–15s，保留实例）；full=实例重启；none=不重启','text',null,'zygote')
   +glcell('非模拟器也强制','glbAndForce','GLB.android=Object.assign({},GLB.android||{},{identity:Object.assign({},(GLB.android||{}).identity||{},{force:this.checked})})',!!((GLB.android||{}).identity||{}).force,'真机上别开','check')
   +glcell('隐藏开发者选项','glbAndHideDev','GLB.android=Object.assign({},GLB.android||{},{stealth:Object.assign({},(GLB.android||{}).stealth||{},{hide_dev_options:this.checked})})',((GLB.android||{}).stealth||{}).hide_dev_options!==false,'关掉「开发者选项」开关（部分风控 SDK 会读）','check')
+  +glcell('对齐显示参数','glbAlignDisp','GLB.align_display=this.checked',GLB.align_display!==false,'把 density/dpi/分辨率对齐到设备身份；关闭=保持模拟器原值','check')
+  +glcell('ABI 自动校正','glbSpoofAbi','GLB.spoof_abi=this.checked?"auto":null',(GLB.spoof_abi==='auto'||GLB.spoof_abi===true),'auto=仅 canary 判定 ok 后写 arm64 props；关闭=不动 ABI','check')
   +glcell('复用前台 App','glbAndKeep','GLB.android=Object.assign({},GLB.android||{},{keep_app_alive:this.checked})',!!(GLB.android||{}).keep_app_alive,'复用上一轮前台 App，少一次冷启；仓库实证可能让后续航线卡在设城市，默认关','check')
   +'</div>'
   +glsec('♻ 启动级 · 运行与存储 · 路径可迁移 · 保存后重启生效 <button class="btn2 secrestart" title="打开重启与迁移中心：查看差量、迁移预案并重启" onclick="openRestartCenter()">'+ic('rotate')+' 重启中心</button>')
@@ -22971,6 +23282,9 @@ const GLB_RANGES=[
     校验只拦「越界」，不拦「会被别的键夹取」——后者由 glbClamp 负责说明。 */
  {id:'glbJt',min:0,max:10080,label:'随机扰动须为 0-10080 分钟'},
  {id:'glbHumR',min:1,max:6,label:'拟人化轮数须为 1-6 轮'},
+ {id:'glbSliderCap',min:0,max:20,label:'滑块每日上限须为 0-20 次'},
+ {id:'glbSliderFails',min:1,max:10,label:'滑块连续失败须为 1-10 次'},
+ {id:'glbSliderDist',min:40,max:1000,label:'滑块拖动距离须为 40-1000 px'},
  {id:'glbWait',min:0,max:120,label:'会话锁等待须为 0-120 秒'},
  {id:'glbFast',min:5,max:1440,label:'快 TTL 须为 5-1440 分钟'},
  {id:'glbSlow',min:5,max:1440,label:'慢 TTL 须为 5-1440 分钟'},
@@ -34253,6 +34567,28 @@ class _Handler(BaseHTTPRequestHandler):
                                 "humanize_rounds": int(
                                     (cfg.get("crawler") or {}).get(
                                         "humanize_rounds", 2) or 2),
+                                "policy_gate": bool(
+                                    (cfg.get("crawler") or {}).get(
+                                        "policy_gate", True)),
+                                "daily_cap": int(
+                                    ((cfg.get("crawler") or {}).get(
+                                        "slider") or {}).get("daily_cap", 3) or 0),
+                                "max_fails": int(
+                                    ((cfg.get("crawler") or {}).get(
+                                        "slider") or {}).get("max_fails", 2) or 2),
+                                "device_distance": int(
+                                    ((cfg.get("crawler") or {}).get(
+                                        "slider") or {}).get(
+                                            "device_distance", 260) or 260),
+                                "single_shot": bool(
+                                    ((cfg.get("crawler") or {}).get(
+                                        "slider") or {}).get("single_shot", False)),
+                                "align_display": bool(
+                                    (((cfg.get("android") or {}).get(
+                                        "identity") or {}).get(
+                                            "align_display", True))),
+                                "spoof_abi": (((cfg.get("android") or {}).get(
+                                    "identity") or {}).get("spoof_abi")),
                                 "browser_channel": str(
                                     (cfg.get("crawler") or {}).get(
                                         "browser_channel", "") or ""),
@@ -34535,6 +34871,23 @@ class _Handler(BaseHTTPRequestHandler):
                         except (TypeError, ValueError):
                             _hr = 2
                         _crw["humanize_rounds"] = max(1, min(6, _hr))
+                    if glb.get("policy_gate") is not None:
+                        _crw["policy_gate"] = bool(glb["policy_gate"])
+                    _sl0 = dict(_crw.get("slider") or {})
+                    for _sk, _lo, _hi, _sd in (
+                            ("daily_cap", 0, 20, 3),
+                            ("max_fails", 1, 10, 2),
+                            ("device_distance", 40, 1000, 260)):
+                        if glb.get(_sk) is not None:
+                            try:
+                                _sv = int(glb[_sk])
+                            except (TypeError, ValueError):
+                                _sv = _sd
+                            _sl0[_sk] = max(_lo, min(_hi, _sv))
+                    if glb.get("single_shot") is not None:
+                        _sl0["single_shot"] = bool(glb["single_shot"])
+                    if _sl0:
+                        _crw["slider"] = _sl0
                     if glb.get("browser_channel") is not None:
                         _bc = str(glb["browser_channel"]).strip().lower()
                         _crw["browser_channel"] = (
@@ -34622,6 +34975,23 @@ class _Handler(BaseHTTPRequestHandler):
                             _a0["keep_app_alive"] = bool(
                                 _and["keep_app_alive"])
                         cfg["android"] = _a0
+                    if glb.get("align_display") is not None or "spoof_abi" in glb:
+                        _a2 = dict(cfg.get("android") or {})
+                        _id2 = dict(_a2.get("identity") or {})
+                        if glb.get("align_display") is not None:
+                            _id2["align_display"] = bool(glb["align_display"])
+                        if "spoof_abi" in glb:
+                            _sa = glb.get("spoof_abi")
+                            _sat = str(_sa).strip().lower()
+                            if _sa is None or _sa is False or _sat in (
+                                    "", "false", "none"):
+                                _id2["spoof_abi"] = None
+                            elif _sat == "auto":
+                                _id2["spoof_abi"] = "auto"
+                            elif _sat == "true":
+                                _id2["spoof_abi"] = True
+                        _a2["identity"] = _id2
+                        cfg["android"] = _a2
                     if glb.get("debug") is not None:
                         _crw["debug"] = bool(glb["debug"])
                     if glb.get("stealth") is not None:
