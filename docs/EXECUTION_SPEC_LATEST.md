@@ -3120,7 +3120,10 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · 临时库 `itinerary_daily` 1 行 + `itinerary_history` 1 点；`tripType=MC`、
     `totalBasis=page_multicity_total`、`prov{path,url,totalBasis}` 均落库；
     **未写 live 库**。
-  · 矩阵仍 `""`：2 段已有生产整单行，3+ 段与缺口程未验；`core/channels.py`、
+  · 追加 3 段实测：SHA→TYO 11-20 / TYO→OSA 11-23 / OSA→SHA 11-26，
+    结果页**无「多程超低价」组合卡**，解析器记 empty；3+ 段未接通（不是渠道
+    没有），缺口程未验。
+  · 矩阵仍 `""`：2 段已有生产整单行，3+ 段未接通；`core/channels.py`、
     HANDOFF、Release 正文同步「已有 2 段生产整单行」。
 
 - r951 多程整单历史 + 概览 sparkline（2026-11-03 11:58，`feat/mc-history` 合并）：

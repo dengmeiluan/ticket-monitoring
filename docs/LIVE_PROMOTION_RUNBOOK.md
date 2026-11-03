@@ -17,7 +17,7 @@
 | live 配置 | `_release_ab04/config.yaml` 与主树 `config.yaml` **diff=0** |
 | 数据/日志/登录态 | live 树的 `data`、`logs`、`user_data` 都是**主树的符号链接**（同一份文件） |
 | live 当前能力 | **10 渠道代码**（Release `ab04c22`，webui sha12 `6c85a00f14c1`）；`/api/channel-dims` 10 家；`enabled_platforms` 6（配置未变） |
-| 主树候选 | 10 渠道 + App/浏览器国际往返；tracked collect **6211**（2026-11-03 12:35）；全量非 UI **6192 passed / 19 skipped / 0 failed**（12:54，workers 8，759.17s，共 6211；含 r951 历史、r952 门禁修复与 r953 CSV 导出）；UI **670/670**（11:18）；候选包 SHA256 `bdf974af562c238ac3c4b56618ff5526e3589369a1c847471f59a2d57e653d0e`（**2026-11-03 12:37 按 `80c63eb` 合并树构建；61,742,809 bytes / 864 entries；冻结后若树再变必须重算**） |
+| 主树候选 | 10 渠道 + App/浏览器国际往返；tracked collect **6212**（2026-11-03 12:46）；全量非 UI **6192 passed / 19 skipped / 0 failed**（12:54，workers 8，759.17s，共 6211；含 r951 历史、r952 门禁修复与 r953 CSV 导出）；c1425d8 仅加 1 条真下载用例（定向 2 passed，产品代码未变），6212 全量待复跑；UI **670/670**（11:18）；候选包 SHA256 `bdf974af562c238ac3c4b56618ff5526e3589369a1c847471f59a2d57e653d0e`（**2026-11-03 12:37 按 `80c63eb` 构建；61,742,809 bytes / 864 entries；webui sha `ccfc38542bf3` 未变，冻结仍按最终树重算**） |
 
 因为数据/日志/登录态共享，切换**不需要迁移数据库、日志或登录快照**；旧 live 树保留作回滚。
 
@@ -28,7 +28,7 @@
 > 候选 `bdf974af562c238ac3c4b56618ff5526e3589369a1c847471f59a2d57e653d0e`
 > （61,742,809 bytes / 864 entries）只是 `80c63eb` 快照，冻结后若树再变必须重算。
 > **计数陷阱**：README/EN 的 tracked 计数必须按干净 HEAD 实收同步；当前 tracked
-> **6211**（旧 6168 已过期）。`release_align_check --local` 必须 **25/25**；当前实测
+> **6212**（旧 6168 已过期）。`release_align_check --local` 必须 **25/25**；当前实测
 > **25/25 PASS**（12:40），静态站已按 `80c63eb` 重烘（站点戳 `code:ccfc38542bf3`）。
 > 站点尚未发布，推送后 Pages 才更新。
 > 脏树若因未提交文档/测试不同步显示 <25，先分清「值变了」和「设计坏了」，不要为了

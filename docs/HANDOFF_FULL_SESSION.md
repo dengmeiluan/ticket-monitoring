@@ -48,8 +48,9 @@
 > **2026-11-03 03:30 补（同程 App 国际往返 + 最终树）**：同程 App 国际往返真机接通
 > （上海⇌东京 11-16/19，7 条去程、最低 9C8515 ¥2209 含税总价；返程 `+¥N` 为加价），
 > `round_trip=y`（仅国际）；`PATH_CN` 补 `app-roundtrip`（r658 门禁曾点红）。
-> tracked collect **6211**（12:35）；全量非 UI **6192 passed / 19 skipped / 0 failed**
+> tracked collect **6212**（12:46）；全量非 UI **6192 passed / 19 skipped / 0 failed**
 > （12:54，workers 8，759.17s，共 6211；含 r951 历史、r952 门禁修复与 r953 CSV 导出）；
+> c1425d8 仅加 1 条真下载用例（定向 2 passed，产品代码未变），6212 全量待复跑；
 > UI **670/670**（11:18 全量复跑，零 JS 错误）；能力矩阵截图
 > `docs/screenshots/console-dims.png` 已按 10 渠道 + RT 状态重烘，
 > 静态站同步；`release_align_check --local` **25/25**。
