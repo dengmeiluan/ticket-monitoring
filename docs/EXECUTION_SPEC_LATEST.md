@@ -33,10 +33,10 @@
   可溯源/过期首段不提醒/整单历史 sparkline/CSV 导出/2 段矩阵升 y）；live 8765 于
   **2026-11-03 08:58** 切到 `_release_ab04`（live 树 `ab04c22`，webui sha12
   `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r956 尚未入该树。
-- **门禁**：tracked collect **6396**（2026-11-03 21:25 核对）。
+- **门禁**：tracked collect **6406**（2026-11-03 21:45 核对，含 r920 +2 / r921 +10）。
   最后一次本地 clean 全量在 HEAD `0f782f9`：**6375 passed / 19 skipped / 0 failed**
   （workers 8，608.29s，共 6394；源码哈希 pin 通过，语法检查 ok）；此后新增
-  r920 2 项定向 **30 passed**，发布前仍建议在最终 HEAD 再跑一次整树全量。
+  r920 2 项与 r921 10 项定向通过，发布前仍建议在最终 HEAD 再跑一次整树全量。
   CI 已把全量 pytest 拆到 4 台 runner：
   `tools/ci_shard.py` 按 `tests/ci_durations.json` 历史耗时贪心均分，跑测前
   `--stats 4` 自检并集=全部 `tests/test_*.py`（新增文件按 20s 自动进组）+ workflow
