@@ -419,7 +419,7 @@ def preflight(dev, packages=None) -> dict:
     # 第一道闸：这台机器到底能不能改 ro.*（2026-11-03 的 MuMu 三条路全堵）
     # 放在包探测之后：报告要能一次把「机器什么样」+「包什么样」都摆出来，
     # 操作员才知道是「机器不支持」还是「包的 so 不匹配」。
-    if not rep["can_write_ro"]:
+    if not (rep.get("capabilities") or {}).get("can_write_ro"):
         rep["risk"] = _PREFLIGHT_STOP
         # 这里**只给静态提示**，不去 shell 调 MuMuManager：那是宿主机 GUI 进程，
         # 采集进行中会阻塞几十秒甚至更久（实测把一批单测拖到 42 分钟）。
