@@ -37,7 +37,7 @@ python -m py_compile main.py webui.py report.py wizard.py core/*.py crawlers/*.p
 > 并且共用 docs/uitest_result.txt 与 profile 重算。不同分支的验证排队跑。
 
 > **CI 分片并发**：`.github/workflows/ci.yml` 把全量 pytest 按 `tests/ci_durations.json`
-> 的历史耗时贪心分成 4 片，跑在 4 台 runner 上（片内仍 `-n 4 --dist loadfile`）。
+> 的历史耗时贪心分成 4 片，跑在 4 台 runner 上（片内仍 `pytest -n 4 --dist loadfile`）。
 > 分片并集=全部 `tests/test_*.py`，由 `python tools/ci_shard.py --stats 4` 在跑测前自检；
 > 新增测试文件即使不在耗时快照里也会进组（按 20s 计权），不会漏跑。测试规模明显
 > 变化后用一次全量 JUnit 重建快照：`python tools/ci_shard.py --snapshot _scratch/test_run/<ts>/pytest.xml`。

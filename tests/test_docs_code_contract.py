@@ -240,7 +240,7 @@ def test_documented_cli_flags_exist():
     以及收在「坑」语境里说明"这不是本版参数"的引用。
     """
     src = ""
-    for rel in ("main.py", "webui.py", "wizard.py"):
+    for rel in ("main.py", "webui.py", "wizard.py", "tools/ci_shard.py"):
         pth = ROOT / rel
         if pth.exists():
             src += pth.read_text(encoding="utf-8", errors="replace")
@@ -261,9 +261,14 @@ def test_documented_cli_flags_exist():
             # 反引号里常是整条命令（`python main.py --setup`），
             # 所以先取反引号内容，再从里面提 flag——只匹配"反引号内只有 flag"会漏掉绝大多数写法。
             for span in re.findall(r"`([^`]+)`", line):
-                # 外部工具的 flag 不归本项目管（git / pyinstaller / pip / playwright …）
-                if re.search(r"\b(git|pyinstaller|pip|playwright|npm|npx|curl|netstat|"
-                             r"findstr|tasklist|powershell|pwsh)\b", span, re.I):
+                # 外部工具的 flag 不归本项目管（git / pyinstaller / pip / pytest /
+                # playwright …）；仓库自带工具（tools/*.py）同样不是产品 CLI。
+                # 产品命令（main.py/webui.py/wizard.py）里的假参数仍会被下面拦下。
+                if re.search(r"\b(git|pyinstaller|pip|pytest|playwright|npm|npx|curl|"
+                             r"netstat|findstr|tasklist|powershell|pwsh)\b",
+                             span, re.I):
+                    continue
+                if re.search(r"\btools/[A-Za-z0-9_]+\.py\b", span):
                     continue
                 for f in set(re.findall(r"(--[a-z][a-z0-9-]{2,})", span)):
                     if f in flags or f in cssvars:
