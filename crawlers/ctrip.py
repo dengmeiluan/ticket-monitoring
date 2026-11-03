@@ -24,6 +24,15 @@ from .challenge import classify_text
 
 _LOG = logging.getLogger(__name__)
 
+
+def _multi_text_with_total(page, text, extra_s=12.0, step_ms=500):
+    """多程组合卡异步渲染：以「多程含税价」总价标签为就绪锚轮询。"""
+    deadline = time.time() + max(0.0, float(extra_s))
+    while "多程含税价" not in text and time.time() < deadline:
+        page.wait_for_timeout(step_ms)
+        text = page.inner_text("body")
+    return text
+
 # pid zstd 解码依赖（fltitem[].pid=`__Zstd__|`+base64 的政策载荷）：
 # 缺失时行李额采集整体跳过（爬虫其余功能不受影响），打包漏装不至于炸
 try:
@@ -690,6 +699,11 @@ class CtripCrawler(BaseCrawler):
                 page.goto(url, wait_until="domcontentloaded")
                 page.wait_for_timeout(wait_ms)
                 text = page.inner_text("body")
+                # 组合卡异步渲染：固定等 9s 在慢页会假空（开口程实测
+                # 12s 才出「多程含税价 ¥2184」）。以总价标签为就绪锚
+                # 再等最多 12s，出现即走；被拦页没有该标签，只多等这一段。
+                if "多程含税价" not in text:
+                    text = _multi_text_with_total(page, text)
         except Exception as e:  # noqa: BLE001
             self.logger.warning("[ctrip][多程] 页面不可用: %s", e)
             self.path_note("多程", "error", detail=str(e)[:160], url=url)

@@ -101,3 +101,34 @@ def test_collect_multicity_skips_without_ctrip_or_after_expiry():
                                   today="2026-11-01") == 0
     assert c.calls == [], "用户没勾携程不得替他采"
     assert s.rows == []
+
+
+def test_multi_wait_polls_until_total_appears_with_deadline():
+    """组合卡异步渲染：固定等 9s 会假空（开口程实测 12s 才出总价）。
+
+    以「多程含税价」为就绪锚轮询；始终没有总价时受 deadline 约束返回
+    最后一次文本，不能死等。
+    """
+    from crawlers.ctrip import _multi_text_with_total
+
+    class Page:
+        def __init__(self, texts):
+            self.texts = texts
+            self.calls = 0
+
+        def wait_for_timeout(self, ms):
+            self.calls += 1
+
+        def inner_text(self, sel):
+            return self.texts[min(self.calls, len(self.texts) - 1)]
+
+    p = Page(["多程超低价", "多程超低价", "¥2184\n多程含税价"])
+    got = _multi_text_with_total(p, "多程超低价", extra_s=1.0, step_ms=1)
+    assert "多程含税价" in got
+    assert p.calls == 2, "总价出现后必须停轮询"
+
+    empty = Page(["多程超低价"])
+    got = _multi_text_with_total(empty, "多程超低价", extra_s=0.01,
+                                 step_ms=1)
+    assert "多程含税价" not in got
+    assert empty.calls >= 1, "没有总价时也要实际等过一轮"

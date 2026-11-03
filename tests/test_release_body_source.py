@@ -132,12 +132,14 @@ def _multi_city_errors(body):
     errs = []
     if "多程" not in body:
         errs.append("正文没写多程")
-    # 携程 PC 2 段已生产验证（矩阵 ✓ 仅 2 段），但 3+ 段/缺口程未验；
-    # 正文必须写清 scope，不能把「2 段已验证」写成「全段已支持」。
+    # 携程 PC 2 段已生产验证（矩阵 ✓ 仅 2 段），缺口程 2 段已实测，
+    # 3+ 段未验；正文必须写清 scope，不能把「2 段已验证」写成「全段已支持」。
     if "已有 2 段生产整单行" not in body:
         errs.append("多程必须写明已有 2 段生产整单行")
     if "仅 2 段" not in body:
         errs.append("多程矩阵必须写明「仅 2 段」scope")
+    if "缺口程 2 段已实测" not in body:
+        errs.append("多程必须写明缺口程 2 段已实测（不得再写未验）")
     if "3+ 段" not in body and "3+段" not in body:
         errs.append("多程必须写明 3+ 段未验")
     if '`""`' not in body:
