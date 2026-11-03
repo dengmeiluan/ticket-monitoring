@@ -219,18 +219,29 @@ android:
 这条**只改身份档案、不动任何设备设置**，所以坐标一个字都不用改。做完之后
 `display.audit()` 应该 `ok: true`。
 
-真要**改屏幕**（`wm size` / `wm density`）也能做，但必须配坐标换算：
+真要**改屏幕**（`wm size` / `wm density`）也能做，但必须配坐标换算——用现成的
+安全入口，别手改：
 
-```python
-from core.android import display
-display.spoof(dev, width=1080, height=1920)   # density 默认同比缩放，保持 dp 尺寸
-dev.set_design(900, 1600)                     # 之后写死的常量按设计坐标给
+```powershell
+python scripts\display_spoof.py                 # 看现状（只读，含"是否空闲"提示）
+python scripts\display_spoof.py --scale 1.2     # 改到 1080x1920，density 同比 288
+python scripts\display_spoof.py --restore       # 回滚到出厂
 ```
+
+脚本强制三件事（缺一个都会让 App 渠道静默瘫掉）：
+
+1. **改完立刻 `dev.set_design(900, 1600)`** —— 写死的常量仍指向正确位置；
+2. **改完立刻 dump 一次**，确认「界面还在、不是白屏」，否则**自动回滚**；
+3. `--restore` 一条命令回到 `wm size/density reset`。
+
+原理与边界：
 
 - `density` 与 `size` **同比例**变化时 dp 尺寸不变（界面布局不乱，只是更细）；
 - `AdbDevice` 的 `tap/swipe` 会把设计坐标换算成设备坐标，`to_design()` 做反向；
 - UI 树 `bounds` 读出来的是**设备坐标**，参与常量比较前要走 `to_design()`；
-- `design` 默认 `None` = 完全不换算（现状逐字不变），所以这条开关不会误伤。
+- `design` 默认 `None` = 完全不换算（现状逐字不变），所以这条开关不会误伤；
+- `hardening` 每次会做**坐标基准体检**：设备分辨率 ≠ 900×1600 时明确告警
+  「必须 set_design」，因为这种错在账本上只表现为「设城市失败」，很难追。
 
 ### ABI：写 arm64 能不能行，要看能不能验证——装置已经给你了
 
