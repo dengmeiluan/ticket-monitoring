@@ -96,6 +96,13 @@ jobs:
   uitest:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # UI 自检是单进程脚本，整轮约 6 分钟，已是 CI 关键路径。按
+    # docs/uitest.py 的段号（0–49）切 2 片并行；段号由 tools/ui_shard.py
+    # 从源码派生，新增段自动进片，--stats 自检并集/workflow 一致性。
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [0, 1]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -114,14 +121,19 @@ jobs:
             ms-playwright-${{ runner.os }}-
       - name: 安装 Chromium 内核
         run: playwright install --with-deps chromium
-      - name: 全功能 UI 自检（任何 JS 报错即失败）
-        run: python docs/uitest.py
+      - name: UI 分片覆盖自检（并集=全部分段，新增段不漏跑）
+        run: python tools/ui_shard.py --stats 2
+      - name: 全功能 UI 自检 · 第 ${{ matrix.group }} 片（任何 JS 报错即失败）
+        run: |
+          export UITEST_SECTIONS="$(python tools/ui_shard.py --print 2 ${{ matrix.group }})"
+          export UITEST_RESULT="uitest_result_${{ matrix.group }}.txt"
+          python docs/uitest.py
       - name: 上传自检结果
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: uitest-result
-          path: docs/uitest_result.txt
+          name: uitest-result-${{ matrix.group }}
+          path: uitest_result_${{ matrix.group }}.txt
 
   # 稳定聚合检查：分片 job 名会变成 test (0..3)，分支保护/外部集成只需
   # 认这一个「全部泳道绿」的结论。
