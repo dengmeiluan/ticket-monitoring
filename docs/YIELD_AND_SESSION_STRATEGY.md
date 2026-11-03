@@ -308,6 +308,64 @@ python scripts/abi_preflight.py --canary   # 真跑，自动回滚 + 落判定
 `abi_canary.capabilities()` 会把上面三条通道各探一次并写进报告，所以下次不用
 再手工试一遍——它会直接告诉你"是机器不支持"还是"包的 so 不匹配"。
 
+#### 2026-11-03 追加：找到 ABI 的真正开关了（MuMu 官方键）
+
+用 `MuMuManager.exe setting -v 0 --all` 枚举出 MuMu 的官方设置，其中一条是
+**`system_disk_readonly: true`** —— 它就是"系统盘只读挂给虚拟机"的开关，
+也是 `setprop`/`blockdev`/`remount` 全部静默无效的**最深层根因**。
+
+```
+MuMuManager.exe setting -v 0 -k system_disk_readonly -val false   # 已执行，读回 false
+```
+
+但它要**重启实例**才生效。所以 ABI 的推进路径变成：
+
+```powershell
+# 1) 等采集空窗（日志出现"本轮扫描结束"，或 01:00–07:00 静默窗）
+# 2) 关系统盘只读（幂等，已设过也行）
+& "D:\Program Files\Netease\MuMu\nx_main\MuMuManager.exe" setting -v 0 -k system_disk_readonly -val false
+# 3) 重启实例（会中断采集，所以必须挑空窗）
+& "D:\Program Files\Netease\MuMu\nx_main\MuMuManager.exe" control -v 0 restart
+# 4) 重跑预检：能力闸应变成可写
+python scripts\abi_preflight.py
+# 5) 通过后跑 canary 实测（自动回滚），判定 ok 才填 auto
+python scripts\abi_preflight.py --canary
+```
+
+**顺带发现更重要的一件事**：MuMu 还提供**官方的机型与屏幕接口**——
+
+| 官方键 | 实测值 | 对应 Android prop |
+|---|---|---|
+| `phone_brand` | Samsung | `ro.product.brand` |
+| `phone_model` | Galaxy A52 5G | `ro.product.model` |
+| `phone_miit` | SM-A5260 | `ro.product.model`（实际值） |
+| `phone_imei` | 865247046277134 | `gsm` 侧 |
+| `resolution_width/height` | 1600 / 900 | `DisplayMetrics` |
+| `resolution_dpi` | 240 | `densityDpi` |
+
+**这比改 props 好得多**：不需要 root、不需要 Magisk、可持久化、写失败会报错
+（而不是静默无效）。所以本项目的分层原则定为：
+
+> **能让 MuMu 官方做的，就别去改 props。**
+> props 那条路（`fingerprint`）只补官方不提供的部分（序列号、android_id、gsm）。
+
+对应实现 `core/android/vendor.py`，白名单只放设备外观与系统盘开关
+（性能/网络键一律拒写——改错会让采集变慢或断网），写后**读回校验**，
+需要重启的键标 `restart_required` 并**不替你重启**：
+
+```yaml
+android:
+  vendor:
+    apply: false          # 默认只读；写配置要重启实例，属于操作员的决定
+    # brand: Samsung
+    # model: Galaxy A52 5G
+    # miit: SM-A5260
+    # width: 900
+    # height: 1600
+    # dpi: 240
+    # unlock_system_disk: false
+```
+
 ---
 
 ## 4. 度量闭环：先量，再改，再复测
@@ -344,7 +402,6 @@ python scripts/yield_report.py --profile 邓美鸾 --interval 30
 ---
 
 ## 5. 三档参数（按你现在的实际状态选，不要跳档）
-
 | 键 | 保守（刚被风控过） | 均衡（默认） | 激进（长期干净） |
 |---|---|---|---|
 | `schedule.interval_minutes` | 45 | 30 | 20 |
@@ -380,6 +437,44 @@ App 启动之前完成（`android.os.Build` 在 zygote 定型）。之后才是
 **日历**：逐日循环里单日失败必须只记该日（`note_date`），不许中断整段；
 日历接口对未预热会话返回空，不是「当天没票」。
 
+### 6.1 单日隔离（2026-11-03 落地）
+
+App 渠道的日期循环原本是「一抛异常整个 `fetch` 结束」：
+
+```python
+for date in dates:
+    got = self._one_date(dev, ..., date)   # ← 第 2 天设备抖一下，第 3/4/5 天全丢
+    if got: out.append(got)
+```
+
+账本上表现为**整条航线 timeout**，而实际可能只有 1 天有问题——这是纯粹的
+产量损失，与风控无关。现在统一走 `AppCrawler.date_guard()`：
+
+```python
+got = self.date_guard(date, self._one_date, dev, fc, tc, date)
+```
+
+- 异常只死这一天，其余日期照常出数；
+- 该日记 `timeout` 并写明异常类型，**绝不记 `empty`**（账本红线）；
+- 返回元组的渠道（智行 `(rows, blocked)`）用 `_default=([], None)` 保持契约。
+
+已接入：携程、同程、飞猪、智行。**去哪儿原本就有**（内部 try/except + 记账），
+没有重复改。
+
+### 6.2 预热时序：等 cookie，不等秒数（2026-11-03 落地）
+
+日历/深链的价值不在「停留了几秒」，而在「服务端把会话 cookie 发下来了」。
+固定 `wait_for_timeout(4000)` 有两种失败模式：cookie 还没下来就去打 → 被当
+新会话 → 444/202 软拒；cookie 早下来了却还在等 → 白等。
+
+`BaseCrawler.wait_risk_cookies(ctx, timeout_s=12)` 改成**轮询命中即返回**：
+
+- 命中 → 立刻继续（比固定等待更快）；
+- 超时未命中 → 返回空，并由调用方记「预热未生效」。
+
+携程国际日历已接入，并把记账口径接上：预热没落下 cookie 且无价时记
+`soft_reject`，**不是** `empty`——"会话没养熟"不能写成"没有航班"。
+
 ---
 
 ## 7. 别做的事（只看会真吃亏的）
@@ -405,7 +500,8 @@ App 启动之前完成（`android.os.Build` 在 zygote 定型）。之后才是
 |---|---|---|
 | 统一策略层 | `crawler.policy_gate: false` | 回到各部件各自判断；账本/报表照旧 |
 | 策略状态 | 删 `user_data/<profile>/policy_state.json` | 停手/余温全部清零 |
-| 滑块自动尝试 | `crawler.slider.auto: off`（默认）；或删掉 `register_handler(...)` | 回到"识别→记账→停手" |
+| 滑块自动尝试 | `crawler.slider.auto: off`（默认 `off`；已开为 `simple`） | 回到"识别→记账→停手" |
+| 单日隔离 | 无需开关（异常日只记该日 `timeout`） | 想回旧行为需改渠道循环 |
 | 滑块拉黑 | 删 `user_data/<profile>/slider_ledger.json` | 预算/拉黑清零 |
 | 身份屏幕对齐 | `android.identity.align_display: false` | 身份声明保持池里的原值 |
 | 屏幕伪装 | `display.reset(dev)`（或 `adb shell wm size reset`） | 回到物理分辨率 |

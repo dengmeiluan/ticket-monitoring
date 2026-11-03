@@ -30,6 +30,62 @@ from . import display as display_mod
 from . import fingerprint as fp_mod
 from . import stealth as st_mod
 from . import emulator_tuning as tune_mod
+from . import vendor as vendor_mod
+
+
+def _vendor_step(config: dict, logger, *, vm: int) -> dict:
+    """读 MuMu 官方设置；**只有显式配置了才写**。
+
+    可写键（``android.vendor`` 段）::
+
+        android:
+          vendor:
+            apply: true                 # 默认 false = 只读
+            brand: Samsung
+            model: Galaxy A52 5G
+            miit: SM-A5260
+            width: 900                  # 改分辨率必须配 dev.set_design()
+            height: 1600
+            dpi: 240
+            unlock_system_disk: false   # true=把系统盘改可写（ABI 前置，需重启）
+    """
+    sec = _sec(config, "vendor")
+    mgr = None
+    try:
+        from .mumu import MuMuManager
+        from .config import resolve_install_dir, normalize
+        mgr = MuMuManager(install_dir=resolve_install_dir(normalize(None)),
+                          vm_index=int(vm))
+    except Exception:
+        mgr = None
+    out = vendor_mod.read(mgr) if mgr is not None else {}
+    rep = {"available": bool(out), "current": {
+        k: out.get(k) for k in ("phone_brand", "phone_model", "phone_miit",
+                                "resolution_width", "resolution_height",
+                                "resolution_dpi", "system_disk_readonly",
+                                "root_permission") if k in out}}
+    if not _flag(sec.get("apply"), False):
+        rep["skipped"] = "只读（android.vendor.apply=false）"
+        return rep
+    if mgr is None or not mgr.available():
+        rep["error"] = "MuMuManager 不可用，无法写官方设置"
+        return rep
+    vals = {}
+    for key, cfg_key in (("phone_brand", "brand"), ("phone_model", "model"),
+                         ("phone_miit", "miit"),
+                         ("resolution_width", "width"),
+                         ("resolution_height", "height"),
+                         ("resolution_dpi", "dpi")):
+        v = sec.get(cfg_key)
+        if v not in (None, ""):
+            vals[key] = v
+    if _flag(sec.get("unlock_system_disk"), False):
+        vals["system_disk_readonly"] = "false"
+    if not vals:
+        rep["skipped"] = "没有要写的键"
+        return rep
+    rep["apply"] = vendor_mod.apply(mgr, logger=logger, **vals)
+    return rep
 
 
 def _flag(v, default=False) -> bool:
@@ -61,7 +117,19 @@ def harden(dev, config: dict = None, logger=None, *, vm: int = 0,
     """跑完整套硬化。返回 ``{ok, steps, identity, stealth, tuning,
     display, abi}``。"""
     rep = {"ok": False, "steps": [], "identity": {}, "stealth": {},
-           "tuning": {}, "display": {}, "abi": {}}
+           "tuning": {}, "display": {}, "abi": {}, "vendor": {}}
+
+    # ---------- ⓿ 厂商官方接口（比改 props 更稳，优先用）----------
+    #
+    # 机型 / 分辨率 / 系统盘只读 在 MuMu 上都有**官方键**，写进实例配置即可，
+    # 不需要 root、不需要 Magisk，而且可持久化。所以放在最前面：凡是官方
+    # 能做的就不去改 props（见 core/android/vendor.py 的分层原则）。
+    # 默认**只读不写**——写配置要重启实例才生效，属于操作员的决定。
+    try:
+        rep["vendor"] = _vendor_step(config, logger, vm=vm)
+    except Exception as e:
+        rep["vendor"] = {"ok": False, "error": str(e)[:160]}
+    rep["steps"].append(("vendor-read", bool(rep["vendor"].get("available"))))
 
     # ---------- ① 身份 ----------
     try:

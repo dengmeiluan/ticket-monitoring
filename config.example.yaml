@@ -195,7 +195,7 @@ crawler:
   # 一律交给人工（这类判定吃的是行为分布，越算越像机器）。
   # 只有"背景图 + 固定缺口"的几何滑块（simple）才会尝试。
   slider:
-    auto: off            # off | simple | auto（true 等价 simple）
+    auto: "off"          # "off" | "simple" | "auto"（true 等价 simple）
     daily_cap: 3         # 每渠道每天最多试几次
     max_fails: 2         # 连续失败几次拉黑（拉黑 7 天）
     device_distance: 260 # App 侧默认拖动距离（px，缺省按此）
@@ -301,6 +301,25 @@ android:
     #     print(abi_canary.run(d,'ctrip.android.view',{},{},restart_wait_s=60))"
     # 判定 ok 且未过期（7 天）后填 auto 才会真正启用；填 true 是无条件写（不推荐）。
     spoof_abi: null
+  # ── MuMu 官方接口（优先级最高：能官方做的就别改 props）──────────
+  # 2026-11-03 用 `MuMuManager.exe setting -v 0 --all` 枚举出的官方键：
+  #   phone_brand/phone_model/phone_miit/phone_imei   → 机型（对应
+  #       ro.product.brand/model，MuMu 启动时注入，可持久化、不需要 root）
+  #   resolution_width/height + resolution_dpi       → 屏幕
+  #   system_disk_readonly                           → 系统盘可写开关
+  #       **ABI 改不动的真正根因就是它是 true**（系统盘只读挂给虚拟机）：
+  #       setprop ro.* / blockdev --setrw / remount rw 全部返回 0 但静默无效。
+  #       设成 false 并重启实例后，remount 才可能成功。
+  # 默认 apply=false 只读——写配置要重启实例才生效，属于操作员的决定。
+  vendor:
+    apply: false           # true 才写官方键
+    # brand: Samsung
+    # model: Galaxy A52 5G
+    # miit: SM-A5260
+    # width: 900           # 改分辨率必须同时 dev.set_design(900,1600)
+    # height: 1600
+    # dpi: 240
+    # unlock_system_disk: false   # true=把系统盘改可写（ABI 前置，需重启）
   # ── root / 模拟器痕迹隐藏 ─────────────────────────────────────
   # 我们自己的采集必须用 root（快照要读 /data/data），所以策略不是「不要 root」，
   # 而是「root 只对我们可见」：Magisk DenyList 让目标 App 看不到 su//data/adb，

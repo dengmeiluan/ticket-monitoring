@@ -213,6 +213,24 @@ MuMu 12 若自带「手机型号」自定义，可以先用它打底（改成任
   python scripts\abi_preflight.py --canary   # 真跑（重启框架，挑空闲窗口）
   ```
 
+  **2026-11-03 追加：找到根因了。** MuMu 官方设置里有
+  `system_disk_readonly: true`——系统盘以只读方式挂给虚拟机，这就是
+  `setprop ro.*` / `blockdev --setrw` / `remount rw` 全部「返回 0 但静默无效」
+  的最深层原因。已设为 `false`（读回确认），**重启实例后生效**：
+
+  ```powershell
+  & "D:\Program Files\Netease\MuMu\nx_main\MuMuManager.exe" setting -v 0 -k system_disk_readonly -val false
+  & "D:\Program Files\Netease\MuMu\nx_main\MuMuManager.exe" control -v 0 restart   # 挑采集空窗
+  python scripts\abi_preflight.py            # 能力闸应变可写
+  python scripts\abi_preflight.py --canary   # 再跑实测，ok 才填 auto
+  ```
+
+* **机型与屏幕优先走 MuMu 官方键**（`core/android/vendor.py`）：
+  `phone_brand` / `phone_model` / `phone_miit` / `resolution_*` 都是官方设置，
+  不需要 root、可持久化、写失败会报错。**能官方做的就别改 props**——props
+  那条路只补官方不提供的（序列号/android_id/gsm）。默认 `vendor.apply: false`
+  只读；写配置要重启实例，属于操作员的决定。
+
 ---
 
 ## 4. 会话层：把「重登次数」压下去

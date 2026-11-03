@@ -242,6 +242,62 @@ _PREFLIGHT_BAD = "high"
 _PREFLIGHT_STOP = "blocked"
 
 
+def mumu_capabilities(manager=None) -> dict:
+    """读 MuMu 宿主机侧的**官方能力**（不需要 root、不需要 Magisk）。
+
+    2026-11-03 用 ``MuMuManager.exe setting -v 0 --all`` 枚举出来的关键项：
+
+    ==========================  ================================================
+    键                            含义 / 实测值
+    ==========================  ================================================
+    ``system_disk_readonly``    **系统盘只读开关**，实测 ``true``——这就是 ABI
+                                改不动的根因；改成 ``false`` 后重启实例，
+                                ``mount -o remount,rw /`` 才可能成功
+    ``root_permission``         MuMu 自带 root（实测 ``true``，但只给 adb root，
+                                不提供 ``resetprop``）
+    ``phone_brand`` / ``phone_model`` / ``phone_miit`` / ``phone_imei``
+                                **官方机型伪装**（实测 Samsung / Galaxy A52 5G /
+                                SM-A5260，与 ``ro.product.model`` 一致）——
+                                比改 props 更稳、可持久化、还不用 root
+    ``resolution_width/height`` + ``resolution_dpi``
+                                **官方分辨率/DPI**（实测 1600×900 / 240）
+    ==========================  ================================================
+
+    结论：**机型和分辨率这两件事根本不需要走 props 那条路**，MuMu 自己就提供
+    了正式接口；只有 ABI 必须靠系统盘可写或 Magisk。
+    """
+    out = {"available": False, "raw": {}, "keys": {}}
+    mgr = manager
+    try:
+        if mgr is None:
+            from .config import resolve_install_dir, normalize
+            from .mumu import MuMuManager
+            cfg = normalize(None)
+            mgr = MuMuManager(install_dir=resolve_install_dir(cfg) or "",
+                              vm_index=0)
+        if not mgr.available():
+            out["note"] = "MuMuManager 不可用"
+            return out
+        info = mgr._call_json(["setting", "-v", str(mgr.vm_index), "--all"])
+        if not isinstance(info, dict):
+            out["note"] = "setting --all 无输出"
+            return out
+        out["available"] = True
+        out["raw"] = info
+        for k in ("system_disk_readonly", "root_permission",
+                  "phone_brand", "phone_model", "phone_miit", "phone_imei",
+                  "resolution_width", "resolution_height", "resolution_dpi",
+                  "resolution_mode"):
+            if k in info:
+                out["keys"][k] = info[k]
+        out["system_writable"] = str(
+            info.get("system_disk_readonly", "true")).lower() == "false"
+        return out
+    except Exception as e:
+        out["note"] = "%s: %s" % (type(e).__name__, str(e)[:120])
+        return out
+
+
 def capabilities(dev) -> dict:
     """探测「这台实例到底能不能改 ro.*」——四条路各测一次，全部只读。
 
@@ -363,11 +419,17 @@ def preflight(dev, packages=None) -> dict:
     # 第一道闸：这台机器到底能不能改 ro.*（2026-11-03 的 MuMu 三条路全堵）
     # 放在包探测之后：报告要能一次把「机器什么样」+「包什么样」都摆出来，
     # 操作员才知道是「机器不支持」还是「包的 so 不匹配」。
-    if not rep["capabilities"].get("can_write_ro"):
+    if not rep["can_write_ro"]:
         rep["risk"] = _PREFLIGHT_STOP
-        rep["why"] = ("这台实例改不了 ro.*：%s。ABI 伪装技术上不可行——"
-                      "要做得先给 MuMu 装 Magisk（提供 resetprop）。"
-                      % (rep["capabilities"].get("note") or "无写入通道"))
+        # 这里**只给静态提示**，不去 shell 调 MuMuManager：那是宿主机 GUI 进程，
+        # 采集进行中会阻塞几十秒甚至更久（实测把一批单测拖到 42 分钟）。
+        # 宿主能力由 CLI（scripts/abi_preflight.py）单独查、单独展示。
+        rep["why"] = (
+            "这台实例改不了 ro.*：%s。ABI 伪装要求系统盘可写或装 Magisk。"
+            "MuMu 用户可关掉「系统盘只读」再重启实例：\n"
+            "  MuMuManager.exe setting -v <实例> -k system_disk_readonly -val false\n"
+            "  MuMuManager.exe control -v <实例> restart"
+            % (rep["capabilities"].get("note") or "无写入通道"))
         return rep
 
     blob = ",".join([props["abilist"], props["abilist64"],
