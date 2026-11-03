@@ -279,6 +279,57 @@ android:
 `auto` 的语义是「**只有这台实例 + 这个包被验证过，才写 ABI**」——比"文档说可以"
 可靠得多，也是这条唯一负责的做法。
 
+#### ✅ 实测结论（2026-11-03）：ABI 伪装**已跑通**，走的是 MuMu 官方 per-app 表
+
+前一轮的结论是"三条路全堵"，这一轮继续挖，找到了 MuMu 官方的机制并**实证成功**。
+
+**关键发现**：`/system/etc/mumu-configs/abi-select-android12.config` 是
+MuMu 的「**包名正则 → ABI**」映射表，决定**每个 App 用哪套 ABI 启动**。
+
+```
+ctrip\.android\.view      arm64-v8a      # 携程
+com\.taobao\.trip         arm64-v8a      # 飞猪
+com\.Qunar                arm64-v8a      # 去哪儿
+com\.tongcheng\.android   arm64-v8a      # 同程
+cn\.suanya\.zhixing       arm64-v8a      # 智行
+```
+
+**验证结果（重启实例后）**：
+
+| 项 | 实测 |
+|---|---|
+| 5 个包 `primaryCpuAbi` | 全部 **arm64-v8a** ✅ |
+| 全局 `ro.product.cpu.abi` | 仍 **x86_64**（系统稳定，不受影响）✅ |
+| 携程启动 | `CtripHomeActivity` 正常在前台 ✅ |
+| logcat | 无 `UnsatisfiedLinkError` / `FATAL` / `SIGSEGV` ✅ |
+| 采集 | 正常运行（tuniu 国际 92 条明细、app_qunar 继续）✅ |
+
+**为什么这条路对、全局改 prop 不对**：
+
+* App 视角是 arm64（风控读 `ApplicationInfo.primaryCpuAbi` 时看到的就是这个）；
+* 系统仍跑 x86，ARM 转译层照常工作，稳定性不受影响；
+* **只影响我们关心的 5 个包**，不碰系统其余部分；
+* 历史那次 `Runtime.load0` ANR 的前提（x86 装 arm64 so）在这里不成立——
+  这些包**本来就是 arm64 包**（实测 `primaryCpuAbi` 一直是 arm64-v8a）。
+
+**顺带确认**：直接改 `/system/build.prop` 的 `ro.product.cpu.abi` **无效**——
+即便系统盘已可写、文件确实改成了 `arm64-v8a`，重启后运行时 `getprop` 仍
+`x86_64`（MuMu 的启动流程会用 `mumu-configs` 覆盖）。所以**别走 build.prop**。
+
+对应实现 `core/android/vendor.py`：
+
+```python
+from core.android import vendor
+vendor.read_abi_select(dev)        # 看现状：{pkg: abi}
+vendor.set_app_abi(dev)            # 幂等写入 5 个票务包（自动备份原表）
+vendor.revert_app_abi(dev)         # 从备份还原
+```
+
+前置条件只有一条：`system_disk_readonly=false`（已设）。
+
+>`read_abi_select` 的坑：表里**第一列本身就是带 `\.` 转义的正则**，
+> 用裸包名去匹配必然失败——实现里两边都去转义后再比。
+
 #### 实测结论（2026-11-03，MuMu 实例 0 / Android 15）
 
 先跑只读预检，结果如下：

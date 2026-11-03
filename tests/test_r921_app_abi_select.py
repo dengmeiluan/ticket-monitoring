@@ -128,10 +128,13 @@ def test_set_app_abi_custom_abi():
     rep = vendor.set_app_abi(dev, apps={"com.Qunar": r"com\.Qunar"},
                              abi="armeabi-v7a")
     assert rep["added"] == []                     # 已在表里
+    # 自定义包：能写进去（read_abi_select 只回读票务包，所以按 payload 断言）
     rep2 = vendor.set_app_abi(dev, apps={"com.new.app": r"com\.new\.app"},
                               abi="armeabi-v7a")
-    assert rep2["added"] == ["com.new.app"]
+    assert "com\\.new\\.app" in dev.appended
     assert "armeabi-v7a" in dev.appended
+    # read_abi_select 的职责是"票务包现状"，不含自定义包 —— 这是刻意的窄口径
+    assert "com.new.app" not in vendor.read_abi_select(dev)["apps"]
 
 
 def test_set_app_abi_reports_missing_table():

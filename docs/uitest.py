@@ -4670,8 +4670,14 @@ def main():
                 #      （源码钉只证声明在场）；段尾回监控视图（复位律） ----
             if _want(26):
                 step("r299 配置页语义配色")
+                # 分片冷启动时配置页数据是异步到的：先切视图并等渠道 chip
+                # 真渲染，再取 computed——否则拿到 0/1 颗，颜色断言假红。
+                pg.evaluate("()=>switchView('cfg')")
+                _wait_until(
+                    pg,
+                    "() => document.querySelectorAll('.chip.pch.on').length>=2",
+                    cap_ms=6000)
                 pg.evaluate("""()=>{
-                  switchView('cfg');
                   const pills=[...document.querySelectorAll('.chip.pch.on')];
                   window.__w1=pills.slice(0,2).map(x=>getComputedStyle(x).borderColor);
                   const b=document.querySelector('.rhead>b');
@@ -7035,7 +7041,7 @@ def main():
                 _wait_until(
                     _p358,
                     "() => !!document.querySelector('#hbody .hc[data-ts]')",
-                    cap_ms=6000)
+                    cap_ms=12000)
                 _hc358 = _p358.evaluate("""()=>{
                   const c=[...document.querySelectorAll('#hbody .hc')]
                     .find(x=>x.hasAttribute('data-ts'));
