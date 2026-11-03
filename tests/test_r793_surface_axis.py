@@ -412,11 +412,6 @@ def test_surface_declaration_matches_48h_ledger():
     try:
         conn = sqlite3.connect("file:%s?mode=ro" % DB.replace("\\", "/"),
                                uri=True)
-    except sqlite3.OperationalError as exc:
-        # 冻结树里账本由其他用例创建/重建，读只读连接会短暂打不开；
-        # 这不是端面声明矛盾，跳过而不是把环境竞态记成产品红。
-        pytest.skip("账本被并行用例重建/锁住: %s" % exc)
-    try:
         cur = conn.cursor()
         cur.execute("""
             select platform, entry_path, path_status, count(*), sum(rows)
@@ -424,8 +419,15 @@ def test_surface_declaration_matches_48h_ledger():
             where fetched_at > datetime('now','localtime','-48 hours')
             group by platform, entry_path, path_status
         """)
+        rows = cur.fetchall()
+    except sqlite3.DatabaseError as exc:
+        # 冻结树里账本由其他用例创建/重建：连接可能打不开，也可能刚
+        # 建出空文件、表还没 create。两种都是环境竞态，不是端面矛盾
+        # （分片并发实测：查询期 no such table 逃过了只包 connect 的守卫）。
+        pytest.skip("账本被并行用例重建/未建表: %s" % exc)
+    try:
         agg = {}
-        for plat, path, st, n, s in cur.fetchall():
+        for plat, path, st, n, s in rows:
             key = (plat, surface_of(path))
             if not key[1]:
                 continue
