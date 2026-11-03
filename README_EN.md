@@ -215,7 +215,7 @@ The capability map follows **collect → push → visualize → configure**. Eac
 > - **Fliggy**: PC and H5 are **two separate domains** (fliggy.com / taobao.com) with non-shared sessions — log in twice (two slots);
 > - **Tongcheng**: the `ly.com` parent-domain cookie covers www/m/tiflight, so **one slot suffices** and the international side needs no second login;
 > - **Tuniu**: the domestic list needs a login; collection-wise the international side works anonymously, though opening its PC international entry page asks for one.
-> - **Zhixing App / Qunar App**: sign in inside the "Channel login" embedded device view; the session is packed into a snapshot and restored before each collection run. An expired snapshot is shown as "session expired" in Settings instead of pretending everything is fine.
+> - **Zhixing App / Qunar App**: sign in inside the "Channel login" embedded device view; the session is packed into a snapshot and restored before each collection run. An expired snapshot is shown as "session expired" in Settings instead of pretending everything is fine. The embedded view opens as a **near-fullscreen workspace** (focus mode and a draggable floating window): tap / drag / long-press / wheel, inline text input, back / home / recent / delete keys; the read-only `/api/app-login/info` reports screen size and foreground app.
 
 ### Docker / NAS
 
