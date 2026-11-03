@@ -96,6 +96,11 @@
 
 ### 2.1 代码 / 分支 / 工作树
 
+> **2026-11-03 20:20 状态更新（优先于本节旧快照）**：HEAD `bc96947`（main），
+> 工作树干净；tracked collect **6370**；clean HEAD 全量非 UI
+> **6326 passed / 44 skipped / 0 failed**（409.47s）；UI **670/670**；
+> 站点戳 `4179e3223c14` 已与当前 webui 对齐；PiP 工作台与 App 图标质感已落地。
+
 - 分支：`feat/multicity`（不是 `main`）。
 - HEAD：`4fcdcfb docs: 历史多程记录补缺口程实测订正痕迹`。
 - **工作树不干净**：`git status --short` 共 **26** 项，全部属于并行会话的 App 隐身/ABI/滑块/策略 WIP（见 §2.6）。本轮自己的文件均已提交。

@@ -33,8 +33,8 @@
   可溯源/过期首段不提醒/整单历史 sparkline/CSV 导出/2 段矩阵升 y）；live 8765 于
   **2026-11-03 08:58** 切到 `_release_ab04`（Release `ab04c22`，webui sha12
   `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r956 尚未入该树。
-- **门禁**：tracked collect **6355**。2026-11-03 20:11 clean HEAD `f0b196e`
-  全量非 UI **6311 passed / 44 skipped / 0 failed**（workers 8，438.14s，共 6355；
+- **门禁**：tracked collect **6370**。2026-11-03 20:19 clean HEAD `bc96947`
+  全量非 UI **6326 passed / 44 skipped / 0 failed**（workers 8，409.47s，共 6370；
   源码哈希 pin 通过，语法检查 ok）。CI 已把全量 pytest 拆到 4 台 runner：
   `tools/ci_shard.py` 按 `tests/ci_durations.json` 历史耗时贪心均分，跑测前
   `--stats 4` 自检并集=全部 `tests/test_*.py`（新增文件按 20s 自动进组）+ workflow
