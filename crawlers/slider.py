@@ -391,8 +391,15 @@ def should_attempt(plat: str, config: dict = None, *,
 
 
 def note_result(plat: str, ok: bool, config: dict = None, *,
-                user_data_dir="user_data", profile="", now: float = None) -> dict:
-    """记一次尝试结果；连续失败 2 次 → 拉黑 7 天。"""
+                user_data_dir="user_data", profile="", now: float = None,
+                kind: str = "") -> dict:
+    """记一次尝试结果；连续失败 2 次 → 拉黑 7 天。
+
+    ``kind`` 为类别标签（``slider`` / ``arithmetic`` / ``text``）。
+    账本里额外维护 ``by_kind`` 分项——**总账仍是一本**（拉黑按总失败数算），
+    分项只用于"哪一类更容易过"的观测，不参与预算决策。
+    这样既不会因为分类别而让"失败 2 次拉黑"互相抵消，又能看出该关哪一类。
+    """
     ts = float(now if now is not None else time.time())
     path = _ledger_path(user_data_dir, profile or str(plat))
     data = _load(path)
@@ -412,6 +419,19 @@ def note_result(plat: str, ok: bool, config: dict = None, *,
         rec["last_fail"] = ts
         if rec["fails"] >= int(_cfg(config).get("max_fails") or 2):
             rec["blocked_until"] = ts + BLACKLIST_S
+    # 分项记账（只做观测，不影响预算）
+    k = str(kind or "unknown")
+    bk = rec.get("by_kind")
+    bk = bk if isinstance(bk, dict) else {}
+    item = bk.get(k) if isinstance(bk.get(k), dict) else {}
+    item["tries"] = int(item.get("tries") or 0) + 1
+    if ok:
+        item["ok"] = int(item.get("ok") or 0) + 1
+    else:
+        item["fail"] = int(item.get("fail") or 0) + 1
+    item["last"] = ts
+    bk[k] = item
+    rec["by_kind"] = bk
     rec["last_at"] = ts
     data[str(plat)] = rec
     _save(path, data)
@@ -567,12 +587,12 @@ def attempt_page(page, plat: str, config: dict = None, *, tier=None,
             # 验证看**控件是否消失**，不用 classify 复判（残留 CSS 类名会误判）
             if _slider_gone(page):
                 note_result(plat, True, config, user_data_dir=user_data_dir,
-                            profile=profile)
+                            profile=profile, kind="slider")
                 if logger:
                     logger.info("[%s] 简单滑块已通过（偏移 %dpx）", plat, offset)
                 return True
         note_result(plat, False, config, user_data_dir=user_data_dir,
-                    profile=profile)
+                    profile=profile, kind="slider")
         if logger:
             logger.warning("[%s] 简单滑块尝试未通过，交给人工", plat)
         return False
@@ -634,12 +654,12 @@ def attempt_device(dev, plat: str, config: dict = None, *, tier=None,
             any(m in after_xml for m in _SIMPLE_DOM)
         if not still:
             note_result(plat, True, config, user_data_dir=user_data_dir,
-                        profile=profile)
+                        profile=profile, kind="slider")
             if logger:
                 logger.info("[%s] App 简单滑块已通过", plat)
             return True
         note_result(plat, False, config, user_data_dir=user_data_dir,
-                    profile=profile)
+                    profile=profile, kind="slider")
         return False
     except Exception:
         return False

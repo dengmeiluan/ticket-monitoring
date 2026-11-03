@@ -303,3 +303,95 @@ def test_ocr_scale_is_read_from_config(monkeypatch, tmp_path):
                 "captcha": {"text": True, "ocr_scale": 2.0}},
                user_data_dir=str(tmp_path), logger=_LOG)
     assert seen.get("scale") == 2.0, seen
+
+
+# ---------------------------------------------------------------------------
+# 7. 账本：分项观测 + 总账仍是一本
+# ---------------------------------------------------------------------------
+def test_ledger_records_by_kind(tmp_path):
+    from crawlers import slider as sl
+    d = str(tmp_path)
+    cfg = {"slider": {"auto": True, "max_fails": 2}}
+    sl.note_result("ctrip", True, cfg, user_data_dir=d, kind="arithmetic")
+    sl.note_result("ctrip", False, cfg, user_data_dir=d, kind="text")
+    sl.note_result("ctrip", True, cfg, user_data_dir=d, kind="arithmetic")
+    rec = sl._load(sl._ledger_path(d, "ctrip"))["ctrip"]
+    assert rec["tries"] == 3
+    bk = rec["by_kind"]
+    assert bk["arithmetic"]["tries"] == 2 and bk["arithmetic"]["ok"] == 2
+    assert bk["text"]["tries"] == 1 and bk["text"]["fail"] == 1
+
+
+def test_ledger_blacklist_still_counts_total(tmp_path):
+    """拉黑按**总**失败数算：分类别不能让"失败 2 次拉黑"互相抵消。"""
+    from crawlers import slider as sl
+    d = str(tmp_path)
+    cfg = {"slider": {"auto": True, "max_fails": 2}}
+    sl.note_result("ctrip", False, cfg, user_data_dir=d, kind="slider")
+    sl.note_result("ctrip", False, cfg, user_data_dir=d, kind="text")
+    rec = sl._load(sl._ledger_path(d, "ctrip"))["ctrip"]
+    assert rec["fails"] == 2
+    assert rec["blocked_until"] > 0            # 跨类别累计照样拉黑
+
+
+def test_ledger_old_file_without_by_kind_still_works(tmp_path):
+    """老账本没有 ``by_kind`` 字段，读进来不能炸。"""
+    import json
+    from crawlers import slider as sl
+    d = str(tmp_path)
+    p = sl._ledger_path(d, "ctrip")
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    with open(p, "w", encoding="utf-8") as f:
+        json.dump({"ctrip": {"tries": 5, "fails": 1}}, f)
+    cfg = {"slider": {"auto": True}}
+    rec = sl.note_result("ctrip", True, cfg, user_data_dir=d, kind="text")
+    assert rec["tries"] == 6
+    assert rec["by_kind"]["text"]["ok"] == 1
+    assert rec["fails"] == 0                    # 成功清零
+
+
+# ---------------------------------------------------------------------------
+# 8. 可选后端 ddddocr：装了优先用，没装退回系统 OCR（都不许抛）
+# ---------------------------------------------------------------------------
+def test_backend_name_is_one_of_known(tmp_path):
+    assert cp.backend_name() in ("ddddocr", "windows-ocr", "none")
+
+
+def test_read_text_prefers_ddddocr_when_it_reads_more(monkeypatch):
+    """ddddocr 读出更多字符时采用它（它对付字符验证码通常更强）。"""
+    monkeypatch.setattr(cp, "_ocr_once", lambda png: "AB1")     # 系统 OCR
+    monkeypatch.setattr(cp, "_read_with_ddddocr", lambda png: "AB12")
+    assert cp.read_text(b"\x89PNG fake") == "AB12"
+
+
+def test_read_text_keeps_windows_result_when_ddddocr_empty(monkeypatch):
+    monkeypatch.setattr(cp, "_ocr_once",
+                        lambda png: "AB12" if png is not None else "")
+    monkeypatch.setattr(cp, "_read_with_ddddocr", lambda png: "")
+    assert cp.read_text(b"x") == "AB12"
+
+
+def test_read_text_keeps_windows_result_when_ddddocr_shorter(monkeypatch):
+    calls = {"n": 0}
+
+    def _ocr(png):
+        calls["n"] += 1
+        return "AB12"
+    monkeypatch.setattr(cp, "_ocr_once", _ocr)
+    monkeypatch.setattr(cp, "_read_with_ddddocr", lambda png: "A")
+    assert cp.read_text(b"x") == "AB12"
+
+
+def test_ddddocr_absent_is_not_an_error(monkeypatch):
+    """没装 ddddocr 时 ``_read_with_ddddocr`` 返回空串，不抛。"""
+    cp._DDDDOCR_TRIED[0] = False
+    cp._DDDDOCR.clear()
+    monkeypatch.setitem(__import__("sys").modules, "ddddocr", None)
+    assert cp._read_with_ddddocr(b"x") == ""
+
+
+def test_slide_match_absent_returns_none(monkeypatch):
+    cp._DDDDOCR_TRIED[0] = False
+    cp._DDDDOCR.clear()
+    monkeypatch.setitem(__import__("sys").modules, "ddddocr", None)
+    assert cp.slide_match(b"x") is None

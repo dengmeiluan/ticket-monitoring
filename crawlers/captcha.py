@@ -87,8 +87,84 @@ class Kind:
 
 
 # ---------------------------------------------------------------------------
-# 判型
+# 可选后端：ddddocr（开源验证码识别，装了就用）
 # ---------------------------------------------------------------------------
+# 用户明确要求"Python 应该有很多现成的解码开源框架吧，可以试试"。
+# ddddocr 是中文验证码识别里最常用的一个（纯 onnxruntime，不需要 torch），
+# 它自带三类能力，正好对上我们的题目分类：
+#
+#   * ``classification``   —— 字符验证码（我们叫 text）
+#   * ``slide_match``      —— 滑块缺口坐标（可替代我们的边缘检测）
+#   * ``slide_comparison`` —— 两张图对比找缺口
+#
+# **做成可选后端**：装了就优先用、没装就自动退回"系统 OCR + cv2"。
+# 这样既满足"试试现成框架"，又不给项目强加 onnxruntime 级依赖
+# （那会让打包体积涨几十 MB，而多数场景用不上）。
+_DDDDOCR = {}
+_DDDDOCR_TRIED = [False]
+
+
+def _ddddocr():
+    """惰性初始化 ddddocr；不可用返回 None。**失败只探一次**。"""
+    if _DDDDOCR_TRIED[0]:
+        return _DDDDOCR.get("cls")
+    _DDDDOCR_TRIED[0] = True
+    try:
+        import ddddocr  # type: ignore
+        _DDDDOCR["cls"] = ddddocr.DdddOcr(show_ad=False)
+        _DDDDOCR["slide"] = ddddocr.DdddOcr(show_ad=False,
+                                            det=False, ocr=False)
+    except Exception:
+        _DDDDOCR["cls"] = None
+        _DDDDOCR["slide"] = None
+    return _DDDDOCR.get("cls")
+
+
+def backend_name() -> str:
+    """当前文字识别走哪个后端（``ddddocr`` / ``windows-ocr`` / ``none``）。"""
+    if _ddddocr() is not None:
+        return "ddddocr"
+    try:
+        from core.android import ocr
+        if ocr.available():
+            return "windows-ocr"
+    except Exception:
+        pass
+    return "none"
+
+
+def _read_with_ddddocr(png: bytes) -> str:
+    try:
+        cls = _ddddocr()
+        if cls is None:
+            return ""
+        out = cls.classification(png)
+        return str(out or "").strip()
+    except Exception:
+        return ""
+
+
+def slide_match(png: bytes, bg_png: bytes = None):
+    """用 ddddocr 的 ``slide_match`` 找缺口 x；不可用返回 ``None``。
+
+    这是给 ``slider.find_gap`` 的可选增强：ddddocr 的滑轨模型对"缺口与背景
+    同色系/有噪点"的图更稳，而我们的边缘法对"两条强边"最稳——两者互补。
+    """
+    try:
+        import ddddocr  # type: ignore
+        if not _DDDDOCR_TRIED[0]:
+            _ddddocr()
+        det = _DDDDOCR.get("slide")
+        if det is None:
+            return None
+        res = det.slide_match(png, simple_target=True)
+        if isinstance(res, dict) and "target" in res:
+            box = res["target"]
+            if isinstance(box, (list, tuple)) and len(box) >= 4:
+                return int((box[0] + box[2]) / 2)
+        return None
+    except Exception:
+        return None
 def classify_kind(html: str = "", text: str = "") -> Kind:
     """判「这是哪一类验证」。强人机优先级最高（安全侧）。"""
     blob = ("%s\n%s" % (html or "", text or "")).lower()
@@ -272,7 +348,13 @@ def read_text(png: bytes, bbox=None, *, scale: float = 3.0,
             pass
     a = _ocr_once(raw)                       # 原图
     b = _ocr_once(preprocess(raw, scale=scale))   # 预处理图
-    return a if len(a) >= len(b) else b
+    win = a if len(a) >= len(b) else b
+    # 可选后端优先：ddddocr 对"字符验证码"通常明显强于系统 OCR。
+    # 只在它**读出了东西**时才采用，否则保留系统 OCR 的结果。
+    d4 = _read_with_ddddocr(raw)
+    if len(d4) >= len(win) and d4:
+        return d4
+    return win
 
 
 def clean_answer(text: str, *, digits_only: bool = False) -> str:
@@ -435,7 +517,8 @@ def attempt(page, plat: str, config: dict = None, *, kind=None,
 
     if not answer:
         slider_mod.note_result(plat, False, config,
-                               user_data_dir=user_data_dir, profile=profile)
+                               user_data_dir=user_data_dir, profile=profile,
+                               kind=k.name)
         rep["detail"] += "（空答案，记失败）"
         return rep
 
@@ -451,12 +534,14 @@ def attempt(page, plat: str, config: dict = None, *, kind=None,
     except Exception as e:
         rep["detail"] += "，填写异常：%s" % str(e)[:60]
         slider_mod.note_result(plat, False, config,
-                               user_data_dir=user_data_dir, profile=profile)
+                               user_data_dir=user_data_dir, profile=profile,
+                               kind=k.name)
         return rep
 
     ok = not _still_there(page, k.name)
     slider_mod.note_result(plat, ok, config,
-                           user_data_dir=user_data_dir, profile=profile)
+                           user_data_dir=user_data_dir, profile=profile,
+                           kind=k.name)
     rep["ok"] = ok
     rep["detail"] += "，%s" % ("已通过" if ok else "未通过")
     if logger:
@@ -535,7 +620,7 @@ class SolverHandler:
         if not answer:
             slider_mod.note_result(plat, False, self.config,
                                    user_data_dir=self.user_data_dir,
-                                   profile=self.profile)
+                                   profile=self.profile, kind=k.name)
             return ChallengeOutcome(handled=False, detail="空答案")
         m = re.search(r'text="([^"]*)"[^>]*bounds="\[(\d+),(\d+)\]'
                       r'\[(\d+),(\d+)\]"', xml)
@@ -554,7 +639,7 @@ class SolverHandler:
             ok = False
         slider_mod.note_result(plat, ok, self.config,
                                user_data_dir=self.user_data_dir,
-                               profile=self.profile)
+                               profile=self.profile, kind=k.name)
         return ChallengeOutcome(handled=bool(ok),
                                 detail="%s %s" % (k.name,
                                                   "ok" if ok else "fail"))
