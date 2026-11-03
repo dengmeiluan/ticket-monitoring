@@ -62,7 +62,7 @@
   `test_r640` 三档行高覆盖）；能力线 9 文件 **63 passed**（2026-11-03 09:55）；
   `channel_contract --strict` **10 家 × 11 轴无缺口**（2026-11-03 10:13）；
   `release_align_check --local` **25/25 PASS**（2026-11-03 22:00，clean 克隆 `7deb733`，
-  tracked 6425 / UI 670）；静态站 `code:5045a4437de8` 已按当前 webui 重烘并随
+  tracked 6425 / UI 670）；静态站 `code:db416c15fca7` 已按当前 webui 重烘并随
   `0f782f9` 推送，线上 Pages 匿名请求实测同戳。
 - **多程开口程（2026-11-03 16:41 实测）**：profile 副本 + 临时库跑
   SHA→TYO 11-20 / OSA→SHA 11-26，页面「多程超低价」组合卡自报
@@ -83,7 +83,7 @@
   像素门禁 `test_app_zhixing_icon_has_no_promo_banner`。
 - **唯一声明源**：`core/channels.py`。新增渠道/维度先跑 `python -m core.channel_contract --strict`
   与 `test_r903/r904/r905`；声明字典禁止重复键，hint 承诺的按钮必须真实渲染。
-- **发布状态**：Release `v1.0` → `e65cee1`（2026-11-03 09:54 由 `ab04c22` 重指，多 4 个提交；v1.5.307，10 渠道正文/四资产 digest 4/4；CI/release-build/Pages 在 `e65cee1` 均 success；**该轮四平台包构建早于 `numpy` 依赖声明（21:10），冻结包内滑块缺口检测会静默无候选——下一次发版必须按最终 `requirements.txt` 重建四平台包并重算资产 SHA/正文**）；ghcr `sha-e65cee1` = `latest` digest `5fb025bb3488…`（同 digest）；`sha-ab04c22` 仍可拉取（digest `9b72acb1a6b9…`）但已不对应 Release；公开站点戳 `code:5045a4437de8` 由更新后的 main 部署（release 树 webui 为 `6c85a00f14c1`）；live 8765 仍是 `_release_ab04`（`ab04c22` 树）；
+- **发布状态**：Release `v1.0` → `e65cee1`（2026-11-03 09:54 由 `ab04c22` 重指，多 4 个提交；v1.5.307，10 渠道正文/四资产 digest 4/4；CI/release-build/Pages 在 `e65cee1` 均 success；**该轮四平台包构建早于 `numpy` 依赖声明（21:10），冻结包内滑块缺口检测会静默无候选——下一次发版必须按最终 `requirements.txt` 重建四平台包并重算资产 SHA/正文**）；ghcr `sha-e65cee1` = `latest` digest `5fb025bb3488…`（同 digest）；`sha-ab04c22` 仍可拉取（digest `9b72acb1a6b9…`）但已不对应 Release；公开站点戳 `code:db416c15fca7` 由更新后的 main 部署（release 树 webui 为 `6c85a00f14c1`）；live 8765 仍是 `_release_ab04`（`ab04c22` 树）；
   工作树未提交/未发布，推送、tag、Release、Pages、live 切换均需明确授权。
   live 切换的可执行步骤与回滚见 `docs/LIVE_PROMOTION_RUNBOOK.md`。
 - **本文结构**：§1–§12 是执行口径；§12 之后是历次门禁与时序台账，**不是当前状态**；
