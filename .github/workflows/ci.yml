@@ -14,6 +14,13 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # 4 台 runner 按全量耗时快照分片并行：单机 -n 4 约 11 分钟，
+    # 分片后每片约 5–6 分钟（setup 并行，不叠加）。
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [0, 1, 2, 3]
     env:
       # 与本地验证命令逐字节同口径（避免环境插件差异导致行为漂移）
       PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
@@ -61,12 +68,17 @@ jobs:
       # 人对照 HANDOFF 清单：契约逐格读真实登记点，有缺口直接失败并点名。
       - name: 渠道平台契约（10 渠道 × 11 轴，有缺口即失败）
         run: python -m core.channel_contract --strict
-      - name: 全量测试（单测 + 推送链路演练 + 链接同源门禁 + 版本门禁）
+      - name: 分片覆盖自检（并集=全部测试文件，新增文件不漏跑）
+        run: python tools/ci_shard.py --stats 4
+      - name: 选本片测试文件（按全量耗时快照贪心均分）
+        id: shard
+        run: echo "files=$(python tools/ci_shard.py --print 4 ${{ matrix.group }})" >> "$GITHUB_OUTPUT"
+      - name: 全量测试 · 第 ${{ matrix.group }} 片（单测 + 推送链路演练 + 链接同源门禁 + 版本门禁）
         run: |
           set -o pipefail
-          # 文件级分组并行：单机串行 30–40 分钟，4 worker 约 10 分钟；
-          # loadfile 避免同文件内共享 demo 端口/会话状态的用例被拆散。
-          python -m pytest tests/ -q -n 4 -p xdist.plugin --dist loadfile 2>&1 | tee pytest.log
+          # 片内仍按文件整组分配：loadfile 避免同文件内共享 demo 端口/
+          # 会话状态的用例被拆散；跨片由 4 台 runner 并行。
+          python -m pytest ${{ steps.shard.outputs.files }} -q -n 4 -p xdist.plugin --dist loadfile 2>&1 | tee pytest.log
       - name: 失败测试摘要
         if: failure()
         run: |
@@ -83,6 +95,7 @@ jobs:
 
   uitest:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -109,3 +122,15 @@ jobs:
         with:
           name: uitest-result
           path: docs/uitest_result.txt
+
+  # 稳定聚合检查：分片 job 名会变成 test (0..3)，分支保护/外部集成只需
+  # 认这一个「全部泳道绿」的结论。
+  ci-ok:
+    if: always()
+    needs: [test, uitest]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 汇总两个泳道
+        run: |
+          test "${{ needs.test.result }}" = "success"
+          test "${{ needs.uitest.result }}" = "success"

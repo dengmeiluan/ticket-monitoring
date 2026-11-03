@@ -69,19 +69,18 @@ def test_qunar_clears_suspect_on_hit(q_cls, monkeypatch):
     assert q_cls.login_suspect is False
 
 
-def test_login_state_view_carries_stale(q_cls, tmp_path):
+def test_login_state_view_carries_stale(q_cls, tmp_path, monkeypatch):
     """_login_state_view 上浮 stale 字段并随类属性联动；saved 语义不变
     （本地档案在场）。档案目录用 tmp_path 构造（离线可跑，不依赖生产
     user_data）。"""
     import webui
     (tmp_path / "qunar").mkdir()
     (tmp_path / "qunar" / "marker").write_text("x", encoding="utf-8")
-    old_cfg = webui._State.cfg
-    old_boot = getattr(webui._State, "boot_cfg", None)
-    webui._State.cfg = {"crawler": {"user_data_dir": str(tmp_path)}}
-    # _effective_crawler_config 优先读 boot_cfg；只替换 cfg 会被前序测试
-    # 留下的启动快照遮蔽（xdist 换文件顺序时 saved=False）。
-    webui._State.boot_cfg = None
+    # 直接注入配置解析结果：_State.cfg/boot_cfg 是进程级全局，同 worker
+    # 前序用例遗留的后台线程会在断言窗口内重载它（CI xdist 实测
+    # saved=False）。这里只钉 _login_state_view 对 user_data_dir 的语义。
+    monkeypatch.setattr(webui, "_effective_crawler_config",
+                        lambda: {"user_data_dir": str(tmp_path)})
     try:
         q_cls.login_suspect = False
         v = webui._login_state_view()
@@ -92,8 +91,6 @@ def test_login_state_view_carries_stale(q_cls, tmp_path):
         assert v["plats"]["qunar"]["saved"] is True
         assert v["plats"]["qunar"]["stale"] is True
     finally:
-        webui._State.cfg = old_cfg
-        webui._State.boot_cfg = old_boot
         q_cls.login_suspect = False
 
 
