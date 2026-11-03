@@ -181,13 +181,26 @@ crawler:
     single_shot: false   # false=顺次试前 3 个候选偏移
 ```
 
-要在采集里真正生效，需要**显式注册**处理器（默认不注册，保持"识别→记账→停手"的现行处置）：
+要在采集里真正生效，处理器必须**被注册**——现在这一步是自动的：
+`BaseCrawler.__init__` 会调 `challenge.ensure_slider_handler()`，按
+`crawler.slider.auto` 决定挂不挂（幂等、失败静默），所以不用改 main/webui。
 
-```python
-from crawlers.challenge import register_handler
-from crawlers.slider import SliderHandler
-register_handler(SliderHandler(cfg, user_data_dir="user_data"))
+> **踩过的坑**：`SliderHandler` 写好、配置也有了、UI 也有配置项，但
+> **全仓没有一处生产代码调用 `register_handler`**（2026-11-03 搜过，只有
+> challenge.py 的定义、slider.py 的文档、测试里的调用）。也就是功能是**死的**：
+> 配置改了、界面勾了，跑起来一次都不会触发。这类"配了但没接线"的坑最难发现，
+> 因为所有单元测试都是绿的。现在由 `ensure_slider_handler()` 兜住，并加了
+> `tests/test_r923_slider_registration.py` 钉死开关语义与幂等性。
+
+命中率怎么看（`yield_report.py` 的「滑块」列）：
+
 ```
+渠道        样本  成功   下界  间隔建议   倍率  状态      滑块
+ctrip         12    11   0.62       30   1.5x  watch     试 5 / 过 3（命中 60%）
+```
+
+账本落 `user_data/<profile>/slider_ledger.json`（`tries`/`fails`/`day_used`/
+`blocked_until`）。**连续失败 2 次会拉黑 7 天**，所以命中率低时它会自己停手。
 
 工程细节（这几条决定它是不是真能用）：
 

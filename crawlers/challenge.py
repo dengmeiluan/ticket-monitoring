@@ -190,9 +190,18 @@ def ensure_slider_handler(config=None, *, user_data_dir="user_data",
             "probe", config, user_data_dir=user_data_dir, profile=profile)[0]
         if not want:
             return cur
-        if getattr(cur, "name", "") == "slider-handler":
+        # 优先挂**超集**处理器：它覆盖滑块 + 算数 + 文字（强人机一律不碰）。
+        # 挂不上时退回只处理滑块的旧实现，保证老行为可用。
+        try:
+            from . import captcha as captcha_mod
+            handler_cls = captcha_mod.SolverHandler
+            handler_name = "solver-handler"
+        except Exception:
+            handler_cls = slider_mod.SliderHandler
+            handler_name = "slider-handler"
+        if getattr(cur, "name", "") in ("solver-handler", "slider-handler"):
             return cur
-        return register_handler(slider_mod.SliderHandler(
+        return register_handler(handler_cls(
             config, user_data_dir=user_data_dir, profile=profile,
             logger=logger))
     except Exception:
