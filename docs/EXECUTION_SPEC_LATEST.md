@@ -3103,7 +3103,8 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
     不含多程整单样本」，界面可把「没样本」和「读失败」分开。
   · 矩阵 `ctrip.multi_city` 说明同步：已有 `fetch_multi`/轮尾采集/只读 API；
     配置卡/概览整单卡在 r944、整单提醒与历史走势在 r944/r951 补齐；r954 已有
-    2 段生产整单行（¥1476），后续 r956 升 `y`（仅 2 段），3+ 段/缺口程未验；
+    2 段生产整单行（¥1476），后续 r956 升 `y`（仅 2 段），3+ 段/缺口程未验
+    （缺口程后于 16:41 实测 ¥2184）；
     不再写「采集端未实现」。
   · 门禁：多程 4 文件 **23 passed**（模型/解析/轮尾/API，2026-11-03 10:13），
     全量见 §1.0。
@@ -3160,7 +3161,8 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
 - r956 矩阵 ctrip.multi_city 升 y（仅 2 段）（2026-11-03 13:10）：
   · 依据 r954 生产行 ¥1476（IJ004+MM304）与配置/采集/概览/来源/提醒/历史/导出
     闭环，`CHANNEL_DIMENSIONS["ctrip"]["multi_city"]` 由 `""` 升 `y`，
-    `DIMENSION_SCOPE` 写「仅 2 段」；3+ 段实测无组合卡、缺口程未验。
+    `DIMENSION_SCOPE` 写「仅 2 段」；3+ 段实测无组合卡、缺口程未验
+    （后于 16:41 实测 ¥2184）。
   · App 对齐缺口由 `()` 变为 `("multi_city",)`（5 家 App 均未接多程）；
     r677/r683 门禁改为「仅 ctrip 可 y、必须带 scope、ctrip 源码有 fetch_multi」。
   · Release 正文/门禁改为「已有 2 段生产整单行 + 矩阵 ✓ 仅 2 段 + 3+ 段未验」；
@@ -3184,7 +3186,7 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
     **未写 live 库**。
   · 追加 3 段实测：SHA→TYO 11-20 / TYO→OSA 11-23 / OSA→SHA 11-26，
     结果页**无「多程超低价」组合卡**，解析器记 empty；3+ 段未接通（不是渠道
-    没有），缺口程未验。
+    没有），缺口程未验（后于 16:41 实测 ¥2184）。
   · 矩阵仍 `""`：2 段已有生产整单行，3+ 段未接通；`core/channels.py`、
     HANDOFF、Release 正文同步「已有 2 段生产整单行」。
 
