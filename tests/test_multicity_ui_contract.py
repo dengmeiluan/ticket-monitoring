@@ -40,10 +40,12 @@ def test_overview_card_and_state_contract():
     src = _src()
     for token in ("function monMCCard(", 'id="monMCList"',
                   "u.mcRoutes", "多程行程 · 整单总价",
-                  "整单总价只取渠道页面，不由段价相加"):
+                  "整单总价只取渠道页面，不由段价相加",
+                  "m.history", "mcspark", "trendSparkSvg"):
         assert token in page, token
     for token in ('"mcRoutes": mc_routes', "_multicity_payload(",
-                  "mode=ro", "def _multicity_alert_round(",
+                  "def _multicity_history(", "mode=ro",
+                  "def _multicity_alert_round(",
                   "get_alert_state(dk)", "set_alert_state(dk, price)"):
         assert token in src, token
     with open(os.path.join(ROOT, "main.py"), encoding="utf-8") as f:

@@ -176,6 +176,21 @@ CREATE TABLE IF NOT EXISTS itinerary_daily (
 );
 CREATE INDEX IF NOT EXISTS idx_itinerary_route
     ON itinerary_daily (route_id, segments_key, depart_date);
+CREATE TABLE IF NOT EXISTS itinerary_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    platform TEXT NOT NULL,
+    route_id TEXT NOT NULL,
+    segments_key TEXT NOT NULL,
+    depart_date TEXT NOT NULL,
+    total_price REAL NOT NULL,
+    legs_json TEXT NOT NULL,
+    fetched_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_itinerary_hist_uniq
+    ON itinerary_history (platform, route_id, segments_key,
+                          depart_date, fetched_at);
+CREATE INDEX IF NOT EXISTS idx_itinerary_hist_key
+    ON itinerary_history (segments_key, fetched_at);
 """
 
 
@@ -1450,6 +1465,16 @@ class PriceStorage:
                     legs_json,fetched_at) VALUES (?,?,?,?,?,?,?)""",
                 (str(platform), str(route_id or key), key, dep, price,
                  json.dumps(extra, ensure_ascii=False), ts))
+            # 历史表只追加：itinerary_daily 保最新一条，走势读这里。
+            # 同一秒重复保存用唯一索引去重，轮询重建不会灌重复点。
+            c.execute(
+                """INSERT OR IGNORE INTO itinerary_history
+                   (platform,route_id,segments_key,depart_date,total_price,
+                    legs_json,fetched_at) VALUES (?,?,?,?,?,?,?)""",
+                (str(platform), str(route_id or key), key, dep, price,
+                 json.dumps(extra, ensure_ascii=False), ts))
+            c.execute("DELETE FROM itinerary_history WHERE fetched_at < "
+                      "datetime('now','localtime','-90 days')")
         return key
 
     def itineraries(self, route_id="", segments_key="", limit=200):
@@ -1475,6 +1500,20 @@ class PriceStorage:
             except ValueError:
                 r["extra"] = {}
         return rows
+
+    def itinerary_history(self, segments_key, limit=96):
+        """按行程键读整单历史点（升序）：[[ISO 时刻, 总价], ...]。
+
+        只返回真实落过库的整单总价；没有历史就是空，不补点。
+        """
+        lim = max(1, min(500, int(limit)))
+        with self._conn() as c:
+            rows = c.execute(
+                "SELECT fetched_at,total_price FROM itinerary_history "
+                "WHERE segments_key=? ORDER BY fetched_at DESC LIMIT ?",
+                (str(segments_key), lim)).fetchall()
+        return [[str(r[0]).replace(" ", "T"), float(r[1])]
+                for r in reversed(rows)]
 
     def flight_history(self, from_city: str, to_city: str, depart_date: str,
                        flight_key: str, cabin: str, channels: list,
