@@ -33,11 +33,11 @@
   可溯源/过期首段不提醒/整单历史 sparkline/CSV 导出/2 段矩阵升 y）；live 8765 于
   **2026-11-03 08:58** 切到 `_release_ab04`（Release `ab04c22`，webui sha12
   `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r956 尚未入该树。
-- **门禁**：tracked collect **6275**。2026-11-03 16:25 CI 同款 4 片并发实测
+- **门禁**：tracked collect **6276**。2026-11-03 16:25 CI 同款 4 片并发实测
   **6230 passed / 44 skipped / 0 failed**（0/1/3 片在 `62888c4`、第 2 片在
   `47731c9`；两提交只差 r793 的测试守卫，产品代码相同；四片合计 6274；此后
-  新增开工况就绪轮询测试 1 项，共 6275，定向已验，全量待重跑；各片源码哈希
-  前后一致）。CI 已把全量 pytest 拆到 4 台 runner：`tools/ci_shard.py`
+  新增开工况就绪轮询与开口程链头断点测试 2 项，共 6276，定向已验，全量待
+  重跑；各片源码哈希前后一致）。CI 已把全量 pytest 拆到 4 台 runner：`tools/ci_shard.py`
   按 `tests/ci_durations.json` 历史耗时贪心均分，跑测前 `--stats 4` 自检
   并集=全部 `tests/test_*.py`（新增文件按 20s 自动进组，不漏跑）；`test/uitest`
   各加 45 分钟超时，`ci-ok` 聚合两泳道。分片暴露的两处环境竞态已改成注入/
@@ -64,6 +64,7 @@
   `totalBasis=page_multicity_total`、来源 URL 落库；固定等 9s 会假空
   （实测 12s 才出总价），`fetch_multi` 改为以「多程含税价」为就绪锚最多
   再等 12s。矩阵 scope 仍「仅 2 段」（含缺口程）；3+ 段仍无组合卡。
+  配置卡链头按断点显示 `SHA→TYO / OSA→SHA`，不再画成 `SHA→TYO→SHA`。
 - **唯一声明源**：`core/channels.py`。新增渠道/维度先跑 `python -m core.channel_contract --strict`
   与 `test_r903/r904/r905`；声明字典禁止重复键，hint 承诺的按钮必须真实渲染。
 - **发布状态**：Release `v1.0` → `ab04c22`（v1.5.307，10 渠道正文/四资产 digest 4/4/CI/Pages 同源）；ghcr `sha-ab04c22` digest `9b72acb1a6b9…`，`latest` = `sha-934e108` digest `c8fe5de9383c…`（latest 跟随更新 HEAD，非同 digest；要 Release 同源请 pin `sha-ab04c22`）；live 8765 已切 `_release_ab04`；

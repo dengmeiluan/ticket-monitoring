@@ -21,6 +21,21 @@ SAMPLE = {
 }
 
 
+OPEN_JAW = {
+    "segments": [
+        {"from": "SHA", "to": "TYO", "date": "2026-11-20"},
+        {"from": "OSA", "to": "SHA", "date": "2026-11-26"}]}
+
+
+def test_mc_chain_shows_open_jaw_discontinuity(page):
+    """开口程不能画成 SHA→TYO→SHA：第二段从 OSA 出发，链上要断开。"""
+    _goto(page)
+    assert page.evaluate("r => _mcChain(r)", OPEN_JAW) == \
+        "SHA→TYO / OSA→SHA"
+    assert page.evaluate("r => _mcNames(r)", OPEN_JAW) == \
+        "SHA→东京 / 大阪→SHA"
+
+
 def test_mc_csv_rows_and_formula_guard(page):
     _goto(page)
     rows = page.evaluate("m => mcCsvRows(m)", SAMPLE)

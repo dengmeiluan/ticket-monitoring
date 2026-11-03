@@ -19399,11 +19399,17 @@ function _mcCodeName(c){c=String(c||'').toUpperCase();
  const n=Object.keys(CITY).find(k=>CITY[k]===c);
  return n||((INTL&&INTL.map&&INTL.map[c])||c);}
 function _mcChain(r){const s=_mcSegs(r);if(!s.length)return '';
- let out=String(s[0].from||'');
- s.forEach(x=>{out+='→'+String(x.to||'');});
+ let out=String(s[0].from||''),prev=out;
+ s.forEach(x=>{const f=String(x.from||''),t=String(x.to||'');
+  if(f&&prev&&f!==prev)out+=' / '+f;
+  out+='→'+t;prev=t;});
  return out;}
 function _mcNames(r){const s=_mcSegs(r);if(!s.length)return '';
- return _mcCodeName(s[0].from)+s.map(x=>'→'+_mcCodeName(x.to)).join('');}
+ let out=_mcCodeName(s[0].from),prev=String(s[0].from||'');
+ s.forEach(x=>{const f=String(x.from||''),t=String(x.to||'');
+  if(f&&prev&&f!==prev)out+=' / '+_mcCodeName(f);
+  out+='→'+_mcCodeName(t);prev=t;});
+ return out;}
 function _mcIssues(r){const out=[],s=_mcSegs(r);
  if(s.length<2||s.length>4)out.push('多程需 2–4 段');
  s.forEach((x,k)=>{const tag='第'+(k+1)+'段';
