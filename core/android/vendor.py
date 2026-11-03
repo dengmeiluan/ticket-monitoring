@@ -35,6 +35,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from .fingerprint import _call, _text
+
 # 允许写入的键白名单：只碰与「设备外观」和「系统盘可写」有关的，
 # 绝不碰性能/网络/帧率——那些改错了会让采集变慢或断网。
 _WRITABLE = (
@@ -172,3 +174,142 @@ def unlock_system_disk(manager=None, *, restart: bool = False,
         except Exception as e:
             rep["restart_error"] = str(e)[:120]
     return rep
+
+
+# ---------------------------------------------------------------------------
+# 按 App 伪装 ABI（MuMu 官方 abi-select 表）——2026-11-03 实测可用
+# ---------------------------------------------------------------------------
+# MuMu 用 `/system/etc/mumu-configs/abi-select-android12.config` 这张
+# 「包名正则 → ABI」表决定**每个 App 用哪套 ABI 启动**。实测：
+
+#   * 往表里加 ``ctrip\.android\.view   arm64-v8a`` 后重启 →
+#     `dumpsys package ctrip.android.view` 的 primaryCpuAbi **真的变成
+#     arm64-v8a**，nativeLibraryDir 指向 arm64 目录；
+#   * 而**全局** ``ro.product.cpu.abi`` 仍是 ``x86_64`` ——
+#     App 视角是 arm64，系统仍跑 x86，稳定性不受影响；
+#   * 携程正常启动（CtripHomeActivity 在前台），logcat 无
+#     UnsatisfiedLinkError / FATAL / SIGSEGV。
+#
+# 这比「全局改 ro.product.cpu.abi」好得多，也比改 /system/build.prop 可靠
+# （build.prop 在只读基础镜像上改了也会被启动流程覆盖）。而且**只影响我们
+# 关心的几个包**，不碰系统。
+ABI_SELECT = "/system/etc/mumu-configs/abi-select-android12.config"
+
+# 票务 App 包名 → 统一正则（表里用的是"包名正则 + 目标 ABI + 注释"）
+TICKET_APPS = {
+    "ctrip.android.view": r"ctrip\.android\.view",
+    "com.taobao.trip": r"com\.taobao\.trip",
+    "com.Qunar": r"com\.Qunar",
+    "com.tongcheng.android": r"com\.tongcheng\.android",
+    "cn.suanya.zhixing": r"cn\.suanya\.zhixing",
+}
+
+_ABI_BLOCK_MARK = "# 票务 App：按 arm64-v8a 启动"
+
+
+def read_abi_select(dev) -> dict:
+    """读 abi-select 表：``{"path", "exists", "lines", "apps": {pkg: abi}}``。
+
+    表里一行形如 ``ctrip\\.android\\.view   arm64-v8a   # 携程``——
+    **第一列本身就是一条正则**（带反斜杠转义），不是裸包名。所以这里把
+    每一行的第一列当"原文"取出，再用它去比对 ``TICKET_APPS`` 里的包名：
+    把两边都去掉转义后比较，避免"用包名去匹配转义文本"这种必失败的写法。
+    """
+    out = {"path": ABI_SELECT, "exists": False, "lines": [], "apps": {}}
+    raw = _text(_call(dev, "shell", "cat", ABI_SELECT))
+    if not raw.strip():
+        return out
+    out["exists"] = True
+    out["lines"] = raw.splitlines()
+
+    def _unesc(s: str) -> str:
+        return str(s or "").replace("\\", "").strip()
+
+    want = {_unesc(p): p for p in TICKET_APPS}
+    for ln in out["lines"]:
+        s = ln.strip()
+        if not s or s.startswith("#"):
+            continue
+        cols = s.split()
+        if len(cols) < 2:
+            continue
+        pat, abi = cols[0], cols[1]
+        if abi not in ("arm64-v8a", "armeabi-v7a", "arm", "x86", "x86_64"):
+            continue
+        key = _unesc(pat)
+        if key in want:
+            out["apps"][want[key]] = abi
+    return out
+
+
+def set_app_abi(dev, apps=None, abi: str = "arm64-v8a", *,
+                logger=None) -> dict:
+    """把票务 App 写进 abi-select 表（幂等：已有则跳过）。
+
+    需要 ``/system`` 可写（见 ``unlock_system_disk``），并且**重启实例**才生效。
+    写前先把原表备份到 ``/data/local/tmp/abi-select.orig``。
+    """
+    apps = dict(apps or TICKET_APPS)
+    rep = {"ok": False, "path": ABI_SELECT, "added": [], "present": [],
+           "abi": abi, "backup": "", "restart_required": True, "error": ""}
+    cur = read_abi_select(dev)
+    if not cur["exists"]:
+        rep["error"] = "找不到 abi-select 表（这台实例可能不是 MuMu？）"
+        return rep
+
+    todo = [p for p in apps if p not in cur["apps"]]
+    rep["present"] = [p for p in apps if p in cur["apps"]]
+    if not todo:
+        rep["ok"] = True
+        rep["restart_required"] = False
+        return rep
+
+    # 备份
+    bak = "/data/local/tmp/abi-select.orig"
+    if not _text(_call(dev, "shell", "ls", bak)).strip():
+        _call(dev, "shell", "cp", "-f", ABI_SELECT, bak)
+    rep["backup"] = bak
+
+    _call(dev, "shell", "mount", "-o", "rw,remount", "/")
+    block = ["", "############################################",
+             _ABI_BLOCK_MARK]
+    for pkg in todo:
+        block.append("%-48s %-18s # %s"
+                     % (apps[pkg], abi, pkg.split(".")[-1]))
+    payload = "\n".join(block) + "\n"
+    # 用 printf 追加（避免 heredoc 在不同 shell 上的差异）
+    out = _text(_call(dev, "shell", "sh", "-c",
+                      "printf %s >> %s && echo TM_OK"
+                      % (_shq(payload), ABI_SELECT)))
+    if "TM_OK" not in out:
+        rep["error"] = "追加失败：%s" % (out.strip()[:120] or "无输出")
+        return rep
+
+    after = read_abi_select(dev)
+    rep["added"] = [p for p in todo if p in after["apps"]]
+    rep["ok"] = bool(rep["added"])
+    if logger and rep["ok"]:
+        logger.info("[android] 已写入 %d 个 App 的 ABI=%s（重启实例生效）",
+                    len(rep["added"]), abi)
+    return rep
+
+
+def revert_app_abi(dev, *, logger=None) -> dict:
+    """从备份还原 abi-select 表（回滚用）。"""
+    bak = "/data/local/tmp/abi-select.orig"
+    rep = {"ok": False, "path": ABI_SELECT, "backup": bak}
+    if not _text(_call(dev, "shell", "ls", bak)).strip():
+        rep["error"] = "没有备份可还原"
+        return rep
+    _call(dev, "shell", "mount", "-o", "rw,remount", "/")
+    out = _text(_call(dev, "shell", "sh", "-c",
+                      "cp -f %s %s && echo TM_OK" % (bak, ABI_SELECT)))
+    rep["ok"] = "TM_OK" in out
+    if logger and rep["ok"]:
+        logger.info("[android] abi-select 已还原（重启实例生效）")
+    return rep
+
+
+def _shq(s: str) -> str:
+    """单引号包裹给设备端 sh（内部单引号转义）。"""
+    return "'" + str(s).replace("'", "'\\''") + "'"
