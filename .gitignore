@@ -262,7 +262,9 @@ _probe*
 _*.ps1
 
 # 审计/调试产物与本地凭据（v1.5.1 教训：add -A 曾扫入真实 token）
-scripts/
+# scripts/ 默认是本地调试脚本；被测试与操作员文档引用的 CLI 显式入库
+scripts/*
+!scripts/display_spoof.py
 audit_shots/
 audit_report.json
 uitest_*.js

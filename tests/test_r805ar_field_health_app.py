@@ -34,15 +34,20 @@ DB = os.path.join(ROOT, "data", "prices.db")
 def _route_with_app():
     if not os.path.isfile(DB):
         return None
-    conn = sqlite3.connect("file:%s?mode=ro" % DB.replace("\\", "/"),
-                           uri=True)
     try:
-        row = conn.execute(
-            "SELECT from_city, to_city, depart_date FROM flight_prices "
-            "WHERE platform LIKE 'app%' AND extra!='' "
-            "GROUP BY 1,2,3 ORDER BY COUNT(*) DESC LIMIT 1").fetchone()
-    finally:
-        conn.close()
+        conn = sqlite3.connect("file:%s?mode=ro" % DB.replace("\\", "/"),
+                               uri=True)
+        try:
+            row = conn.execute(
+                "SELECT from_city, to_city, depart_date FROM flight_prices "
+                "WHERE platform LIKE 'app%' AND extra!='' "
+                "GROUP BY 1,2,3 ORDER BY COUNT(*) DESC LIMIT 1").fetchone()
+        finally:
+            conn.close()
+    except sqlite3.DatabaseError:
+        # CI/并行用例可能刚建了一个空/半建库：无表=无样本，按 skip 处理，
+        # 不把「没有账本」记成产品红。
+        return None
     return row
 
 
