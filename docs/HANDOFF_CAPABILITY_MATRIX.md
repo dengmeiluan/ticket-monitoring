@@ -40,7 +40,7 @@
 能力线 9 文件 **63 passed**（含 r903/r905）、`python -m core.channel_contract --strict` **10 家 × 11 轴无缺口**、
 UI **670/670**（2026-11-03 16:50 全量复跑，零 JS 错误；页面 JS 为最终态，此后仅服务端
 label/提醒改动由全量 pytest 覆盖；含矩阵 ctrip 多程 ✓ 仅 2 段与 r958 的 9 个配置控件；含 r946 多程来源链接与 r947 过期门；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、同程 App round_trip=国际；r901 新增 390 档冻结首列 + 900 档无假提示真渲染；含 r905 行内自检按钮，另由 r905 真渲染 + r640 四档行高覆盖）、
-`release_align_check.py --local` **25/25 PASS**、站点戳 `code:ccfc38542bf3` = 当前 `webui.py`（2026-11-03 12:37 按 `80c63eb` 重烘）。
+`release_align_check.py --local` **25/25 PASS**（2026-11-03 20:22，HEAD `c985ce0`，tracked 6370 / UI 670）、站点戳 `code:4179e3223c14` = 当前 `webui.py`（2026-11-03 20:xx 按最终树重烘）。
 **2026-11-03 09:20 在线复核（Release ab04c22 / v1.5.307）**：tag `v1.0` → `ab04c22`；Release 正文
 v1.5.307 + 源码 ab04c22；四资产 digest 与正文 SHA **4/4 相等**；CI/release-build/Pages
 在 ab04c22 success；ghcr `sha-ab04c22` digest `9b72acb1a6b9…`，`latest` = `sha-934e108`
