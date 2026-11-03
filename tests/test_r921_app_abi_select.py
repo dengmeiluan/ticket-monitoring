@@ -67,7 +67,7 @@ class FakeDev:
             self.appended = cmd[i + 1:j].replace("'\\''", "'")
             self.table = self.table + self.appended
             return "TM_OK"
-        if cmd.startswith("shell cp -f /data/local/tmp/abi-select.orig"):
+        if "cp -f /data/local/tmp/abi-select.orig" in cmd:
             self.table = _TABLE
             return "TM_OK"
         return ""

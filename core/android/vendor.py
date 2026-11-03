@@ -207,13 +207,14 @@ TICKET_APPS = {
 _ABI_BLOCK_MARK = "# 票务 App：按 arm64-v8a 启动"
 
 
-def read_abi_select(dev) -> dict:
+def read_abi_select(dev, apps=None) -> dict:
     """读 abi-select 表：``{"path", "exists", "lines", "apps": {pkg: abi}}``。
 
     表里一行形如 ``ctrip\\.android\\.view   arm64-v8a   # 携程``——
     **第一列本身就是一条正则**（带反斜杠转义），不是裸包名。所以这里把
     每一行的第一列当"原文"取出，再用它去比对 ``TICKET_APPS`` 里的包名：
     把两边都去掉转义后比较，避免"用包名去匹配转义文本"这种必失败的写法。
+    ``apps`` 可传自定义映射（包名→正则），否则只认票务包。
     """
     out = {"path": ABI_SELECT, "exists": False, "lines": [], "apps": {}}
     raw = _text(_call(dev, "shell", "cat", ABI_SELECT))
@@ -225,7 +226,7 @@ def read_abi_select(dev) -> dict:
     def _unesc(s: str) -> str:
         return str(s or "").replace("\\", "").strip()
 
-    want = {_unesc(p): p for p in TICKET_APPS}
+    want = {_unesc(p): p for p in (apps or TICKET_APPS)}
     for ln in out["lines"]:
         s = ln.strip()
         if not s or s.startswith("#"):
@@ -252,7 +253,7 @@ def set_app_abi(dev, apps=None, abi: str = "arm64-v8a", *,
     apps = dict(apps or TICKET_APPS)
     rep = {"ok": False, "path": ABI_SELECT, "added": [], "present": [],
            "abi": abi, "backup": "", "restart_required": True, "error": ""}
-    cur = read_abi_select(dev)
+    cur = read_abi_select(dev, apps=apps)
     if not cur["exists"]:
         rep["error"] = "找不到 abi-select 表（这台实例可能不是 MuMu？）"
         return rep
@@ -285,7 +286,7 @@ def set_app_abi(dev, apps=None, abi: str = "arm64-v8a", *,
         rep["error"] = "追加失败：%s" % (out.strip()[:120] or "无输出")
         return rep
 
-    after = read_abi_select(dev)
+    after = read_abi_select(dev, apps=apps)
     rep["added"] = [p for p in todo if p in after["apps"]]
     rep["ok"] = bool(rep["added"])
     if logger and rep["ok"]:
