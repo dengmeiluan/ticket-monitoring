@@ -218,7 +218,10 @@ def collect_multicity(users, crawlers, storage, logger, today=""):
             logger.info("[多程] 首段已过期，跳过 %s", key)
             continue
         try:
-            rows = crawler.fetch_multi(segs) or []
+            # 与主采集/预热/手动探针共用同一把渠道闸门：多程虽然跑在
+            # 轮尾，也不能在主扫描之外另开一个 Ctrip 浏览器窗口。
+            with channel_slot("ctrip"):
+                rows = crawler.fetch_multi(segs) or []
         except Exception as e:  # noqa: BLE001
             logger.warning("[多程] %s 采集异常：%s", key, e)
             continue
