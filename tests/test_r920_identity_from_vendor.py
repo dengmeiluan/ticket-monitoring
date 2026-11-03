@@ -145,3 +145,60 @@ def test_ensure_can_disable_vendor_preference(tmp_path, monkeypatch):
     fp.ensure(dev, cfg, _LOG, user_data_dir=str(tmp_path),
               profile="device", vm=0)
     assert calls == []          # 关掉就完全不查官方
+
+
+# ---------------------------------------------------------------------------
+# 4. 写 props 只有一份实现，且必须读回校验
+# ---------------------------------------------------------------------------
+class _NoWriteDev:
+    """模拟只读系统盘：setprop 全部"返回 0"但值不变。"""
+
+    def __init__(self):
+        self.props = {"ro.product.brand": "MuMu",
+                      "ro.product.model": "MuMu"}
+        self.calls = []
+
+    def _sh(self, *a, timeout=None):
+        cmd = " ".join(str(x) for x in a)
+        self.calls.append(cmd)
+        if cmd == "shell getprop":
+            return "\n".join("[%s]: [%s]" % (k, v)
+                             for k, v in self.props.items())
+        if cmd.startswith("shell getprop "):
+            return self.props.get(cmd.split(" ", 2)[2], "")
+        if "command -v su" in cmd:
+            return "/system/bin/su"
+        if "command -v resetprop" in cmd:
+            return ""
+        if "setprop" in cmd or "-n " in cmd:
+            # 命令都"成功"，但 props 一个都不变 —— 这就是只读系统盘的真实行为
+            import re as _re
+            return "\n".join("OK " + m.group(1) for m in _re.finditer(
+                r"(?:setprop|-n)\s+'([^']+)'\s+'[^']*'", cmd))
+        return ""
+
+
+def test_apply_reports_zero_verified_when_disk_readonly(tmp_path):
+    """命令报成功但读回没变 → verified 必须为 0（不许假阳性）。"""
+    dev = _NoWriteDev()
+    ident = fp.build_from_vendor(_VENDOR, 7, vm=0)
+    rep = fp.apply(dev, ident, uid=False)
+    assert rep["applied"], rep          # 命令层确实"报成功"了
+    assert rep["verified"] == [], rep   # 但读回一条都没生效
+    assert rep["mismatch"], rep         # 差异被如实记下来
+
+
+def test_apply_uses_shared_implementation(tmp_path, monkeypatch):
+    """apply 必须委托给 abi_canary.apply_props（唯一实现）。"""
+    from core.android import abi_canary
+    seen = {}
+
+    def _fake(dev, mapping, use_root=True):
+        seen["keys"] = sorted(mapping)
+        return {"applied": [], "verified": [], "failed": [], "mismatch": {},
+                "unchanged": [], "resetprop": ""}
+    monkeypatch.setattr(abi_canary, "apply_props", _fake)
+    ident = fp.build_from_vendor(_VENDOR, 7, vm=0)
+    rep = fp.apply(_NoWriteDev(), ident, uid=False)
+    assert seen["keys"] == sorted(ident.props())   # 整份 props 交给共享实现
+    assert rep["verified"] == []

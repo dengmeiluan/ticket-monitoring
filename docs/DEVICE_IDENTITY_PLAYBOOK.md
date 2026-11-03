@@ -231,6 +231,20 @@ MuMu 12 若自带「手机型号」自定义，可以先用它打底（改成任
   那条路只补官方不提供的（序列号/android_id/gsm）。默认 `vendor.apply: false`
   只读；写配置要重启实例，属于操作员的决定。
 
+* **身份的唯一来源是官方**（2026-11-03 实测后定）：本机 MuMu 官方
+  `phone_brand=Samsung` / `phone_miit=SM-A5260`，设备里 `ro.product.brand/model`
+  就是 **Samsung / SM-A5260**；而我们 `setprop ro.product.model <池里的机型>`
+  静默无效。所以 `fingerprint.ensure()` 生成身份时**先读官方**（`prefer_vendor`,
+  默认开），机型池只兜底。否则会出现"档案说 Redmi、设备是 Samsung"——
+  报告骗自己，风控读到的却是另一套。
+
+  同时统一了写 props 的实现：`fingerprint.apply()` 现在委托给
+  `abi_canary.apply_props()`（写前快照 + 写后读回）。原因：`setprop ro.*`
+  在只读系统盘上**返回 0 但值不变**，只按返回码判会得出"9 条生效"的假结论。
+  现在报告里 `verified`（读回真的变了）才是可信数，实测本机
+  `verified = 1`（只有 `android_id` 那条走 `settings put` 真生效）、
+  `ro.*` 全进 `mismatch`。
+
 ---
 
 ## 4. 会话层：把「重登次数」压下去
