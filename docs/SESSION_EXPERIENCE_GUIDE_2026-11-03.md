@@ -134,8 +134,10 @@
   - `test/uitest` 各 `timeout-minutes: 45`；`ci-ok` 聚合 `needs: [test, uitest]`。
   - `pip`/Playwright 缓存保留；`fetch-depth: 0` + 补拉 tag；Chromium + Noto CJK 安装保留。
 - `tools/ci_shard.py`：`--snapshot <junit>` 从全量 JUnit 生成按文件耗时快照；`--stats N` 统计并自检；`--print N K` 给 shell 选片。
-- `tests/ci_durations.json`：已按 clean gate JUnit 重算；clean 树覆盖 **854/854**，四组耗时 **1.00** 均衡（总 ~2963s）；脏树会因未跟踪测试显示 857 个，不要拿脏树数字当 CI 口径。
-- 实测参考：旧 CI `test` 单 job `-n 4` 约 **11 分 31 秒**（2026-11-03 01:40:09→01:51:40）；UI job 约 **6 分 05 秒**。新 4 片预期 test lane 约 **6–8 分钟**（本机 4 片 `-n 3` 竞争下 7:40–7:51；未在真实 GitHub 上复测，不能把估计写成已实测）。
+- `tests/ci_durations.json`：已按 clean gate JUnit 重算；当前快照覆盖 **863/864** 个测试文件（总 ~2961.5s），四组耗时 **1.00** 均衡；新文件按 20s 自动进组，快照不要求全覆盖。
+- 实测参考：旧 CI `test` 单 job `-n 4` 约 **11 分 31 秒**（2026-11-03 01:40:09→01:51:40）；UI job 约 **6 分 05 秒**。4 片真实 GitHub 首跑（`bc96947`，2026-11-03 13:11Z 起）：shard 1/3 绿（249s/283s）、shard 0/2 红（214s/233s），UI 381s——test lane 墙钟已从 11 分半降到 **约 5 分钟**；红的根因与切片无关，见下条。
+- **本地绿 / CI 红的环境差异（已实证）**：`crawlers/slider.py` 用可选 `import numpy`，本地全局环境有 numpy，CI 只装 `requirements.txt` 而当时未声明 numpy → `find_gap()` 恒返回空候选，r914/r916 四条同时红。修复=把 `numpy>=1.26` 写进 `requirements.txt`（CI、release-build、Docker 同一来源），并给缺依赖加一次性告警 + 负控（屏蔽 numpy 时仍红、装上才绿），不把测试改成 skip。
+- 分片串行排障口径：先看失败片日志的 `FAILED` 行，再判断是本片代码问题还是并行 WIP 的跨片问题；本次第二红（`android.vendor.apply` 无 UI 落点 + 加固 ok 被只读探测拖红）就是并行提交引入、与 numpy 无关。
 
 ### 2.4 多程（能力矩阵当前口径）
 
@@ -207,10 +209,14 @@
    - 之后新增 4 个测试（轮询、JS 链头、服务端 label、提醒标题），由 clean HEAD 全量门禁覆盖为 **6234/44/0（6278）**；
    - `tests/ci_durations.json` 按 clean JUnit 刷新：854/854、四组 1.00 均衡。
 
+**真实 GitHub 验证（2026-11-03，已补）**：
+- `41633762684`（`bc96947`）：shard 1/3 success，shard 0/2 failure；失败仅 r914/r916 滑块四条，根因 CI 缺 numpy（本地全局有，掩盖了）。
+- `41642117895`（`03a46e6`）：numpy 修复后 shard 0/1/3 success，shard 2 failure；失败为并行提交的 `android.vendor.apply` 无配置页落点 + `test_harden_runs_steps_in_fixed_order` 的 ok 语义，与 numpy 无关。
+- 修复：requirements 声明 numpy + 缺依赖告警；配置页补 `glbVendorApply` 控件、保存时与文件已有 `android.vendor` 键合并；加固的只读 vendor 探测不再拖红整套 ok；补真渲染“点击写回 GLB”断言与静态合并断言。受影响 72 + 1 项本地绿后推送 `8c3e4b5`。
+
 **边界**：
-- 真实 GitHub CI 还需推送后才能验证（未授权推送）；
-- CI 的预计 6–8 分钟是估计，不能当作已实测；
-- 分片快照是历史耗时，测试结构大改后需重建。
+- 分片快照是历史耗时，测试结构大改后需重建；新增文件按 20s 兜底。
+- 并行会话持续推送时，CI HEAD 会移动；必须以最新 run 的 head_sha 为准，不能拿旧 run 的绿/红冒充当前树。
 
 ### 3.2 携程 2 段缺口程（open-jaw）
 
