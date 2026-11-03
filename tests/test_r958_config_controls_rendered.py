@@ -17,6 +17,7 @@ IDS = {
     "glbAndForce": "非模拟器也强制",
     "glbAndHideDev": "隐藏开发者选项",
     "glbAndKeep": "复用前台 App",
+    "glbVendorApply": "应用 MuMu 官方设置",
 }
 
 
@@ -40,3 +41,12 @@ def test_stealth_identity_controls_are_rendered(page):
         assert label in st["label"], "%s 标签缺失：%r" % (cid, st)
     # 数字控件必须挂范围校验（r606 的通用门禁也覆盖；这里钉住新增项）
     assert page.evaluate("()=>!!glbRangeOf('glbHumR')")
+    # 可见还要真的写回：点击后 GLB.android.vendor.apply 必须翻转
+    before = page.evaluate(
+        "()=>!!(((GLB.android||{}).vendor||{}).apply)")
+    page.click("#glbVendorApply")
+    after = page.evaluate(
+        "()=>!!(((GLB.android||{}).vendor||{}).apply)")
+    assert after is (not before), "vendor.apply 勾选没有写回 GLB（%r→%r）" % (
+        before, after)
+    page.click("#glbVendorApply")

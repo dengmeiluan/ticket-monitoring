@@ -59,7 +59,7 @@ def _vendor_step(config: dict, logger, *, vm: int) -> dict:
     except Exception:
         mgr = None
     out = vendor_mod.read(mgr) if mgr is not None else {}
-    rep = {"available": bool(out), "current": {
+    rep = {"ok": True, "available": bool(out), "current": {
         k: out.get(k) for k in ("phone_brand", "phone_model", "phone_miit",
                                 "resolution_width", "resolution_height",
                                 "resolution_dpi", "system_disk_readonly",
@@ -68,6 +68,7 @@ def _vendor_step(config: dict, logger, *, vm: int) -> dict:
         rep["skipped"] = "只读（android.vendor.apply=false）"
         return rep
     if mgr is None or not mgr.available():
+        rep["ok"] = False
         rep["error"] = "MuMuManager 不可用，无法写官方设置"
         return rep
     vals = {}
@@ -85,6 +86,7 @@ def _vendor_step(config: dict, logger, *, vm: int) -> dict:
         rep["skipped"] = "没有要写的键"
         return rep
     rep["apply"] = vendor_mod.apply(mgr, logger=logger, **vals)
+    rep["ok"] = bool(rep["apply"].get("ok"))
     return rep
 
 
@@ -129,7 +131,7 @@ def harden(dev, config: dict = None, logger=None, *, vm: int = 0,
         rep["vendor"] = _vendor_step(config, logger, vm=vm)
     except Exception as e:
         rep["vendor"] = {"ok": False, "error": str(e)[:160]}
-    rep["steps"].append(("vendor-read", bool(rep["vendor"].get("available"))))
+    rep["steps"].append(("vendor-read", bool(rep["vendor"].get("ok", False))))
 
     # ---------- ① 身份 ----------
     try:

@@ -21261,6 +21261,7 @@ function buildForm(){if(!CFG)return;let h='',gh='';
   +glcell('隐藏开发者选项','glbAndHideDev','GLB.android=Object.assign({},GLB.android||{},{stealth:Object.assign({},(GLB.android||{}).stealth||{},{hide_dev_options:this.checked})})',((GLB.android||{}).stealth||{}).hide_dev_options!==false,'关掉「开发者选项」开关（部分风控 SDK 会读）','check')
   +glcell('对齐显示参数','glbAlignDisp','GLB.align_display=this.checked',GLB.align_display!==false,'把 density/dpi/分辨率对齐到设备身份；关闭=保持模拟器原值','check')
   +glcell('ABI 自动校正','glbSpoofAbi','GLB.spoof_abi=this.checked?"auto":null',(GLB.spoof_abi==='auto'||GLB.spoof_abi===true),'auto=仅 canary 判定 ok 后写 arm64 props；关闭=不动 ABI','check')
+  +glcell('应用 MuMu 官方设置','glbVendorApply','GLB.android=Object.assign({},GLB.android||{},{vendor:Object.assign({},(GLB.android||{}).vendor||{},{apply:this.checked})})',!!((GLB.android||{}).vendor||{}).apply,'开启后把机型/分辨率/系统盘写入 MuMu 官方设置（需重启实例生效）；关闭=只读','check')
   +glcell('复用前台 App','glbAndKeep','GLB.android=Object.assign({},GLB.android||{},{keep_app_alive:this.checked})',!!(GLB.android||{}).keep_app_alive,'复用上一轮前台 App，少一次冷启；仓库实证可能让后续航线卡在设城市，默认关','check')
   +'</div>'
   +glsec('♻ 启动级 · 运行与存储 · 路径可迁移 · 保存后重启生效 <button class="btn2 secrestart" title="打开重启与迁移中心：查看差量、迁移预案并重启" onclick="openRestartCenter()">'+ic('rotate')+' 重启中心</button>')
@@ -34996,6 +34997,14 @@ class _Handler(BaseHTTPRequestHandler):
                         if _and.get("keep_app_alive") is not None:
                             _a0["keep_app_alive"] = bool(
                                 _and["keep_app_alive"])
+                        # vendor 段与文件里已有的 brand/model/…合并，只落
+                        # apply：整体覆盖会把用户手写在 yaml 的官方键冲掉。
+                        _avd = _and.get("vendor")
+                        if isinstance(_avd, dict):
+                            _v0 = dict(_a0.get("vendor") or {})
+                            if _avd.get("apply") is not None:
+                                _v0["apply"] = bool(_avd["apply"])
+                            _a0["vendor"] = _v0
                         cfg["android"] = _a0
                     if glb.get("align_display") is not None or "spoof_abi" in glb:
                         _a2 = dict(cfg.get("android") or {})

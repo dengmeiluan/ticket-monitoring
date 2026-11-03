@@ -68,12 +68,23 @@ def test_control_ranges_match_backend_clamps():
 def test_post_persists_android_block():
     w = _w()
     i = w.index('if isinstance(glb.get("android"), dict):')
-    # r958 后 android 块新增 identity/stealth/keep_app_alive，窗口放宽；
-    # 断言仍锚在符号块内（cfg["android"] = _a0）。
-    seg = w[i:i + 3200]
-    assert 'cfg["android"] = _a0' in seg, "POST 没有写回 cfg['android']"
+    # 按符号收口，不再用固定字符窗口：每加一个嵌套字段窗口就得跟着放宽。
+    seg = w[i:w.index('cfg["android"] = _a0', i)]
+    assert 'cfg["android"] = _a0' in w[i:], "POST 没有写回 cfg['android']"
     for field in ("enabled", "provider", "install_dir", "vm_index",
                   "boot_timeout_s", "action_timeout_s", "snapshot"):
         assert '"%s"' % field in seg, "POST 没有落 %s" % field
     # 与后端同界：越界要钳回，不能把脏值写进文件
     assert "max(_alo, min(_ahi, _av))" in seg, "数值没有按后端区间钳制"
+
+
+def test_vendor_apply_has_control_and_merges_into_file_values():
+    """vendor.apply 有控件；保存时只合并 apply，不能整体覆盖文件里的
+    brand/model（那会让用户手写的官方键被静默清空）。"""
+    w = _w()
+    assert "'glbVendorApply'" in w, "android.vendor.apply 没有控件"
+    i = w.index('if isinstance(glb.get("android"), dict):')
+    seg = w[i:w.index('cfg["android"] = _a0', i)]
+    assert '_and.get("vendor")' in seg
+    assert '_a0.get("vendor") or {}' in seg
+    assert '_v0["apply"] = bool(_avd["apply"])' in seg
