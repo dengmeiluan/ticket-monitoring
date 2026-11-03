@@ -105,6 +105,18 @@ def test_find_gap_is_fail_soft():
     assert off == 0 and cands == []
 
 
+def test_missing_numpy_is_visible_in_log(monkeypatch, caplog):
+    """缺依赖与「没找到缺口」返回同一个空值，必须靠日志区分（否则
+    滑块能力在缺 numpy 的环境里静默空转，CI 曾因此红得没有线索）。"""
+    monkeypatch.setitem(sys.modules, "numpy", None)
+    monkeypatch.setattr(slider, "_NP_WARNED", False)
+    with caplog.at_level(logging.WARNING, logger="crawlers.slider"):
+        assert slider.find_gap(_png()) == (0, [])
+        assert slider.find_gap(_png()) == (0, [])
+    hits = [r for r in caplog.records if "numpy" in r.getMessage()]
+    assert len(hits) == 1, [r.getMessage() for r in caplog.records]
+
+
 # ---------------------------------------------------------------------------
 # 3. 轨迹
 # ---------------------------------------------------------------------------

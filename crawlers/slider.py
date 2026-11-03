@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 import math
 import os
 import random
@@ -131,11 +132,22 @@ def classify(html: str = "", text: str = "") -> Tier:
 # ---------------------------------------------------------------------------
 # 缺口检测（纯图像，离线可测）
 # ---------------------------------------------------------------------------
+_NP_WARNED = False
+
+
 def _np():
+    """取 numpy。缺失时只告警一次：空候选必须能区分「没找到缺口」和
+    「环境缺依赖」，否则滑块尝试失败在日志里表现为正常的无候选。"""
+    global _NP_WARNED
     try:
         import numpy as np
         return np
-    except Exception:
+    except Exception as exc:
+        if not _NP_WARNED:
+            _NP_WARNED = True
+            logging.getLogger(__name__).warning(
+                "numpy 不可用，滑块缺口检测将始终返回空候选；"
+                "请安装 requirements.txt（%s）", exc)
         return None
 
 
