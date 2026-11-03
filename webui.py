@@ -2421,10 +2421,11 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  .appworkspace{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:12px;
    flex:1;min-height:0;width:100%}
  .appstage{min-width:0;min-height:0;display:flex;flex-direction:column;gap:8px;
-   padding:10px;border:1px solid var(--line);border-radius:12px;
+   align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px;
    background:radial-gradient(70% 55% at 50% 18%,#1a2433 0%,#0a0d12 72%)}
  .appdevice{position:relative;flex:1;min-height:0;display:flex;align-items:center;
-   justify-content:center;padding:10px;border-radius:28px;background:#05070a;
+   justify-content:center;width:fit-content;max-width:100%;align-self:center;
+   padding:10px;border-radius:28px;background:#05070a;
    border:1px solid #2b3542;box-shadow:0 18px 50px rgba(0,0,0,.38)}
  .appstage .appscr{height:100%;max-height:none;min-height:0;aspect-ratio:9/16;
    width:auto;background:#000;border-radius:20px}
@@ -2465,12 +2466,14 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  .appfloat-stage .appscr{height:100%;max-height:none;min-height:0;aspect-ratio:9/16;
    width:auto;background:#000;border-radius:10px}
  .appfloat-stage .appscr img{height:100%;width:auto;max-height:100%;max-width:100%}
+ .appfloat-stage .appstage{height:100%;width:100%;min-height:0;padding:0;
+   border:0;border-radius:0;background:transparent;gap:2px}
  .appfloat-bar{display:flex;gap:6px;padding:6px 8px;border-top:1px solid var(--line);
    flex-wrap:wrap}
  .appfloat-bar .btn2{flex:0 0 auto;white-space:nowrap}
  @media(max-width:900px){
-  #lgModal[data-kind="app"]{width:100vw;height:100dvh;max-height:100dvh;
-    border:0;border-radius:0}
+  #lgModal[data-kind="app"]{left:0;top:0;transform:none;width:100%;
+    height:100dvh;max-height:100dvh;border:0;border-radius:0}
   #lgModal[data-kind="app"] .lgmodal-b{padding:8px;overflow:auto}
   .appworkspace{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;
     height:auto;min-height:100%}

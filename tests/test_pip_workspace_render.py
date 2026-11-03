@@ -43,6 +43,17 @@ def _boot():
     pytest.skip("演示服务未在期限内起来")
 
 
+SHOT = os.environ.get("PIP_SHOT")
+
+
+def _shot(pg, name):
+    if not SHOT:
+        return
+    out = os.path.join(ROOT, "_scratch")
+    os.makedirs(out, exist_ok=True)
+    pg.screenshot(path=os.path.join(out, "pip_%s.png" % name))
+
+
 def _rect(pg, sel):
     return pg.evaluate("""s => {const e=document.querySelector(s);
       if(!e)return null;const r=e.getBoundingClientRect();
@@ -111,6 +122,7 @@ def test_workspace_focus_float_input_and_browser_isolation():
                 assert pg.evaluate(
                     "()=>{const f=document.getElementById('appFloat');"
                     "return !f||getComputedStyle(f).display==='none'}")
+                _shot(pg, "workspace_1512")
 
                 pg.fill("#appTextInput", "13800000000")
                 pg.click("#lgModal .apptextrow button")
@@ -134,6 +146,7 @@ def test_workspace_focus_float_input_and_browser_isolation():
                     "()=>document.getElementById('lgModal')"
                     ".classList.contains('appfocus')")
                 assert _rect(pg, ".apprail")["d"] == "none"
+                _shot(pg, "focus_1512")
                 pg.keyboard.press("Escape")
                 pg.wait_for_timeout(200)
                 assert not pg.evaluate(
@@ -156,20 +169,14 @@ def test_workspace_focus_float_input_and_browser_isolation():
                 y0 = drag["t"] + drag["h"] / 2
                 pg.mouse.move(x0, y0)
                 pg.mouse.down()
-                print("DBG down", pg.evaluate(
-                    "()=>JSON.stringify({drag:APP_LOGIN.drag,"
-                    "t:document.elementFromPoint(%d,%d).id})" % (x0, y0)))
                 pg.mouse.move(x0 + 60, y0 + 40)
-                print("DBG move", pg.evaluate(
-                    "()=>JSON.stringify({drag:APP_LOGIN.drag,"
-                    "l:document.getElementById('appFloat').style.left,"
-                    "t:document.getElementById('appFloat').style.top})"))
                 pg.mouse.up()
                 pg.wait_for_timeout(150)
                 dragged = _rect(pg, "#appFloat")
                 assert dragged["l"] != fl["l"] or dragged["t"] != fl["t"], (
                     fl, dragged)
                 assert dragged["l"] >= 0 and dragged["t"] >= 0
+                _shot(pg, "float_1512")
 
                 pg.get_by_role("button", name="放大").click()
                 pg.wait_for_timeout(300)
@@ -211,6 +218,7 @@ def test_workspace_focus_float_input_and_browser_isolation():
                 assert not over, m390
                 assert m390["l"] >= 0 and m390["w"] <= 391, m390
                 assert img390 and img390["h"] >= 300, img390
+                _shot(pg, "workspace_390")
                 pg.get_by_role("button", name="缩小浮窗").click()
                 pg.wait_for_timeout(250)
                 f390 = _rect(pg, "#appFloat")
