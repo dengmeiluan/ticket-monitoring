@@ -17254,34 +17254,43 @@ function gotoMonTab(t){if(VIEW!=='mon')switchView('mon');showMonTab(t);}
 function gotoPulseHealth(el){let ts=el,bad='';
  if(el&&el.dataset){ts=el.dataset.ts;bad=el.dataset.bad||'';}
  gotoMonTab('health');
- let cell=null;
- document.querySelectorAll('#hbody .hrow').forEach(row=>{
-  let hit=null;
-  row.querySelectorAll('.hc').forEach(c=>{
-   if(!hit&&(c.getAttribute('title')||'').indexOf(ts)===0)hit=c;});
-  if(hit){
-   if(!cell)cell=hit;
-   /* 每行都滚到同一轮，不只首行：768/390 横滚容器各滚各的，
-     旧实现只居中携程行，其余渠道仍停在旧轮，点击后的「定位」
-     变成单行独走（r355 八路审计实锤）。 */
-   const wrap=hit.parentElement;
-   if(wrap&&wrap.scrollWidth>wrap.clientWidth+4){
-    const wr=wrap.getBoundingClientRect(),hr=hit.getBoundingClientRect();
-    wrap.scrollLeft+= (hr.left+hr.width/2)-(wr.left+wr.width/2);
+ /* 健康行是异步渲染的：慢机/并行负载下切过去时 #hbody 可能还是空的，
+    旧实现只扫一次就放弃，脉冲柱的「跳转+辉光」承诺落空。这里最多
+    等 2s 再扫；行出现即停，不改变快路径。 */
+ let _tries=0;
+ const paint=()=>{
+  const rows=document.querySelectorAll('#hbody .hrow');
+  if(!rows.length&&_tries++<20){setTimeout(paint,100);return;}
+  let cell=null;
+  rows.forEach(row=>{
+   let hit=null;
+   row.querySelectorAll('.hc').forEach(c=>{
+    if(!hit&&(c.getAttribute('title')||'').indexOf(ts)===0)hit=c;});
+   if(hit){
+    if(!cell)cell=hit;
+    /* 每行都滚到同一轮，不只首行：768/390 横滚容器各滚各的，
+      旧实现只居中携程行，其余渠道仍停在旧轮，点击后的「定位」
+      变成单行独走（r355 八路审计实锤）。 */
+    const wrap=hit.parentElement;
+    if(wrap&&wrap.scrollWidth>wrap.clientWidth+4){
+     const wr=wrap.getBoundingClientRect(),hr=hit.getBoundingClientRect();
+     wrap.scrollLeft+= (hr.left+hr.width/2)-(wr.left+wr.width/2);
+    }
    }
-  }
-  if(bad){bad.split(',').some(b=>{if(b&&row.querySelector('[data-plat="'+String(b).replace(/[^a-z0-9_-]/gi,'')+'"]')){
-   row.classList.remove('hflash');void row.offsetWidth;
-   row.classList.add('hflash');
-   setTimeout(()=>row.classList.remove('hflash'),1900);
-   return true;}return false;});}});
- if(cell){const wrap=cell.parentElement;
-  if(wrap&&wrap.scrollWidth>wrap.clientWidth+4){
-   const wr=wrap.getBoundingClientRect(),hr=cell.getBoundingClientRect();
-   wrap.scrollLeft+=(hr.left+hr.width/2)-(wr.left+wr.width/2);
-  }
-  try{cell.focus({preventScroll:true})}catch(_){}
- }else{const _h=$('healthcard');if(_h){_h.setAttribute('tabindex','-1');try{_h.focus({preventScroll:true})}catch(_){}}}}
+   if(bad){bad.split(',').some(b=>{if(b&&row.querySelector('[data-plat="'+String(b).replace(/[^a-z0-9_-]/gi,'')+'"]')){
+    row.classList.remove('hflash');void row.offsetWidth;
+    row.classList.add('hflash');
+    setTimeout(()=>row.classList.remove('hflash'),1900);
+    return true;}return false;});}});
+  if(cell){const wrap=cell.parentElement;
+   if(wrap&&wrap.scrollWidth>wrap.clientWidth+4){
+    const wr=wrap.getBoundingClientRect(),hr=cell.getBoundingClientRect();
+    wrap.scrollLeft+=(hr.left+hr.width/2)-(wr.left+wr.width/2);
+   }
+   try{cell.focus({preventScroll:true})}catch(_){}
+  }else{const _h=$('healthcard');if(_h){_h.setAttribute('tabindex','-1');try{_h.focus({preventScroll:true})}catch(_){}}}
+ };
+ paint();}
 /* 桌面窄窗横滚容器滚轮通道（.hcells 健康表 + #montabs 吸顶切换器）：
    overflow-x:auto 容器纵向滚轮默认不动横滚、Shift+滚轮无可发现性
    ——容器级 deltaY→scrollLeft 转写（仅当容器真横向可滚；宽屏放得

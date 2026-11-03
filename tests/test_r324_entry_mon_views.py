@@ -65,10 +65,12 @@ def test_hl03_pulse_bar_jump_health_flash(page):
         ".findIndex(p=>p.dataset.bad)")
     assert idx >= 0   # demo 有失败轮
     page.locator("#pulsebars .pbar").nth(idx).click()
-    page.wait_for_timeout(500)
-    assert page.evaluate("MONTAB") == "health"
-    assert page.evaluate(
-        "document.querySelectorAll('#hbody .hflash').length") >= 1
+    # 健康行异步渲染：固定 500ms 在并行负载下会早于渲染完成（真渲染
+    # 复现），等到状态与辉光真的落地，断言强度不降。
+    page.wait_for_function("MONTAB === 'health'", timeout=5000)
+    page.wait_for_function(
+        "document.querySelectorAll('#hbody .hflash').length >= 1",
+        timeout=5000)
 
 def test_gl01_theme_three_state_cycle(page):
     """主题三态：真实点击 themeBtn 循环 auto→light→dark：localStorage
