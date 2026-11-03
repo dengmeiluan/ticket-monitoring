@@ -274,17 +274,22 @@ def test_preflight_no_installed_package():
 
 
 def test_preflight_blocked_when_no_write_channel():
-    """2026-11-03 实机结论：无 Magisk + 块设备只读 → 改不了 ro.*。
+    """无 Magisk + 块设备只读 → **全局** ro.* 改不了，必须判 blocked。
 
-    这种情况下即使 app 全是 arm64，也必须判 blocked——否则 canary 会白跑
-    一次「命令报成功、读回没变」的过程。
+    这种情况下即使 app 全是 arm64，也不能让 canary 白跑一次
+    「命令报成功、读回没变」的过程。
+
+    但提示必须指向**能走通的那条路**（MuMu 官方 per-app ABI 表）——
+    2026-11-03 实测 ABI 伪装已通过 abi-select 表跑通，与全局 ro.* 无关。
     """
     dev = _abi_dev(primary="arm64-v8a", can_write=False)
     rep = abi_canary.preflight(dev, ["ctrip.android.view"])
     assert rep["ok"] is False and rep["risk"] == "blocked"
-    assert "改不了 ro.*" in rep["why"]
-    assert "Magisk" in rep["why"]
+    assert "ro.*" in rep["why"]
     assert rep["capabilities"]["can_write_ro"] is False
+    # 提示里要有「官方 per-app 表」这条真正可走的路，以及 Magisk 作为兜底
+    assert "set_app_abi" in rep["why"] or "per-app" in rep["why"], rep["why"]
+    assert "Magisk" in rep["why"]
 
 
 def test_canary_refuses_without_write_channel(tmp_path):
