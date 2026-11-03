@@ -21,9 +21,11 @@ dump` 找控件。两个现场条件会直接让整轮归零，而它们都与�
 * 改：`window_animation_scale` / `transition_animation_scale` /
   `animator_duration_scale` = 0、`svc power stayon true`、屏幕超时置最大、
   关屏保、预确认沉浸模式弹层。全部是 `settings`/`svc`，可逆、不影响身份。
-* **不改**：分辨率与 DPI（坐标是按现有竖屏写死的，改了所有 App 渠道一起瘫）、
-  自动旋转（`device.lock_portrait()` 已经负责）、CPU/内存分配（要重启实例，
-  且属于宿主机资源决策，交给操作员）。
+* **不改**：分辨率与 DPI（这里不管）。要改屏幕用 ``display.spoof()``，
+  并且**必须**同时 ``dev.set_design()`` 开坐标换算，否则 App 渠道按现有
+  竖屏写死的坐标会按比例偏（这条是本模块与 ``display`` 的分工边界）。
+* **不改**：自动旋转（`device.lock_portrait()` 已经负责）、CPU/内存分配
+  （要重启实例，且属于宿主机资源决策，交给操作员）。
 
 失败一律 fail-soft：读不到就跳过，绝不阻断采集。
 """

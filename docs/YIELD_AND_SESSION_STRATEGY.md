@@ -103,6 +103,176 @@ B 地」是最便宜的一条矛盾判定。默认不写 = 行为完全不变（
 
 ---
 
+## 3.5 统一策略层：四本账只能有一个出口
+
+散着判一定会打架。举个真实会发生的组合：熔断器说「停 40 分钟」，产量账说
+「下界 0.95、可以 0.8× 加速」，登录账说「还能再试」——三个都对，合起来是错的，
+而且谁赢取决于调用顺序。
+
+`core/policy.py` 把这些收敂成**每渠道一个决定**，浏览器与 App 渠道读**同一个
+引擎**（不是各写一份）：
+
+| 字段 | 含义 |
+|---|---|
+| `state` | `healthy` / `rehab` / `watch` / `degraded` / `blocked` |
+| `allow` | 本轮允不允许发请求 |
+| `pace_factor` | 间隔倍率（0.8×–3.0×） |
+| `need_warmup` | 下次是否必须先预热（会话没养熟别打深链） |
+| `rotate` | 是否建议换设备身份（**只建议**） |
+
+**分工是刻意的，也是本节最重要的一条**：
+
+- **短时冷却归 `ChannelBreaker`**——它拿得到服务端 `Retry-After`，按真实配额退避；
+- **长期姿态归策略层**——要不要停一整段、要不要换身份、倍率给多少；
+- 两层都去拦会过度降温，产量白掉。所以策略层只在 `human`/`rotate` 档关闸，
+  `pause` 档只把速度压到 3.0×。
+
+**不会关闸的三件事**（关了就丢证据，比多打几次更危险）：
+
+1. 登录退避（登录墙必须如实记 `login` 并继续跑，由人过完再采）；
+2. 产量差（真无票、真冷门航线都会让成功率掉，与风控无关）；
+3. 抢不到自家锁（那是自家冲突，不是渠道失败）。
+
+**余温与恢复期**：一轮滑块的证据不会下一轮就忘——`watch` 留 30 分钟、
+`degraded` 留 60 分钟（**沿用原到期时间，不续期**，否则每次查询都把窗口往后推，
+等于永久降速）；`blocked` 到期后先进 `rehab`（1.5× + 强制预热），成功一次转正。
+
+```
+crawler:
+  policy_gate: true      # 总开关；关掉=回到各部件各自判断，账本照记
+```
+
+状态落 `user_data/<profile>/policy_state.json`，删掉即「全部从头开始」。
+`yield_report.py` 会把最终决定直接打在表里：
+
+```
+渠道        样本  成功   下界  间隔建议   倍率  状态
+ctrip         12    11   0.62       30   1.5x  watch
+tunari        40    38   0.83       45   1.0x  healthy
+```
+
+---
+
+## 3.6 滑块：先分级，再决定要不要动手
+
+滑块不是一类东西，是两类：
+
+| 类别 | 判定输入 | 能不能自动化 | 本仓库的做法 |
+|---|---|---|---|
+| **简单滑块** | **几何**：背景图里固定形状的缺口，把方块送到位即可 | 可以稳定复现 | 找缺口 → 拟人轨迹 → 校验；默认仍关，显式打开才试 |
+| **强人机**（极验 v4/天御/baxia/reCAPTCHA/点选/人脸） | **你的行为分布**：加速度、抖动频谱、停顿分布 | 越算越像机器 | 一律不动手，交人工 |
+
+`crawlers/slider.py` 的分级是**字符串证据**判的，不是"看起来像"：
+
+- 命中 `极验/geetest v4/智能验证/tcaptcha/天御/baxia/whaleguard/reCAPTCHA/hCaptcha/点选/人脸` 任一 → `strong`；
+- 命中 `拖动滑块/滑动验证/slide-verify/nc_1_n1/…` → `simple`；
+- 两者都命中 → **按 strong 处理**（安全侧）；
+- 都没有 → `unknown`（同样不尝试）。
+
+开启方式（默认 `off`，不打开就完全不动手）：
+
+```yaml
+crawler:
+  slider:
+    auto: off            # off | simple | auto
+    daily_cap: 3         # 每渠道每天上限
+    max_fails: 2         # 连续失败 2 次 → 拉黑 7 天
+    device_distance: 260 # App 侧默认拖动距离
+    single_shot: false   # false=顺次试前 3 个候选偏移
+```
+
+要在采集里真正生效，需要**显式注册**处理器（默认不注册，保持"识别→记账→停手"的现行处置）：
+
+```python
+from crawlers.challenge import register_handler
+from crawlers.slider import SliderHandler
+register_handler(SliderHandler(cfg, user_data_dir="user_data"))
+```
+
+工程细节（这几条决定它是不是真能用）：
+
+- **缺口检测**是纯图像的：灰度列差分 → 找"两条强竖直边 + 中间无纹理"的成对峰。
+  不按单条边打分（实测会被背景纹理和滑块起始方块骗走），也不做模板匹配
+  （各家缺口形状不同，模板要一家一份）。精度差几像素，靠"顺次试前 3 个候选"兜。
+- **轨迹**三条性质：加速—巡航—减速（smoothstep）、中途一次成对回拉（净位移 0）、
+  落点成对微调 + 松手前停留。终点**精确等于**目标距离（先算位置再算增量，
+  避免逐段抖动累积漂移）。
+- **预算与拉黑**落 `user_data/<profile>/slider_ledger.json`：连续失败 2 次停 7 天。
+  理由很直接——滑块失败本身会被计入行为样本，硬试只会把渠道打成更高风险分。
+- 不接任何第三方打码服务（那等于把账号交给陌生人）。
+
+---
+
+## 3.7 分辨率 / DPI 与 ABI：先能验证，再谈伪装
+
+### 分辨率：默认走「身份对齐」，零风险
+
+设备是 900×1600 / 320dpi，而身份池里那台 Redmi K50 声明 1080×2400 / 440dpi——
+风控读一次 `DisplayMetrics` 就能看出「机型与屏幕不符」，这比不伪装更可疑。
+
+```yaml
+android:
+  identity:
+    align_display: true    # 默认开：把身份档案的 display/density 改成设备真实值
+```
+
+这条**只改身份档案、不动任何设备设置**，所以坐标一个字都不用改。做完之后
+`display.audit()` 应该 `ok: true`。
+
+真要**改屏幕**（`wm size` / `wm density`）也能做，但必须配坐标换算：
+
+```python
+from core.android import display
+display.spoof(dev, width=1080, height=1920)   # density 默认同比缩放，保持 dp 尺寸
+dev.set_design(900, 1600)                     # 之后写死的常量按设计坐标给
+```
+
+- `density` 与 `size` **同比例**变化时 dp 尺寸不变（界面布局不乱，只是更细）；
+- `AdbDevice` 的 `tap/swipe` 会把设计坐标换算成设备坐标，`to_design()` 做反向；
+- UI 树 `bounds` 读出来的是**设备坐标**，参与常量比较前要走 `to_design()`；
+- `design` 默认 `None` = 完全不换算（现状逐字不变），所以这条开关不会误伤。
+
+### ABI：写 arm64 能不能行，要看能不能验证——装置已经给你了
+
+**结论先说**：技术上可以改（`resetprop` 写 `ro.product.cpu.abi/abilist*`），
+但**不能盲改**。MuMu 是 `x86_64 + ARM 转译`，改完之后 PackageManager 会按 arm64
+选 native so，加固 so（携程、去哪儿都带）可能走进转译层不支持的指令——仓库里
+已经吃过一次：主线程 Blocked 在 `Runtime.load0`，ANR 120s+，点「等待」186s 也不恢复。
+
+所以 `core/android/abi_canary.py` 提供的是**可行性实验装置**：
+
+```
+snapshot(原值) → apply(arm64) → 重启框架 → probe(包名) → 恢复原值 → 重启框架 → 落盘判定
+```
+
+- `probe` 判据是**三件事同时成立**：前台回到目标包、UI 树 ≥6 节点、logcat 无
+  `UnsatisfiedLinkError / FATAL EXCEPTION / SIGSEGV / SIGILL / ANR in`；
+- `try/finally` 保证**无论成功、失败还是抛异常都会恢复**（测试里专门钉了这条）；
+- 恢复用的是**探测到的原值**，不是硬编码 x86（万一设备本来就在 arm 上）；
+- 判定落 `user_data/device/abi_canary.json`，**7 天有效**（App 升级会换 so，
+  昨天的结论不作数）。
+
+跑一次：
+
+```powershell
+python -c "from core.android import abi_canary, device; \
+  d=device.AdbDevice(r'D:\Program Files\Netease\MuMu\nx_main\adb.exe','127.0.0.1:16384'); \
+  print(abi_canary.run(d,'ctrip.android.view',{},print,restart_wait_s=60)['ok'])"
+```
+
+判定 ok 之后才允许长期启用：
+
+```yaml
+android:
+  identity:
+    spoof_abi: auto     # auto=必须有 ok 判定；true=无条件写（不推荐）；null/false=不动
+```
+
+`auto` 的语义是「**只有这台实例 + 这个包被验证过，才写 ABI**」——比"文档说可以"
+可靠得多，也是这条唯一负责的做法。
+
+---
+
 ## 4. 度量闭环：先量，再改，再复测
 
 ```powershell
@@ -175,16 +345,20 @@ App 启动之前完成（`android.os.Build` 在 zygote 定型）。之后才是
 
 ---
 
-## 7. 明确不做（沿用仓库黑名单，只列与本文相关的）
+## 7. 别做的事（只看会真吃亏的）
 
 1. 重试风暴——唯一能把「限你」升级成「封你」的动作。
 2. 把换 IP / 住宅代理当常态——真 429 只占 0.3%，为它付 100% 成本；国内站配境外出口反而升档。
 3. 用自家锁冲突惩罚对方站点。
 4. 靠降速解决设备身份命中（设备规则与频率无关）。
-5. 把 `ro.product.cpu.abi` 写成 arm64（会让加固 so 崩、ANR）。
-6. 改分辨率/DPI 去「更像真机」（坐标全写死，改了全渠道瘫）。
-7. 接打码平台 / 自动过验证。
+5. **没验证就写 `ro.product.cpu.abi=arm64`**——先跑 `abi_canary.run()` 拿判定，
+   再 `identity.spoof_abi: auto`（见 §3.7）。
+6. **直接改 `wm size` 却不开 `dev.set_design()`**——坐标会按比例偏；要么只做
+   §3.7 的身份对齐（推荐），要么连坐标换算一起开。
+7. **接第三方打码服务**（把账号交给陌生人）；**在强人机上硬试**（极验 v4/天御/
+   baxia/点选/人脸的行为判定越试越像机器）。几何滑块自己解，强人机交人工。
 8. 调高并发到 4+ 或 5 家同秒齐发。
+9. 在模拟器上装途牛 App（`libtuniudns.so` SIGSEGV，与登录无关）。
 
 ---
 
@@ -192,6 +366,13 @@ App 启动之前完成（`android.os.Build` 在 zygote 定型）。之后才是
 
 | 改动 | 关掉的方式 | 影响面 |
 |---|---|---|
+| 统一策略层 | `crawler.policy_gate: false` | 回到各部件各自判断；账本/报表照旧 |
+| 策略状态 | 删 `user_data/<profile>/policy_state.json` | 停手/余温全部清零 |
+| 滑块自动尝试 | `crawler.slider.auto: off`（默认）；或删掉 `register_handler(...)` | 回到"识别→记账→停手" |
+| 滑块拉黑 | 删 `user_data/<profile>/slider_ledger.json` | 预算/拉黑清零 |
+| 身份屏幕对齐 | `android.identity.align_display: false` | 身份声明保持池里的原值 |
+| 屏幕伪装 | `display.reset(dev)`（或 `adb shell wm size reset`） | 回到物理分辨率 |
+| ABI 伪装 | `android.identity.spoof_abi: null`；或删 `user_data/device/abi_canary.json` | 不再写 ABI props |
 | 会话等待 | `crawler.profile_wait_s: 0` | 回到「立刻让位」 |
 | 实例调优 | `android.tuning.enabled: false` | App 段回到动画/息屏原状 |
 | 对数正态停顿 | 无开关（区间语义不变）；要复现旧行为可临时改 `crawlers/base.py::_sleep` | 仅间隔形状 |

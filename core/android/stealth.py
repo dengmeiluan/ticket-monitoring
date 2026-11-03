@@ -24,9 +24,12 @@ MuMu 的出厂状态恰好把这些全踩了：``adb root`` 默认可用（``ro.
 ----------------------------
 * 能改：props（``resetprop``）、Magisk DenyList（对本机几个包隐藏 root）、
   Magisk 管理器包、开发者选项开关、App 可读的 su 路径（DenyList 后不可见）。
+* **要先验证才能改**：ABI（x86_64 → arm64-v8a）。本模块不写它；
+  入口在 ``abi_canary.run()``（带自动回滚），判定 ok 后由
+  ``hardening`` 的 ABI 闸门写。
 * 改不动：Play Integrity / SafetyNet 的设备认证（需要真机 TEE）、
-  传感器数量、内核版本字符串、x86_64 架构。这些留在 ``detect()`` 的
-  ``unfixable`` 里，让操作员知道「还剩什么」，而不是以为已经干净。
+  传感器数量、内核版本字符串。这些留在 ``detect()`` 的 ``unfixable`` 里，
+  让操作员知道「还剩什么」，而不是以为已经干净。
 
 失败一律 fail-soft：没有 Magisk、没有 root、设备掉线，都只让报告变短，
 绝不抛异常、绝不中断采集。
@@ -73,7 +76,7 @@ EMU_PROP_PAT = ("mumu", "netease", "nemu", "vbox", "goldfish", "qemu",
 # 改不动的残留（如实报告，不要假装清掉了）
 UNFIXABLE = (
     ("play_integrity", "Play Integrity / SafetyNet 需要真机 TEE，任何模拟器都过不了"),
-    ("abi", "x86_64 架构改不了；写死 arm64 会让加固 so 崩（见 fingerprint.ABI_NOTE）"),
+    ("abi", "ABI 要先过 abi_canary 实测才能写（写错会让加固 so 崩），本层不碰"),
     ("sensors", "传感器数量/类型来自 HAL，props 改不了"),
     ("kernel", "内核版本字符串来自真实内核"),
 )

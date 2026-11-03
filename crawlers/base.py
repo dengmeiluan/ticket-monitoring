@@ -1208,19 +1208,110 @@ class BaseCrawler:
             rounds = 2
         return on, max(1, min(6, rounds))
 
-    def _sleep(self):
-        """页内停顿：**对数正态**，不是均匀分布。
+    # ---------- 统一策略 ----------
+    def _policy(self):
+        """策略引擎（懒加载；拿不到就返回 None = 全放行）。"""
+        eng = getattr(self, "_policy_engine", None)
+        if eng is not None:
+            return eng
+        try:
+            from core.policy import default_engine
+            self._policy_engine = default_engine(
+                self.config, repo_root=_REPO_ROOT,
+                profile=str(getattr(self, "profile_name", "") or self.name))
+        except Exception:
+            self._policy_engine = None
+        return self._policy_engine
 
-        均匀分布的间隔本身就是一条机器特征（机器人喜欢均匀）。同样的均值
-        下，对数正态给出「多数短、偶发长」的重尾形状，与人手一致；区间仍
-        严格夹在 `delay_min..delay_max`，不改变配置语义。取不到 human 模块
-        时退回原来的均匀分布。
+    def _policy_now(self, *, two_way: bool = True, statuses=None,
+                    soft: bool = False, captcha: bool = False,
+                    login_wall: bool = False):
+        """拿一份决定。默认 `two_way=True` = 只查询、不推进状态机。"""
+        eng = self._policy()
+        if eng is None:
+            return None
+        try:
+            return eng.decide(self.name, two_way=two_way, statuses=statuses,
+                              soft=soft, captcha=captcha,
+                              login_wall=login_wall)
+        except Exception:
+            return None
+
+    def _policy_cached(self, ttl: float = 30.0, now: float = None):
+        """带 TTL 的决定缓存：`_sleep` 一次采集里会被调几十次。
+
+        不做缓存等于每次停顿都去读两份 JSON（产量 1 份 + 登录 1 份），
+        纯白花 IO；而倍率 30 秒内不会变。
+        """
+        ts = float(now if now is not None else time.time())
+        cache = getattr(self, "_policy_cache", None)
+        if cache and ts - cache[0] <= ttl:
+            return cache[1]
+        pol = self._policy_now(two_way=True)
+        self._policy_cache = (ts, pol)
+        return pol
+
+    def _policy_enabled(self) -> bool:
+        """``crawler.policy_gate``：统一策略的**总开关**（默认开）。
+
+        关掉它只影响「闸门 + 倍率」，账本照记、报表照出——这样排障时能一键
+        回到「各部件各自为政」的旧行为，而不会把度量也一起丢掉。
+        """
+        raw = self.config.get("policy_gate") if isinstance(self.config, dict) \
+            else None
+        if isinstance(raw, str):
+            return raw.strip().lower() not in ("0", "false", "no", "off", "")
+        return True if raw is None else bool(raw)
+
+    def _policy_gate(self) -> bool:
+        """采集入口的统一闸门。返回 False = 本轮不发请求。
+
+        只有 `riskscore` 到 `pause`/`human`/`rotate` 档才会关闸；**登录退避
+        不关闸**（登录墙要如实记 `login` 并继续跑，由人过完再采），产量差也
+        不关闸（真无票与风控无关）。关闸轮次**不计入爬取率**——它不是渠道
+        的失败，是我们自己选择不打。
+        """
+        if not self._policy_enabled():
+            return True
+        pol = self._policy_now(two_way=False)
+        if pol is None:
+            return True
+        self._policy_cache = (time.time(), pol)
+        if pol.allow:
+            self.last_policy = pol.as_dict()
+            return True
+        self.last_policy = pol.as_dict()
+        self.policy_blocked = True
+        log = getattr(self, "logger", None)
+        if log is not None:
+            log.warning("[%s] 策略暂停本轮（%s，%ds 后可试）：%s", self.name,
+                        pol.state, pol.wait_s(),
+                        "／".join(pol.reasons)[:200])
+        return False
+
+    def _sleep(self):
+        """页内停顿：**对数正态** + **按策略倍率放大**。
+
+        均匀分布的间隔本身就是一条机器特征（机器人喜欢均匀），所以用
+        对数正态（区间仍是 `delay_min..delay_max`）。在此基础上乘策略层给的
+        `pace_factor`：降档时上限抬高（1.5×/2.5×），有余量时允许压到 0.8×
+        但**不低于配置的 delay_min**——配置是人定的地板，不替人做决定。
         """
         try:
-            from .human import human_delay
-            d = human_delay(self.delay_min, self.delay_max)
+            pol = self._policy_cached()
+            scale = float(getattr(pol, "pace_factor", 1.0) or 1.0) \
+                if pol is not None else 1.0
         except Exception:
-            d = random.uniform(self.delay_min, self.delay_max)
+            scale = 1.0
+        lo = float(self.delay_min)
+        hi = float(self.delay_max) * max(1.0, scale)
+        if hi < lo:
+            hi = lo
+        try:
+            from .human import human_delay
+            d = human_delay(lo, hi)
+        except Exception:
+            d = random.uniform(lo, hi)
         time.sleep(d)
 
     def _debug_snapshot(self, page: Page, tag: str, extra_text: str = None):
@@ -1372,6 +1463,12 @@ class BaseCrawler:
         # 上一条查询的 page 不能留给本次截图/URL 兜底：httpx 直连路径
         # 不会 new_page，若不清空会把上一页截进本轮现场。
         self._last_page = None
+        # 统一策略闸门：只有 riskscore 到 human/rotate 档才关（长期姿态），
+        # 短时冷却仍归 ChannelBreaker（它拿得到 Retry-After）。关闸轮次
+        # 不发请求、也不计入爬取率——那是我们选择不打，不是渠道失败。
+        self.policy_blocked = False
+        if not self._policy_gate():
+            return []
         try:
             # 域标记入日志（r415）：健康面板此前只能按厂商聚合，同一家
             # 的国内与国际混成一个数——实报同程 13%，而它国际窗历当天
@@ -1391,6 +1488,7 @@ class BaseCrawler:
                              self.name, len(results),
                              (" · " + _scope) if _scope else "")
             self._yield_note(results)
+            self._policy_note_round()
             return results
         except SessionBusyError as e:
             # 让位：不记异常栈（这是预期内的排队，不是故障），也不重试
@@ -1402,7 +1500,27 @@ class BaseCrawler:
         except Exception as e:
             self.logger.exception("[%s] 抓取失败: %s", self.name, e)
             self._yield_note([])
+            self._policy_note_round()
             return []
+
+    def _policy_note_round(self) -> None:
+        """把本轮**已发生的事实**喂回策略层（推进状态机，不改本轮流程）。
+
+        喂的是路径账本里真实记下的东西：HTTP 状态、软拒、挑战、登录墙。
+        不喂猜测值——策略层据此决定下一轮的姿态（停/降速/换身份）。
+        """
+        try:
+            codes = [int(p.get("http") or 0) for p in (self.paths or [])]
+            self._policy_now(
+                two_way=False, statuses=codes,
+                soft=bool(self.last_soft_reject),
+                captcha=any(p.get("status") == "blocked"
+                            for p in (self.paths or [])),
+                login_wall=any(p.get("status") == "login"
+                               for p in (self.paths or [])))
+            self._policy_cache = None      # 下轮重新判
+        except Exception:
+            pass
 
     # ---------- 爬取率账本 ----------
     def _yield_ledger(self):

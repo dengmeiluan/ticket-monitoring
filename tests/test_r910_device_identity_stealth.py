@@ -290,10 +290,12 @@ def test_audit_flags_emulator_and_root_evidence():
 def test_audit_keeps_abi_as_known_residue():
     got = fp.audit(FakeDev(props=_REAL_PROPS))
     keys = {x["key"] for x in got["leaks"]}
-    # ABI 改不动：干净的机型 props 也要把 x86 报出来
+    # ABI 是「要先验证才能改」的一类：干净的机型 props 也要把 x86 报出来
     assert "ro.product.cpu.abi" in keys
     assert got["score"] > 60
-    assert "ABI" in got["abi_note"] + fp.ABI_NOTE
+    # 说明文字必须指向验证装置，而不是一句「改不动」
+    assert "abi_canary" in fp.ABI_NOTE
+    assert "abi_canary" in got["abi_note"]
 
 
 # ---------------------------------------------------------------------------

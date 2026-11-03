@@ -18,6 +18,9 @@
 
     register_handler(MyHandler())
 
+现成的处理器：``crawlers.slider.SliderHandler``（只对**几何滑块**尝试，强人机
+不碰；需显式注册 + ``crawler.slider.auto`` 打开，默认不挂）。
+
 处理器在**页面渲染完成之后**接手（导航一返回就调用），面对的是已经渲染
 出来的挑战控件；它解完自行 reload，重载不会再触发本钩子。
 未注册处理器时，接缝是纯转发：行为与开销都与没有接缝时一致。

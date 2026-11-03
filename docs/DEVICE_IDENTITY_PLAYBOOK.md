@@ -53,7 +53,7 @@
 2. 派生 `android_id`（16 位 hex）、`ro.serialno`、WLAN/BT MAC；
 3. 身份落盘 `user_data/device/device_identity.json`——**进程重启、实例重建都是同一台设备**；
 4. 按 boot_id 每启动周期只应用一次（快路径 = 一条 adb 读标记）；
-5. `audit()` 如实报「还剩哪些特征没清」（含改不动的 ABI）。
+5. `audit()` 如实报「还剩哪些特征没清」；ABI 单独走 §3.4b 的 canary 实测再决定要不要写。
 
 ### 2.2 开关
 
@@ -179,9 +179,29 @@ MuMu 12 若自带「手机型号」自定义，可以先用它打底（改成任
 
 ### 3.4 一个必须知道的顺序
 
-`ensure_ready()` → `_harden()`（身份 + 隐藏）→ 各 App 渠道 `prepare_device()`。
+`ensure_ready()` → `hardening.harden()` → 各 App 渠道 `prepare_device()`。
+硬化五步的顺序由 `core/android/hardening.py` 统一编排，**不要再在别处写一遍**：
+
+```
+① 身份（props/序列号/android_id）       ← 必须最先，App 启动前生效
+② 显示对齐（身份声明 vs 真实屏幕）       ← 依赖 ①，只改档案、不动 wm size
+③ root/模拟器隐藏                       ← 与 ① 写同一批 props，值不冲突
+④ 实例调优（动画/常亮/屏保）             ← 独立，随时可做
+⑤ ABI 闸门（只有 canary 判定 ok 才写）    ← 必须最后
+```
+
 硬化发生在 **App 进程起来之前**，这是唯一能保证 `android.os.Build` 读到新值的时机。
-副作用：**模拟器冷启后的第一轮会多 8–15s**（框架重启），其余轮次只有一条 adb 的开销。
+副作用：**模拟器冷启后的第一轮会多 8–15s**（框架重启），其余轮次只有一两条 adb 的开销。
+
+### 3.4b 屏幕与 ABI：默认只做零风险的那半
+
+* **屏幕**：默认 `align_display: true` —— 把身份档案的 display/density 改成设备
+  真实值（900×1600/320dpi），**不动 `wm size`**，所以坐标不受影响，只是让
+  「机型声明」和「真实屏幕」不再自相矛盾。真要改屏幕见
+  `docs/YIELD_AND_SESSION_STRATEGY.md` §3.7（要配 `dev.set_design()`）。
+* **ABI**：默认不动。要动先跑 `core.android.abi_canary.run(...)`（带自动回滚），
+  判定 ok 后再把 `identity.spoof_abi` 设成 `auto`。理由：MuMu 是 x86+ARM 转译，
+  写死 arm64 会让加固 so 走进不支持的指令，仓库里有过 `Runtime.load0` ANR 死锁。
 
 ---
 
@@ -239,7 +259,8 @@ android:
    （`crawlers/human.py` 的动作序列就是干这个的）；
 4. 仍然失败 → `fp_mod.rotate()` 换一台机型（相当于「换手机」），再走第 3 步；
 5. 换过两台机型仍失败 → 停手。此时是账号侧规则（短信次数/实名/风控人工标记），
-   继续试只会加深标记。**仓库立场：不代答验证、不接打码平台。**
+   继续试只会加深标记。**边界：几何滑块可以开 `slider.auto` 自己解；强人机
+（极验 v4/天御/baxia/点选/人脸）交人工；不接第三方打码。**
 
 ### 4.4 携程/去哪儿 H5 掉登录
 
@@ -358,10 +379,13 @@ Select-String -Path logs\monitor.log -Pattern "身份已应用|root/模拟器隐
 2. **把换 IP / 住宅代理当常态**：真 429 只占 0.3%，为 0.3% 的问题付 100% 成本；
    国内站配境外出口反而升档。
 3. **靠降速解决设备身份命中**：设备规则与频率无关，降速无效，只能改身份。
-4. **把 `ro.product.cpu.abi` 写成 arm64-v8a**：PackageManager 选错 so → ANR 死锁。
+4. **没验证就写 `ro.product.cpu.abi=arm64-v8a`**：PackageManager 会按 arm64 选 so，
+   加固 so 可能直接 ANR 死锁。要写就先跑 `abi_canary.run()` 拿 ok 判定，
+   再设 `identity.spoof_abi: auto`（判定 7 天有效）。
 5. **每次采集无条件恢复登录快照**：用旧副本盖新会话 = 每轮把用户踢下线。
 6. **换身份不清 App 内 `utdid/umid/c_guid` 缓存**：新设备 + 旧 ID，比不换更可疑。
-7. **接打码平台 / 自动过验证**：仓库硬边界（`tests/test_p0_challenge_detection.py`）。
+7. **接第三方打码服务**：那等于把账号交给陌生人。简单滑块用 `slider.py` 自己解，
+   强人机（极验 v4/天御/baxia/reCAPTCHA/点选/人脸）交人工。
 8. **在模拟器上装途牛 App**：`libtuniudns.so` SIGSEGV。
 9. **调高并发 / 让 5 家同秒齐发**：2 路是实测较稳的档。
 10. **改完就宣布「已经不会被风控」**：风控是动态对抗，验收只看**账本数字**

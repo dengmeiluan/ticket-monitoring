@@ -415,6 +415,10 @@ class AppCrawler:
                    ret_date: str = "") -> List[FlightPrice]:
         self.path_reset()
         self.last_error = ""
+        # 统一策略闸门（与浏览器渠道同一份引擎）：只有 long-term 档会关。
+        self.policy_blocked = False
+        if not self._policy_gate():
+            return []
         try:
             if ret_date and not self.supports_round_trip:
                 self.logger.warning(
@@ -446,11 +450,107 @@ class AppCrawler:
             # 爬取率账本：与浏览器渠道同一口径（rows>0 才算 ok），
             # 这样两端的成功率可以在同一张表里比。
             self._note_round_yield()
+            self._policy_note_round()
+
+    # ---------- 统一策略 ----------
+    def _policy_engine(self):
+        """策略引擎（与 BaseCrawler 同一个 `core/policy.py`，判据不漂移）。"""
+        eng = getattr(self, "_policy_eng", None)
+        if eng is not None:
+            return eng
+        try:
+            from core.policy import default_engine
+            cfg = getattr(self, "config", None)
+            self._policy_eng = default_engine(
+                cfg if isinstance(cfg, dict) else {},
+                repo_root=_REPO_ROOT,
+                profile=str(getattr(self, "profile_name", "") or self.name))
+        except Exception:
+            self._policy_eng = None
+        return self._policy_eng
+
+    def _policy_enabled(self) -> bool:
+        """``crawler.policy_gate`` 总开关（与浏览器渠道同一把，默认开）。
+
+        用 ``getattr`` 取 config：单测里常用 ``__new__`` 造桩对象，没有走
+        ``__init__`` 就没有 config——这里不能因此抛异常（fail-soft 是本仓库
+        对这类辅助方法的一贯约定）。
+        """
+        cfg = getattr(self, "config", None)
+        raw = cfg.get("policy_gate") if isinstance(cfg, dict) else None
+        if isinstance(raw, str):
+            return raw.strip().lower() not in ("0", "false", "no", "off", "")
+        return True if raw is None else bool(raw)
+
+    def _policy_gate(self) -> bool:
+        """采集入口闸门。App 端补两条浏览器端没有的信号：
+
+        * 设备/隐藏自检分（来自 `runtime.status()` 的最近一次硬化报告）；
+        * 上一轮是否停在登录墙/验证码（`login_suspect` + 本轮账本）。
+
+        没有这些信号时 score 达不到 human/rotate 档，因此**默认全放行**，
+        既有的「登录墙照记照跑」语义不变。
+        """
+        if not self._policy_enabled():
+            return True
+        eng = self._policy_engine()
+        if eng is None:
+            return True
+        ident = self._identity_scores()
+        try:
+            pol = eng.decide(self.name, two_way=False,
+                             captcha=bool(self.login_suspect), **ident)
+        except Exception:
+            return True
+        self.last_policy = pol.as_dict()
+        if pol.allow:
+            return True
+        self.policy_blocked = True
+        log = getattr(self, "logger", None)
+        if log is not None:
+            log.warning(
+                "[%s] 策略暂停本轮（%s，%ds 后可试）：%s", self.name, pol.state,
+                pol.wait_s(), "／".join(pol.reasons)[:200])
+        return False
+
+    def _identity_scores(self) -> dict:
+        """从 runtime 的硬化报告里取身份/隐藏自检分（取不到就不传）。"""
+        out = {}
+        try:
+            rt = self.runtime()
+            st = rt.status() if rt is not None else {}
+            ip = (st.get("identity") or {}).get("audit") or {}
+            if isinstance(ip.get("score"), (int, float)):
+                out["identity_score"] = ip["score"]
+            sp = ((st.get("stealth") or {}).get("detect") or {})
+            if isinstance(sp.get("score"), (int, float)):
+                out["stealth_score"] = sp["score"]
+        except Exception:
+            pass
+        return out
+
+    def _policy_note_round(self) -> None:
+        """把本轮事实喂回策略层（推进状态机）。全吞异常，绝不改流程。"""
+        eng = self._policy_engine()
+        if eng is None:
+            return
+        try:
+            statuses = [p.get("status") for p in (self.paths or [])]
+            eng.decide(self.name, two_way=False,
+                       captcha=any(s in ("captcha", "face") for s in statuses),
+                       login_wall=("login" in statuses) or self.login_suspect,
+                       soft=("soft_reject" in statuses),
+                       **self._identity_scores())
+            self._policy_cache = None
+        except Exception:
+            pass
 
     def _note_round_yield(self) -> dict:
         try:
             from core.yield_stats import default_ledger, statuses_ok
-            root = str(self.config.get("user_data_dir") or "user_data")
+            cfg = getattr(self, "config", None) or {}
+            root = str(cfg.get("user_data_dir") or "user_data") \
+                if isinstance(cfg, dict) else "user_data"
             profile = str(getattr(self, "profile_name", "") or self.name)
             led = default_ledger(os.path.join(_REPO_ROOT, root), profile)
             ok, rows, path = statuses_ok(self.paths)

@@ -54,6 +54,11 @@ class AdbDevice:
         self.last_error = ""
         # CLI dump 撞上 u2 已注册的 UiAutomation 后，本进程改用 u2
         self._prefer_u2 = False
+        # 设计坐标系（默认 None = 不做任何换算，行为与改造前逐字一致）。
+        # 只有在 ``display.spoof()`` 真改了 wm size 之后才该设置它：那时脚本
+        # 里写死的常量属于「设计坐标」，而 UI 树 bounds 属于「设备坐标」。
+        self.design = None
+        self._size_cache = None
 
     # ---------- 基础 ----------
     def _base(self):
@@ -193,19 +198,64 @@ class AdbDevice:
         return m.group(1) if m else ""
 
     # ---------- 交互 ----------
+    def set_design(self, width, height) -> tuple:
+        """开启「设计坐标系 → 设备坐标系」换算；``(0,0)/None`` = 关闭。
+
+        什么时候需要：``display.spoof()`` 改过 ``wm size`` 之后。这时脚本里
+        **写死的常量**是设计坐标（按 900×1600 写的），而点击要的是设备坐标。
+        不改屏幕就别开这个——开了会给每条坐标多乘一个比例。
+        """
+        try:
+            w, h = int(width or 0), int(height or 0)
+        except (TypeError, ValueError):
+            w = h = 0
+        self.design = (w, h) if (w > 0 and h > 0) else None
+        self._size_cache = None
+        return self.design
+
+    def _scale(self) -> tuple:
+        """(sx, sy)：设备像素 / 设计像素。读不到真实尺寸时退回 1.0。"""
+        if not self.design:
+            return (1.0, 1.0)
+        if self._size_cache is None:
+            try:
+                self._size_cache = self.window_size() or (0, 0)
+            except Exception:
+                self._size_cache = (0, 0)
+        w, h = self._size_cache
+        dw, dh = self.design
+        if min(int(w), int(h), int(dw), int(dh)) <= 0:
+            return (1.0, 1.0)
+        return (w / float(dw), h / float(dh))
+
+    def to_device(self, x, y) -> tuple:
+        """设计坐标 → 设备坐标（未开启换算时原样返回）。"""
+        sx, sy = self._scale()
+        return int(round(float(x) * sx)), int(round(float(y) * sy))
+
+    def to_design(self, x, y) -> tuple:
+        """设备坐标 → 设计坐标：UI 树 ``bounds`` 读出来的点要走这一层，
+        再与写死的设计坐标比较/运算，否则会算错两倍。"""
+        sx, sy = self._scale()
+        return (int(round(float(x) / sx)),
+                int(round(float(y) / sy)))
+
     def tap(self, x: int, y: int) -> bool:
         if not self._coord_ok(x) or not self._coord_ok(y):
             return False
-        out = self._sh("shell", "input", "tap", str(int(x)), str(int(y)))
+        dx, dy = self.to_device(x, y)
+        out = self._sh("shell", "input", "tap", str(dx), str(dy))
         return out is not None
 
     def swipe(self, x1: int, y1: int, x2: int, y2: int,
               duration_ms: int = 300) -> bool:
         if not all(self._coord_ok(v) for v in (x1, y1, x2, y2)):
             return False
+        ax, ay = self.to_device(x1, y1)
+        bx, by = self.to_device(x2, y2)
         out = self._sh("shell", "input", "swipe",
-                       str(int(x1)), str(int(y1)),
-                       str(int(x2)), str(int(y2)), str(int(duration_ms)))
+                       str(ax), str(ay), str(bx), str(by),
+                       str(int(duration_ms)))
         return out is not None
 
     def input_text(self, text: str) -> bool:

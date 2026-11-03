@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """P1: challenge ticket + visible original-page takeover + verify.
 
-Recognition only: the operator completes the challenge in a real window.
-No auto-solving, no third-party solver, no official API.
+默认路径：人工在真实窗口里完成挑战（本文件钉的就是这条链）。
+自动处置属于可选外挂（``crawlers/slider.py::SliderHandler``，需显式注册 +
+``crawler.slider.auto`` 打开，且只对几何滑块生效）；任何情况下都不接第三方
+打码服务、也不调用官方接口。
 """
 import logging
 import os

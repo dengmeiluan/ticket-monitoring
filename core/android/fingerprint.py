@@ -26,10 +26,10 @@
    互相自洽（``ro.product.model`` 是 Redmi K50，而 ``ro.build.fingerprint``
    是 google/sdk_gphone 就是一眼假）。所以身份从**机型池**里整台取，
    不做字段级随机拼缝。
-3. **不冒充改不了的东西**：ABI（x86_64 vs arm64）、传感器数量、
-   Play Integrity 这些改不动就别撒谎（见 ``ABI_NOTE``）——把 x86_64
-   写成 arm64-v8a 会让 PackageManager 选错 so，直接复现仓库里记过的
-   ``Runtime.load0`` ANR 死锁。``audit()`` 会把这些残留如实报出来。
+3. **不冒充改不了的东西**：Play Integrity、传感器数量、内核版本这些改不动
+   就别撒谎；ABI 属于「要先验证才能改」的一类——入口是
+   ``abi_canary.run()``（带自动回滚），验证 ok 后才由 ``hardening`` 写，
+   直接硬写 ``arm64-v8a`` 会复现仓库里记过的 ``Runtime.load0`` ANR 死锁。
 
 生效机制（Android 的事实，别绕过）
 --------------------------------
@@ -156,12 +156,14 @@ PHONE_POOL = (
     },
 )
 
-# ABI 说明（写进 docstring 是为了让后来的人别再试一次）：
+# ABI 说明（写给后来的人，免得再试一次盲改）：
 # MuMu 的系统是 x86_64 + ARM 转译层，``ro.product.cpu.abi`` 改成 arm64-v8a
 # 之后 PackageManager 会按 arm64 选 native so，而转译层对部分加固 so（携程
 # / 去哪儿都带）直接崩——仓库里 record 过 ``Runtime.load0`` 主线程死锁、
-# ANR 120s。所以 **默认不碰 ABI**，只在 audit 里报「x86_64 仍是残留特征」。
-ABI_NOTE = "x86_64 是模拟器最强残留特征之一，但改 ABI 会触发 so 选择错误，默认不动"
+# ANR 120s。所以本模块**默认不碰 ABI**；想动就先跑
+# ``core/android/abi_canary.py::run()`` 在**这台实例 + 这个包**上实测，
+# 拿到 ok 判定后再把 ``android.identity.spoof_abi`` 设成 ``auto``。
+ABI_NOTE = "x86_64 是模拟器最强残留特征之一；要改先过 abi_canary 实测（见 hardening）"
 
 # 默认写入的 props（顺序稳定，便于审计 diff）。刻意不写 ro.build.version.release
 # / sdk：改版本会连带 SDK_INT、资源选择、so 兼容，风险远大于收益。
@@ -576,7 +578,8 @@ def restart_framework(dev, mode: str = "zygote", wait_s: int = 90) -> bool:
         return False
     if mode == "zygote":
         as_root(dev, "stop; start")
-    end = time.time() + max(10, int(wait_s or 90))
+    # 下限 2s：单测会把 wait_s 调到 1，卡 10s 的硬地板会让一次实验白等 20s+
+    end = time.time() + max(2, int(wait_s or 90))
     while time.time() < end:
         time.sleep(3)
         if _text(_call(dev, "shell", "getprop", "sys.boot_completed")

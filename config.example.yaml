@@ -185,6 +185,21 @@ crawler:
   # 比丢一整轮划算——历史上「抢不到自家锁」占了失败样本的 38.9%。
   # 0=立刻让位（现行行为，不改变既有语义）。
   profile_wait_s: 0
+  # ── 统一策略层总开关（默认开）─────────────────────────────────
+  # 把「产量 / 登录 / 风险 / 设备」四本账收敂成每渠道一个决定（停 / 降速 /
+  # 建议换身份），浏览器与 App 渠道读的是同一份引擎。关掉 = 回到各部件各自
+  # 判断的旧行为；**账本照记、报表照出**，只是不再用它们拦采集。
+  policy_gate: true
+  # ── 滑块：分级 + 简单滑块自动尝试（默认关）───────────────────────
+  # 分级先行：极验 v4 / 天御 / baxia / reCAPTCHA / 点选 / 人脸 = strong，
+  # 一律交给人工（这类判定吃的是行为分布，越算越像机器）。
+  # 只有"背景图 + 固定缺口"的几何滑块（simple）才会尝试。
+  slider:
+    auto: off            # off | simple | auto（true 等价 simple）
+    daily_cap: 3         # 每渠道每天最多试几次
+    max_fails: 2         # 连续失败几次拉黑（拉黑 7 天）
+    device_distance: 260 # App 侧默认拖动距离（px，缺省按此）
+    single_shot: false   # true=只试首选偏移；false=顺次试前 3 个候选
   # ── 时区/语言与出口 IP 的地理对齐（可选）────────────────────────
   # 挂着异地/境外出口而页面报 Asia/Shanghai + zh-CN，「IP 在 A 地、时区在
   # B 地」是最便宜的一条矛盾判定。默认不写=保持 zh-CN/Asia/Shanghai 不变。
@@ -274,6 +289,18 @@ android:
     reboot: zygote         # zygote|full|none：Build 字段在 zygote 定型，改 props 必须重启框架
                            #   zygote=stop;start（8–15s，保留实例与 adb）；full=实例重启
     force: false           # true=非模拟器也强行应用（真机上别开）
+    # 身份声明的屏幕对齐设备真实值（零风险，默认开）：
+    # 池里那台机器声明 1080×2400，而实例是 900×1600 —— 风控读一次 DisplayMetrics
+    # 就能看出"机型与屏幕不符"。这条只改身份档案，**不动 wm size**，坐标不受影响。
+    align_display: true
+    # ABI 伪装（arm64-v8a）：默认不动。理由见 core/android/abi_canary.py ——
+    # MuMu 是 x86 + ARM 转译，写死 arm64 会让 PackageManager 按 arm64 选 so，
+    # 加固 so 可能直接 ANR。要开必须先跑可行性验证：
+    #   python -c "from core.android import abi_canary, device; \
+    #     d=device.AdbDevice(r'D:\Program Files\Netease\MuMu\nx_main\adb.exe','127.0.0.1:16384'); \
+    #     print(abi_canary.run(d,'ctrip.android.view',{},{},restart_wait_s=60))"
+    # 判定 ok 且未过期（7 天）后填 auto 才会真正启用；填 true 是无条件写（不推荐）。
+    spoof_abi: null
   # ── root / 模拟器痕迹隐藏 ─────────────────────────────────────
   # 我们自己的采集必须用 root（快照要读 /data/data），所以策略不是「不要 root」，
   # 而是「root 只对我们可见」：Magisk DenyList 让目标 App 看不到 su//data/adb，

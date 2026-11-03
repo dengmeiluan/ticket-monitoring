@@ -48,6 +48,9 @@ class AndroidRuntime:
         self.identity_report: dict = {}
         self.stealth_report: dict = {}
         self.tuning_report: dict = {}
+        self.display_report: dict = {}
+        self.abi_report: dict = {}
+        self.harden_report: dict = {}
         self._mumu: Optional[MuMuManager] = None
         self._device: Optional[AdbDevice] = None
         self._state = "disabled" if not self.cfg.enabled else "unknown"
@@ -88,10 +91,13 @@ class AndroidRuntime:
             "device": self._device if self._state == "ready" else None,
             "enabled": self.cfg.enabled,
             "vm_index": self.cfg.vm_index,
-            # 身份/隐藏/调优的最近一次报告（UI 与风险评分都读它；空 = 还没跑过）
+            # 身份/隐藏/调优/显示/ABI 的最近一次报告（UI 与风险评分都读它；
+            # 空 = 还没跑过）
             "identity": self.identity_report,
             "stealth": self.stealth_report,
             "tuning": self.tuning_report,
+            "display": self.display_report,
+            "abi": self.abi_report,
         }
 
     # ---------- 编排 ----------
@@ -158,51 +164,42 @@ class AndroidRuntime:
         return out
 
     def _harden(self, dev) -> dict:
-        """在 adb 连通之后、任何 App 启动之前，把设备身份与 root 痕迹处理好。
+        """在 adb 连通之后、任何 App 启动之前，把设备硬化跑完。
 
         为什么挂在这里而不挂在各 App 渠道：``android.os.Build`` 的字段在
         zygote 里定型，**必须**在 App 进程起来之前改完（见
         ``fingerprint`` 模块头）。``ensure_ready()`` 是全项目唯一决定
         「模拟器起没起、adb 通不通」的地方，也是唯一能保证这个顺序的地方。
 
+        具体五步（身份 → 显示对齐 → 隐藏 → 调优 → ABI 闸门）的**顺序**由
+        ``hardening.harden`` 统一编排，这里只负责调用与曝光报告——两边都写
+        顺序的话，迟早会有一边写错。
+
         失败一律不阻塞采集：拿不到 root、设备掉线、没装 Magisk，都只让
         报告变短（``identity`` / ``stealth`` 里能看到原因）。
         """
         rep = {}
         try:
-            from . import fingerprint as fp_mod
-            from . import stealth as st_mod
+            from . import hardening
         except Exception as e:            # 模块被裁掉也不能拖垮启动
             self.log("warning", "硬化层不可用：%s", e)
             return rep
-
-        cfg_view = self._layer_cfg()
-        if self.cfg.enabled:
-            try:
-                rep["identity"] = fp_mod.ensure(
-                    dev, cfg_view, self.logger,
-                    user_data_dir=self._user_data_dir(),
-                    profile="device", vm=self.cfg.vm_index)
-            except Exception as e:
-                rep["identity"] = {"ok": False, "error": str(e)[:160]}
-            self.identity_report = rep.get("identity") or {}
+        if not self.cfg.enabled:
+            return rep
 
         try:
-            rep["stealth"] = st_mod.prepare(
-                dev, cfg_view, self.logger, vm=self.cfg.vm_index)
+            rep = hardening.harden(
+                dev, self._layer_cfg(), self.logger,
+                vm=self.cfg.vm_index,
+                user_data_dir=self._user_data_dir(), profile="device")
         except Exception as e:
-            rep["stealth"] = {"ok": False, "error": str(e)[:160]}
+            rep = {"ok": False, "error": str(e)[:160]}
+        self.identity_report = rep.get("identity") or {}
         self.stealth_report = rep.get("stealth") or {}
-
-        # 实例调优放在身份/隐藏之后：它改的是全局 settings（动画/常亮/屏保），
-        # 对之后启动的 App 生效，且与身份无关——失败也不影响身份层结果。
-        try:
-            from . import emulator_tuning as tune_mod
-            rep["tuning"] = tune_mod.apply(
-                dev, cfg_view, self.logger, vm=self.cfg.vm_index)
-        except Exception as e:
-            rep["tuning"] = {"ok": False, "error": str(e)[:160]}
         self.tuning_report = rep.get("tuning") or {}
+        self.display_report = rep.get("display") or {}
+        self.abi_report = rep.get("abi") or {}
+        self.harden_report = rep
         return rep
 
     def _wait_boot(self, mgr: MuMuManager) -> bool:
