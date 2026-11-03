@@ -201,7 +201,12 @@ def test_default_store_path_follows_profile(tmp_path):
 # ---------------------------------------------------------------------------
 # 3. ensure：只在模拟器上动手 + 按 boot 只应用一次
 # ---------------------------------------------------------------------------
-def test_ensure_skips_real_device(tmp_path):
+def test_ensure_skips_real_device(tmp_path, monkeypatch):
+    # 关掉官方来源：这条钉的是「非模拟器 + 只有机型池 → 不许写 props、不许落盘」。
+    # 开着 prefer_vendor 时 ensure 会去读真实 MuMu（本机有值），那是另一条
+    # 路径，由 test_r920 覆盖。
+    monkeypatch.setattr(fp, "_cfg", lambda raw: {"enabled": True,
+                                                "prefer_vendor": False})
     dev = FakeDev(props=_REAL_PROPS)
     rep = fp.ensure(dev, {"android": {"identity": {"enabled": True}}},
                     user_data_dir=str(tmp_path), profile="device", vm=0)

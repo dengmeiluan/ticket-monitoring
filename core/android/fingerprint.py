@@ -375,6 +375,72 @@ class Identity:
             self.ident_id, self.vm, self.profile.get("model"))
 
 
+def build_from_vendor(vendor_values: dict, seed: int = 0,
+                      vm: int = 0) -> Identity:
+    """用 **MuMu 官方设置**当身份来源（池只做兜底）。
+
+    为什么必须这样：2026-11-03 实测这台实例上——
+
+    * MuMu 官方 `phone_brand=Samsung` / `phone_miit=SM-A5260`，
+      设备里 ``ro.product.brand/model`` 就是 **Samsung / SM-A5260**；
+    * 而我们在设备侧 ``setprop ro.product.model <池里的机型>`` **静默无效**
+      （系统盘只读）。
+
+    也就是说**官方注入是唯一真正生效的来源**。如果身份档案还按池写 Redmi K50，
+    就会出现"档案说 Redmi、设备是 Samsung"——报告骗自己，风控读到的却是另一套。
+
+    所以身份改为：**官方有值就用官方**，缺的字段（序列号/android_id/gsm）
+    才由这里派生；官方一个都读不到时才退回 ``build()`` 的机型池。
+    """
+    base = build(seed, vm=vm)
+    prof = dict(base.profile)
+    v = vendor_values or {}
+
+    brand = str(v.get("phone_brand") or "").strip()
+    model = str(v.get("phone_model") or "").strip()
+    miit = str(v.get("phone_miit") or "").strip()
+    if not brand and not model and not miit:
+        return base                       # 官方没值：保持池的行为
+
+    if brand:
+        prof["brand"] = brand
+        prof["manufacturer"] = brand
+    # ro.product.model 实际由 phone_miit 注入（实测 SM-A5260），
+    # phone_model 是营销名（Galaxy A52 5G）——两者都留着，各归其位。
+    if miit:
+        prof["model"] = miit
+    if model:
+        prof["marketing_model"] = model
+    # build 指纹跟着自洽（官方没给 build 字段，用品牌与型号重拼）
+    short = (miit or model or prof.get("device") or "device")
+    prof["fingerprint"] = ("%s/%s/%s:%s/%s/%s:user/release-keys"
+                           % (prof.get("brand", ""), short, short,
+                              prof.get("release", ""),
+                              prof.get("build_id", ""),
+                              prof.get("build_display", "")))
+    # 屏幕也以官方为准（对齐后 identity 不再声明一个设备没有的分辨率）。
+    # **注意方向**：MuMu 的 resolution_width=1600 / height=900 是**窗口**尺寸，
+    # 而 Android 侧 `wm size` 报 900×1600（竖屏）。实测两者是转置关系，
+    # 这里统一折算成「短边×长边」，避免档案写 1600×900 横屏而设备是竖屏。
+    try:
+        w = int(float(v.get("resolution_width") or 0))
+        h = int(float(v.get("resolution_height") or 0))
+        d = int(float(v.get("resolution_dpi") or 0))
+        if w and h:
+            prof["display"] = [min(w, h), max(w, h)]
+        if d:
+            prof["density"] = d
+    except (TypeError, ValueError):
+        pass
+
+    data = base.as_dict()
+    data["profile"] = prof
+    data["source"] = "vendor"            # 便于报告里区分身份来源
+    if v.get("phone_imei"):
+        data["imei"] = str(v["phone_imei"])
+    return Identity(data)
+
+
 def build(seed: int = 0, vm: int = 0, pool=None) -> Identity:
     """按 seed 生成一台自洽的身份（同 seed 同身份，不随机）。"""
     pool = tuple(pool or PHONE_POOL)
@@ -495,39 +561,29 @@ def _magisk(dev) -> str:
 
 
 def apply(dev, ident: Identity, *, use_root=None, uid: bool = True) -> dict:
-    """把身份写进设备。返回逐键结果（applied/failed），不抛异常。
+    """把身份写进设备。返回逐键结果，**带读回校验**，不抛异常。
 
-    ``use_root=None`` 时自动探测：有 root 且装了 Magisk 就走 ``resetprop``
-    （能改 ``ro.*``），否则退回 ``setprop``（只能改 ``persist.*`` 等可写键，
-    ``ro.*`` 会失败——如实记进 failed，不假装成功）。
+    为什么不再自己拼 setprop 脚本：``setprop ro.*`` 在只读系统盘上
+    **返回 0 但值不变**（2026-11-03 实测），只看命令返回码会得出"9 条生效"
+    的假结论——而设备上一条都没变。写 props 这件事因此**只保留一份实现**：
+    ``abi_canary.apply_props``（写前快照 + 写后 getprop 读回比对）。
 
-    一次 adb 往返执行整段脚本：登录流程里 adb 单次 60–90ms，逐键调用会
-    把一次准备拖成秒级。
+    返回键：``applied``（命令报成功）/ ``verified``（读回真的是新值，
+    **只有它可信**）/ ``failed`` / ``mismatch`` / ``unchanged`` /
+    ``android_id``。
     """
-    rep = {"applied": [], "failed": [], "resetprop": "", "android_id": "",
-           "root": False}
-    root = _root(dev) if use_root is None else bool(use_root)
-    rep["root"] = root
-    rp = _magisk(dev) if root else ""
-    rep["resetprop"] = rp
+    from . import abi_canary
 
-    lines = []
-    for k, v in ident.props().items():
-        if rp:
-            cmd = "%s -n %s %s" % (rp, _q(k), _q(v))
-        else:
-            cmd = "setprop %s %s" % (_q(k), _q(v))
-        lines.append("%s >/dev/null 2>&1 && echo 'OK %s' || echo 'FAIL %s'"
-                      % (cmd, k, k))
-    script = "; ".join(lines) or "true"
-    out = _text(as_root(dev, script) if root
-                else _call(dev, "shell", "sh", "-c", script))
-    for line in out.splitlines():
-        s = line.strip()
-        if s.startswith("OK "):
-            rep["applied"].append(s[3:].strip())
-        elif s.startswith("FAIL "):
-            rep["failed"].append(s[5:].strip())
+    props = ident.props()
+    rec = abi_canary.apply_props(dev, props, use_root=True if use_root is None
+                                 else bool(use_root))
+    rep = {"applied": rec.get("applied") or [],
+           "verified": rec.get("verified") or [],
+           "failed": rec.get("failed") or [],
+           "mismatch": rec.get("mismatch") or {},
+           "unchanged": rec.get("unchanged") or [],
+           "resetprop": rec.get("resetprop") or "",
+           "android_id": "", "root": _root(dev)}
 
     if uid:
         aid = ident.android_id
@@ -535,6 +591,10 @@ def apply(dev, ident: Identity, *, use_root=None, uid: bool = True) -> dict:
             _call(dev, "shell", "settings", "put", "secure", "android_id", aid)
             rep["android_id"] = _text(_call(
                 dev, "shell", "settings", "get", "secure", "android_id")).strip()
+            # android_id 是 settings 里的（不是 ro.*），这条路在不改系统盘时
+            # 也可能真生效——所以单独校验，别和 props 的成功率混在一起。
+            rep["android_id_ok"] = bool(rep["android_id"]) and \
+                rep["android_id"] == aid
         # 蓝牙名/设备名跟着机型走：这两条在「同设备」校验里常被一起读
         name = str(ident.profile.get("model") or "")
         if name:
@@ -726,11 +786,48 @@ def ensure(dev, config: dict = None, logger=None, *, user_data_dir="user_data",
         # 机型与 android_id 就这么被测试随机定了下来。
         created = not ident.ident_id
         if created:
-            ident = build(
-                _seed_for("tm-%s-%d-%d" % (profile, vm, int(time.time()))),
-                vm=vm)
+            seed = _seed_for("tm-%s-%d-%d" % (profile, vm, int(time.time())))
+            # 身份来源优先级：**MuMu 官方设置** > 机型池。
+            # 官方是唯一真正生效的来源（设备侧 setprop ro.* 在只读系统盘上
+            # 静默无效），所以让档案服从官方，而不是让两者各说一套。
+            vend = {}
+            if _flag(sec.get("prefer_vendor"), True):
+                try:
+                    from . import vendor as vendor_mod
+                    vend = vendor_mod.read(vm_index=vm) or {}
+                except Exception:
+                    vend = {}
+            if vend:
+                ident = build_from_vendor(vend, seed, vm=vm)
+            else:
+                ident = build(seed, vm=vm)
         rep["identity"] = ident.ident_id
         rep["created"] = created
+
+        # 既有身份也要跟官方对齐：操作员可能改了 MuMu 的 phone_* 键，
+        # 档案不跟着改就会"档案说 A、设备是 B"。只对齐机型/屏幕，不动
+        # android_id / 序列号（那两个变了等于换设备，会触发二次校验）。
+        if not created and ident.ident_id and \
+                _flag(sec.get("prefer_vendor"), True):
+            try:
+                from . import vendor as vendor_mod
+                vend = vendor_mod.read(vm_index=vm) or {}
+                if vend:
+                    synced = build_from_vendor(vend, 0, vm=vm)
+                    cur = ident.profile or {}
+                    newp = synced.profile or {}
+                    diff = {k: (cur.get(k), newp.get(k))
+                            for k in ("brand", "model", "manufacturer",
+                                      "display", "density")
+                            if newp.get(k) and cur.get(k) != newp.get(k)}
+                    if diff:
+                        ident.data["profile"] = newp
+                        store.put(ident)
+                        rep["profile_synced"] = {
+                            k: {"from": v[0], "to": v[1]}
+                            for k, v in diff.items()}
+            except Exception:
+                pass
 
         # 已在本 boot 周期应用过 → 只花两条 adb（boot_id + 标记）。
         #
@@ -752,6 +849,12 @@ def ensure(dev, config: dict = None, logger=None, *, user_data_dir="user_data",
         # 只在**真的是模拟器**上动手：真机跑这套等于自找麻烦，而测试里的
         # 假设备 props 读不到 → 自然跳过，不会污染既有单测。
         if not _is_emulator(plain) and not _flag(sec.get("force"), False):
+            # 例外：身份来自 **MuMu 官方设置**时，那些值已经就是设备事实
+            # （官方注入在虚拟机启动时生效），不需要我们"应用"任何东西，
+            # 因此可以安全落盘——否则会出现"报告说 Samsung、档案是空"的偏差。
+            if created and (ident.data.get("source") == "vendor"):
+                store.put(ident)
+                rep["saved"] = "vendor-source"
             rep["ok"] = True
             rep["skipped"] = "not an emulator"
             return rep
