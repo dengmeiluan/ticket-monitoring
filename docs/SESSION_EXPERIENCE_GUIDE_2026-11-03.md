@@ -134,7 +134,8 @@
   - `test/uitest` 各 `timeout-minutes: 45`；`ci-ok` 聚合 `needs: [test, uitest]`。
   - `pip`/Playwright 缓存保留；`fetch-depth: 0` + 补拉 tag；Chromium + Noto CJK 安装保留。
 - `tools/ci_shard.py`：`--snapshot <junit>` 从全量 JUnit 生成按文件耗时快照；`--stats N` 统计并自检；`--print N K` 给 shell 选片。
-- `tests/ci_durations.json`：已按 clean gate JUnit 重算；当前快照覆盖 **863/864** 个测试文件（总 ~2961.5s），四组耗时 **1.00** 均衡；新文件按 20s 自动进组，快照不要求全覆盖。
+- `tests/ci_durations.json`：已按 clean gate JUnit 重算；当前快照覆盖 **863/865** 个测试文件（总 ~2981.5s），四组耗时 **1.00** 均衡；新文件按 20s 自动进组，快照不要求全覆盖。
+- **最终绿（真实 GitHub）**：`41644097180`（`0f782f9`，含 numpy/vendor 修复）test 4 片 **242/225/341/244s 全绿**、UI 367s、`ci-ok` success，整轮 **6m14s**；第 2 片文件数最多（341）所以最慢（5m41s），其余约 4 分钟。
 - 实测参考：旧 CI `test` 单 job `-n 4` 约 **11 分 31 秒**（2026-11-03 01:40:09→01:51:40）；UI job 约 **6 分 05 秒**。4 片真实 GitHub 首跑（`bc96947`，2026-11-03 13:11Z 起）：shard 1/3 绿（249s/283s）、shard 0/2 红（214s/233s），UI 381s——test lane 墙钟已从 11 分半降到 **约 5 分钟**；红的根因与切片无关，见下条。
 - **本地绿 / CI 红的环境差异（已实证）**：`crawlers/slider.py` 用可选 `import numpy`，本地全局环境有 numpy，CI 只装 `requirements.txt` 而当时未声明 numpy → `find_gap()` 恒返回空候选，r914/r916 四条同时红。修复=把 `numpy>=1.26` 写进 `requirements.txt`（CI、release-build、Docker 同一来源），并给缺依赖加一次性告警 + 负控（屏蔽 numpy 时仍红、装上才绿），不把测试改成 skip。
 - 分片串行排障口径：先看失败片日志的 `FAILED` 行，再判断是本片代码问题还是并行 WIP 的跨片问题；本次第二红（`android.vendor.apply` 无 UI 落点 + 加固 ok 被只读探测拖红）就是并行提交引入、与 numpy 无关。
@@ -213,6 +214,7 @@
 - `41633762684`（`bc96947`）：shard 1/3 success，shard 0/2 failure；失败仅 r914/r916 滑块四条，根因 CI 缺 numpy（本地全局有，掩盖了）。
 - `41642117895`（`03a46e6`）：numpy 修复后 shard 0/1/3 success，shard 2 failure；失败为并行提交的 `android.vendor.apply` 无配置页落点 + `test_harden_runs_steps_in_fixed_order` 的 ok 语义，与 numpy 无关。
 - 修复：requirements 声明 numpy + 缺依赖告警；配置页补 `glbVendorApply` 控件、保存时与文件已有 `android.vendor` 键合并；加固的只读 vendor 探测不再拖红整套 ok；补真渲染“点击写回 GLB”断言与静态合并断言。受影响 72 + 1 项本地绿后推送 `8c3e4b5`。
+- `41644097180`（`0f782f9`）：**test 4 片 + UI + ci-ok 全绿**，各片 242/225/341/244s、UI 367s，整轮 6m14s；numpy 与 vendor 两处修复均已进入该树。
 
 **边界**：
 - 分片快照是历史耗时，测试结构大改后需重建；新增文件按 20s 兜底。
