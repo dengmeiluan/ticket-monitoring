@@ -6,6 +6,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# 同一分支的新提交取消旧跑：PR 连推时不再排队等已过期的全量门禁。
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -22,6 +27,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
       - run: pip install -r requirements.txt pytest pytest-xdist
       # tag 竞态守卫：发版 main 与 tag 两步推送，CI 由 main
       # push 触发时 checkout 快照可能还没拿到刚推的 tag，git describe
@@ -77,6 +83,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
       - run: pip install -r requirements.txt
       - name: 安装 Chromium 内核
         run: playwright install --with-deps chromium
