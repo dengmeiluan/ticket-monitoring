@@ -6,8 +6,16 @@ Pillow>=10.0
 # 滑块缺失检测（crawlers/slider.py::find_gap）的唯一实现依赖；
 # 未声明时源码/发行包/镜像里该能力会静默返回空候选（CI 曾因此假红）。
 numpy>=1.26
+# 验证码预处理（crawlers/captcha.py::preprocess）的依赖：灰度/放大/Otsu。
+# 未安装时 preprocess 会 fail-soft 返回原图（识别率下降但不报错），
+# 所以按「声明为硬依赖」处理，避免发行包装出来才发现能力退化了。
+opencv-python>=4.8
 zstandard>=0.22.0
 tzdata>=2024.1
+# 可选：ddddocr 提供字符验证码识别与滑轨检测（crawlers/captcha.py 的
+# 可选后端）。装了会自动优先使用，没装退回「系统 OCR + cv2 预处理」，
+# 行为完全不变。它会带 onnxruntime（约 50–80MB），故不设成硬依赖。
+#   pip install ddddocr
 # 可选：curl_cffi 提供 Chrome 的 TLS/JA3 指纹（core/net.py 优先用它发 HTTP，
 # 未安装则自动退回 httpx，行为不变）。需要更贴合浏览器指纹时装：
 #   pip install curl_cffi
