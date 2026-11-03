@@ -173,6 +173,10 @@ def test_trend_payload_shape_and_clamp(tmp_path, monkeypatch):
     open(cfg, "w", encoding="utf-8").write(
         f"output:\n  db_path: {db}\n")
     monkeypatch.setattr(webui._State, "config_path", cfg)
+    # _trend_payload 优先读 _State.cfg；只设 config_path 在 xdist 文件顺序下
+    # 会读到前一个用例留下的库，导致 direct=[] 假红（r952）。
+    monkeypatch.setattr(webui._State, "cfg",
+                        {"output": {"db_path": db}})
     ok = webui._trend_payload(
         {"from": ["SHA"], "to": ["URC"], "date": ["2026-11-01"],
          "days": ["180"], "th": ["1900"]})

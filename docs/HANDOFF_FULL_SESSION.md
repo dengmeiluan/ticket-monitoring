@@ -42,14 +42,16 @@
 > 往返重烘（当时站戳 `3a7ea543ba18`；当前站戳见下），`release_align_check --local` **25/25**；
 > Release/正文/四资产/tag 已于 ab04c22 同源；ghcr `sha-ab04c22` 单独存在，`latest` 已随 HEAD 走到 `sha-934e108`（非同 digest）；
 > Release `v1.0` → `ab04c22` 已发（10 渠道正文，资产 4/4）；live 8765 已于
-> 2026-11-03 08:58 切到 `_release_ab04`（PID 47952）。r933–r947 已入库，live 树仍停在 ab04c22；
-> 多程采集/配置卡/概览整单卡/来源页与日桶下限守卫见 SPEC r941–r947。
+> 2026-11-03 08:58 切到 `_release_ab04`（PID 47952）。r933–r953 已入库（至 `80c63eb`），
+> live 树仍停在 ab04c22；多程采集/配置卡/概览整单卡/来源页/整单历史与日桶下限守卫见
+> SPEC r941–r951。
 > **2026-11-03 03:30 补（同程 App 国际往返 + 最终树）**：同程 App 国际往返真机接通
 > （上海⇌东京 11-16/19，7 条去程、最低 9C8515 ¥2209 含税总价；返程 `+¥N` 为加价），
 > `round_trip=y`（仅国际）；`PATH_CN` 补 `app-roundtrip`（r658 门禁曾点红）。
-> tracked collect **6207**（11:13，当前树）；全量冒烟 **6184 passed / 19 skipped /
-> 1 failed / 3 errors**（11:48，共 6207），4 红单飞 **7 passed**（浏览器/demo 竞争），
-> 按单跑口径 **6188 passed / 19 skipped / 0 failed**；UI **670/670**（11:18 全量复跑，零 JS 错误）；能力矩阵截图
+> tracked collect **6211**（12:35，含 r953 导出用例）；全量非 UI **6191 passed /
+> 19 skipped / 0 failed**（12:30，workers 8，648.73s，r953 前共 6210；r952 修掉 r320b
+> 配置隔离与 r286 误杀 8796/`networkidle` 四类假红）；r953 导出定向 **14 passed**，
+> 当前树全量待复跑；UI **670/670**（11:18 全量复跑，零 JS 错误）；能力矩阵截图
 > `docs/screenshots/console-dims.png` 已按 10 渠道 + RT 状态重烘，
 > 静态站同步；`release_align_check --local` **25/25**。
 > **2026-11-03 05:18 补（r927 途牛 H5 国际往返）**：`m.tuniu.com/flight/` 往返档

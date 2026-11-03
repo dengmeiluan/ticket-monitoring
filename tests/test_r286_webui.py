@@ -57,14 +57,8 @@ def srv():
     with sync_playwright() as p:
         if not os.path.exists(p.chromium.executable_path):
             pytest.skip("chromium 二进制缺失（CI 无 playwright install）")
-    try:
-        r = subprocess.run(["netstat", "-ano"], capture_output=True)
-        for ln in r.stdout.decode("utf-8", errors="ignore").splitlines():
-            if "127.0.0.1:8796" in ln and "LISTENING" in ln:
-                subprocess.run(["taskkill", "/PID", ln.split()[-1], "/F"],
-                               capture_output=True)
-    except Exception:
-        pass
+    # 不再杀固定 8796：本 fixture 用随机端口，误杀会打掉并行 worker 的服务
+    # （r952；8796 是旧实现遗留，随机端口下没有任何归属关系）。
     logf = tempfile.TemporaryFile(mode="w+", encoding="utf-8",
                                   errors="replace")
     base = "http://127.0.0.1:%d" % _free_port()
@@ -73,7 +67,7 @@ def srv():
          "--port", str(base.rsplit(":", 1)[1])],
         cwd=ROOT, stdout=logf, stderr=subprocess.STDOUT)
     op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    for _ in range(40):
+    for _ in range(120):
         try:
             op.open(base + "/api/state", timeout=2)
             break
@@ -86,7 +80,12 @@ def srv():
     with _sp() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
-        page.goto(base + "/", wait_until="networkidle")
+        # networkidle 在 8 worker 下会因长轮询永不 idle；改为 DOM 就绪 +
+        # 应用状态出现（r952），慢机也不会被固定等待判死。
+        page.goto(base + "/", wait_until="domcontentloaded")
+        page.wait_for_selector("#navMon", timeout=20000)
+        page.wait_for_function(
+            "typeof S !== 'undefined' && !!S && !!S.users", timeout=20000)
         try:
             yield (p, page)
         finally:
@@ -218,7 +217,9 @@ def test_hc_coarse_ipad_band_computed(srv):
         page.set_viewport_size({"width": 768, "height": 1024})
         page.evaluate("switchView('mon')")
         page.evaluate("showMonTab('health', true)")
-        page.wait_for_timeout(500)
+        # 健康格异步渲染：固定 500ms 在 8 worker 下会早于 .hc 出现（r952）。
+        page.wait_for_selector("#hbody .hc", timeout=20000)
+        page.wait_for_timeout(150)
         w = page.evaluate(
             """()=>{const e=document.querySelector('.hc');
                 return e?e.getBoundingClientRect().width:null;}""")

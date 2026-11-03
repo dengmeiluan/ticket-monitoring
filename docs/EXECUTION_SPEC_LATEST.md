@@ -26,28 +26,28 @@
 
 ## 1. 项目事实与当前状态（开工必核验）
 
-### 1.0 当前状态快照（2026-11-03 10:17，先核验再干活）
+### 1.0 当前状态快照（2026-11-03 12:02，先核验再干活）
 
-- **代码树**：HEAD `3561197` 已含 r933–r947（多程数据层/配置形状/实际渠道错峰/
-  日桶下限守卫/携程多程采集/轮尾采集/只读 API/配置卡/概览整单卡/提醒接线/来源页
-  可溯源/过期首段不提醒）；
-  文档与 `core/channels.py` 的多程口径仍是工作树改动。live 8765 于
-  **2026-11-03 08:58** 切到 `_release_ab04`（Release `ab04c22`，webui sha12
-  `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r947 尚未入该树。
-- **门禁**：tracked collect **6207**（2026-11-03 11:13，当前树）；全量冒烟
-  **6184 passed / 19 skipped / 1 failed / 3 errors**（11:48，workers 8，共 6207）。
-  4 个红点（`test_r320b_trendlong` 1 + `test_r286_webui` 3）单飞 **7 passed**
-  （11:48，8.0s），均为 xdist 下浏览器/demo 竞争，不是产品回归；按单跑口径
-  **6188 passed / 19 skipped / 0 failed**。定向：多程 5 文件 **31 passed**（11:18）；
-  Release 正文 **8 passed**（10:36）；日桶 **16 passed**（10:10）。
+- **代码树**：HEAD `80c63eb`（合并 `feat/mc-history` / `feat/mc-export`）已含
+  r933–r953（多程数据层/配置形状/实际渠道错峰/日桶下限守卫/携程多程采集/
+  轮尾采集/只读 API/配置卡/概览整单卡/提醒接线/来源页可溯源/过期首段不提醒/
+  整单历史 sparkline/CSV 导出）；live 8765 于 **2026-11-03 08:58** 切到
+  `_release_ab04`（Release `ab04c22`，webui sha12 `6c85a00f14c1`，PID 47952；
+  `/api/channel-dims` 10 家）；r933–r953 尚未入该树。
+- **门禁**：tracked collect **6211**（2026-11-03 12:35，含 r953 导出用例）；当前树
+  全量非 UI **6192 passed / 19 skipped / 0 failed**（2026-11-03 12:40，workers 4，
+  15:14）。r952 已修掉此前的 4 个 xdist 假红（r320b `_State.cfg` 隔离、r286
+  误杀 8796/`networkidle`/固定等待）。定向：多程 5 文件 **31 passed**（11:18）；
+  合并后历史/导出 **16 passed**（12:22）；Release 正文 **8 passed**（10:36）；
+  日桶 **16 passed**（10:10）。
   UI **670/670**（2026-11-03 11:18 全量复跑，零 JS 错误；含 r946 来源链接与
   r947 过期门；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、
   同程 App round_trip=国际；r905 新增的行内自检按钮另由 `test_r905` 真渲染 +
   `test_r640` 三档行高覆盖）；能力线 9 文件 **63 passed**（2026-11-03 09:55）；
   `channel_contract --strict` **10 家 × 11 轴无缺口**（2026-11-03 10:13）；
-  `release_align_check --local` **25/25 PASS**（2026-11-03 11:31）；静态站已按当前
-  工作树重烘，站点戳 `code:3860ec683303`（11:29，5,656,613 bytes）。站点尚未发布/
-  部署，推送后 Pages 才会更新。
+  `release_align_check --local` **25/25 PASS**（2026-11-03 12:40）；静态站已按
+  `80c63eb` 重烘（站点戳 `code:ccfc38542bf3`，12:37，5,659,402 bytes）。站点
+  尚未发布/部署，推送后 Pages 才会更新。
 - **唯一声明源**：`core/channels.py`。新增渠道/维度先跑 `python -m core.channel_contract --strict`
   与 `test_r903/r904/r905`；声明字典禁止重复键，hint 承诺的按钮必须真实渲染。
 - **发布状态**：Release `v1.0` → `ab04c22`（v1.5.307，10 渠道正文/四资产 digest 4/4/CI/Pages 同源）；ghcr `sha-ab04c22` digest `9b72acb1a6b9…`，`latest` = `sha-934e108` digest `c8fe5de9383c…`（latest 跟随更新 HEAD，非同 digest；要 Release 同源请 pin `sha-ab04c22`）；live 8765 已切 `_release_ab04`；
@@ -3081,18 +3081,60 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
     库/表缺失返回 `items=[] + note`（不建库建表、不 500）；演示态明说「演示数据
     不含多程整单样本」，界面可把「没样本」和「读失败」分开。
   · 矩阵 `ctrip.multi_city` 说明同步：已有 `fetch_multi`/轮尾采集/只读 API；
-    配置卡/概览整单卡在 r944 补齐，仍无生产整单行、推送/走势未接，仍记 `""`；
+    配置卡/概览整单卡在 r944、整单提醒与历史走势在 r944/r951 补齐；仍无生产
+    整单行，仍记 `""`；
     不再写「采集端未实现」。
   · 门禁：多程 4 文件 **23 passed**（模型/解析/轮尾/API，2026-11-03 10:13），
     全量见 §1.0。
 
+- r952 门禁不稳双修（2026-11-03 12:18）：
+  · r320b `test_trend_payload_shape_and_clamp` 只 monkeypatch `config_path`，
+    而 `_trend_payload` 优先读 `_State.cfg`；xdist 文件顺序下前序用例留下的库
+    导致 `direct=[]` 假红。改为同时钉 `_State.cfg`（临时库）。
+  · r286 fixture 会误杀固定 8796 端口（随机端口下无归属），并 `goto(networkidle)`、
+    固定 500ms 等健康格；8 worker 下 3 个 ERROR。去掉误杀，改 DOM 就绪 +
+    `#navMon`/`S.users` 条件等待，健康格 `.hc` 条件等待。
+  · 验证：两文件单跑 **15 passed**（12:18）；`-n 4` **15 passed**（12:18）；
+    修复后全量非 UI **6191 passed / 19 skipped / 0 failed**（12:30，648.73s，
+    共 6211），4 个假红未再出现。
+
+- r953 多程整单 CSV 导出（2026-11-03 12:22，`feat/mc-export` 合并）：
+  · 概览多程卡「导出 CSV」只导真实落库历史点（route/segments/价格/阈值/
+    渠道/时刻/最新 legs）；公式注入单元格前缀 `'` 转义；无 latest/历史不显示。
+  · `test_multicity_export` 真浏览器求值 + UI 契约；合并后（2026-11-03 12:22）
+    定向 **16 passed**（含历史/API/JS 语法/div 平衡）。
+  · 按 `80c63eb` 重烘静态站：**5,659,402 bytes**，站点戳
+    `1.5.307 code:ccfc38542bf3 2026-11-03`；`release_align_check --local`
+    **25/25 PASS**（12:40）。
+  · 同树重建 Windows 候选：zip **61,742,809 bytes / 864 entries**，SHA256
+    `bdf974af562c238ac3c4b56618ff5526e3589369a1c847471f59a2d57e653d0e`；
+    无 tests/config/user_data/data 条目，未上传。
+
+- r951 多程整单历史 + 概览 sparkline（2026-11-03 11:58，`feat/mc-history` 合并）：
+  · `PriceStorage` 新增 `itinerary_history`（append-only，90 天保留，按
+    platform/route/segments_key/depart_date/fetched_at 唯一去重；`itinerary_daily`
+    仍只保最新一条）。`itinerary_history(segments_key, limit)` 只返回真实落库点，
+    不补点、不按段价折算。
+  · 概览多程卡在 **≥2 个真实整单点**时画 sparkline（心理价线、aria 播报），
+    单点或空历史不画空图；接口随 `mcRoutes.history` 返回。
+  · 定向 `test_multicity_history` + API/UI 契约 **13 passed**（12:01）；
+    tracked 计数 6207→**6210**（r953 导出用例后为 6211）。
+  · 合并后按 `80c655a` 重烘静态站：`docs/site/index.html` **5,657,639 bytes**，
+    站点戳 `1.5.307 code:28872766340e 2026-11-03`；`release_align_check --local`
+    **25/25 PASS**（12:02）。
+  · 同树重建 Windows 候选：zip **61,742,550 bytes / 864 entries**，SHA256
+    `de9489c240ded91d57d345f6a46ef3d20c78d969d59dacdbdd9f6620598bff5e`；
+    无 tests/config/user_data/data 条目，未上传。
+  · 真渲染（demo 注入）：≥2 真实点 → `.mcspark svg` 存在且 aria 含「整单总价
+    历史」；单点/空历史不画；390 档 scrollWidth 380 ≤ 390；零 pageerror。
+
 - r950 当前树全量冒烟 + 红点单飞复验（2026-11-03 11:48）：
-  · 全量非 UI（workers 8，6207 项，耗时 10:41）**6184 passed / 19 skipped /
+  · 全量非 UI（workers 8，6211 项，耗时 10:41）**6184 passed / 19 skipped /
     1 failed / 3 errors**：`test_r320b_trendlong::test_trend_payload_shape_and_clamp`
     1 红，`test_r286_webui` 3 error。
   · 4 项单飞 **7 passed**（8.0s，同树同代码）：错误签名是 Playwright TargetClosed /
     demo 竞争，不是产品回归；按单跑口径 **6188 passed / 19 skipped / 0 failed**。
-  · UI **670/670**（11:18）；`release_align_check --local` **25/25**；tracked **6207**。
+  · UI **670/670**（11:18）；`release_align_check --local` **25/25**；tracked **6211**。
 
 - r949 静态演示站按当前树重烘（2026-11-03 11:29）：
   · `python docs/demo_build.py` → `docs/site/index.html` **5,656,613 bytes（5,524 KB）**，
@@ -3138,7 +3180,7 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · `b49ae51`：轮尾按行程聚合订阅用户，只采「至少一个订阅用户勾选携程」的行程；
     提醒按行平台过滤，未勾携程的用户不再收到多程提醒——不替用户采/推他没选的渠道。
   · 定向多程 5 文件 **29 passed**（2026-11-03 10:53：模型/解析/API/轮尾/提醒）。
-    当前 tracked **6207**；主树全量复跑见 §1.0（不虚报未完成的绿）。
+    当前 tracked **6211**；主树全量复跑见 §1.0（不虚报未完成的绿）。
 
 - r944 多程配置卡 + 概览整单卡（2026-11-03 10:23）：
   · 配置页新增「添加多程行程」：2–4 段行编辑（三字码 + 日期）、整单心理价、
