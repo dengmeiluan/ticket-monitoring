@@ -25,8 +25,11 @@ def test_modes_focus_minimize_restore_exist():
     src = _src()
     for token in ("function appLoginFocus(", "function appLoginMinimize(",
                   "function appLoginRestore(", ".appfloat",
-                  "appfocus", "APP_LOGIN.mode"):
+                  "appfocus", "APP_LOGIN.mode", "appheadic"):
         assert token in src, token
+    # App 图标走独立 squircle 质感层；浏览器方标保持原 .bic-ota
+    assert "bic bic-app " in src and "bic bic-ota " in src
+    assert "srxPlatIcon(plat)" in src
 
 
 def test_shared_close_stops_app_polling():

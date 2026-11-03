@@ -51,6 +51,28 @@ def test_every_channel_is_embedded_official_mark():
         assert not re.search(r"https?://", uri), key
 
 
+def test_app_zhixing_icon_has_no_promo_banner():
+    """智行 App 图标只保留官方「智行」字标，不能再带「酒店真低价」促销条。
+
+    旧图底部是橙色营销横幅，缩到 16–22px 读成广告/噪点，渠道身份不成立。
+    """
+    import base64
+    import io
+    from PIL import Image
+    raw = base64.b64decode(BRAND["app_zhixing"].split(",", 1)[1])
+    im = Image.open(io.BytesIO(raw)).convert("RGB")
+    assert im.size == (256, 256), im.size
+    w, h = im.size
+    for y in range(h - 50, h):
+        for x in range(w):
+            r, g, b = im.getpixel((x, y))
+            assert not (r > 170 and g < 160 and b < 130), (
+                "智行图标底部仍有促销横幅像素 @%s,%s" % (x, y))
+    # 蓝色底：底部应整体偏蓝，不能是白色/黑色横条
+    px = [im.getpixel((x, h - 20)) for x in range(0, w, 8)]
+    assert sum(1 for r, g, b in px if b > r + 40) >= len(px) * 0.9
+
+
 def test_airline_official_icons_cover_major_carriers():
     for code in ("MU", "CA", "CZ", "MF", "9C", "HO", "HU", "3U", "ZH", "SC"):
         assert code in AIR and _png_ok(AIR[code]) > 1500

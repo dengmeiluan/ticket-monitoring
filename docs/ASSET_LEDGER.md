@@ -13,7 +13,7 @@
 | `SRX_BRAND_IMG.fliggy` | 飞猪 | 256×256 PNG | 官方 App/站点品牌标记，用于渠道识别 | 2026-10-24 |
 | `SRX_BRAND_IMG.tongcheng` | 同程 | 256×256 PNG | 官方 App/站点品牌标记，用于渠道识别 | 2026-10-24 |
 | `SRX_BRAND_IMG.tuniu` | 途牛 | 256×256 PNG | 官方 App/站点品牌标记，用于渠道识别 | 2026-10-24 |
-| `SRX_BRAND_IMG.app_zhixing` | 智行 App | 256×256 PNG | 智行官方 App 图标（蓝底「智行」标识） | 2026-10-31 |
+| `SRX_BRAND_IMG.app_zhixing` | 智行 App | 256×256 PNG | 智行官方「智行」字标（蓝底，2026-11-03 去除原图标底部促销横幅后重新居中，避免缩到 16–22px 仍像广告） | 2026-11-03 |
 | `SRX_BRAND_IMG.app_qunar` | 去哪儿 App | 256×256 PNG | 去哪儿官方 App 图标（青色骆驼，与浏览器 `qunar` 同品牌标记） | 2026-10-31 |
 | `SRX_BRAND_IMG.app_fliggy`（别名 → `fliggy`） | 飞猪 App | 256×256 PNG | 与浏览器 `fliggy` 同一官方品牌标记，经 `SRX_BRAND_ALIAS` 复用 | 2026-11-02 |
 | `SRX_BRAND_IMG.app_ctrip`（别名 → `ctrip`） | 携程 App | 256×256 PNG | 与浏览器 `ctrip` 同一官方品牌标记，经 `SRX_BRAND_ALIAS` 复用 | 2026-11-02 |
