@@ -18,6 +18,9 @@ IDS = {
     "glbAndHideDev": "隐藏开发者选项",
     "glbAndKeep": "复用前台 App",
     "glbVendorApply": "应用 MuMu 官方设置",
+    "glbCapArithmetic": "算数验证码",
+    "glbCapText": "文字验证码",
+    "glbCapOcrScale": "OCR 放大倍数",
 }
 
 

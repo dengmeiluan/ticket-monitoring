@@ -33,7 +33,7 @@
   可溯源/过期首段不提醒/整单历史 sparkline/CSV 导出/2 段矩阵升 y）；live 8765 于
   **2026-11-03 08:58** 切到 `_release_ab04`（live 树 `ab04c22`，webui sha12
   `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r956 尚未入该树。
-- **门禁**：tracked collect **6437**（2026-11-03 22:35 核对，含 r920 +2 / r921 +10 / r922 +14 / r923 +12 / UI shard +5）。
+- **门禁**：tracked collect **6484**（2026-11-03 22:51 核对，含 r920 +2 / r921 +10 / r922 +14 / r923 +12 / r924 +47 / UI shard +5）。
   本地 clean 全量在 HEAD `3f14c0c`：**6379 passed / 44 skipped / 2 failed**
   （workers 8，402.86s；两红均为 `display_spoof` 未入库，已由 `922186d` 修复）。
   CI **4 测试片 + 2 UI 片**在 `de44d464` **全绿**（test 284/358/240/282s、

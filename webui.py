@@ -21198,6 +21198,9 @@ function buildForm(){if(!CFG)return;let h='',gh='';
   +glcell('滑块连续失败','glbSliderFails','GLB.max_fails=Math.max(1,Math.min(10,parseInt(this.value)||2))',esc(GLB.max_fails==null?2:GLB.max_fails),'1–10 · 连续失败几次拉黑 7 天','number',null,'2')
   +glcell('滑块拖动距离','glbSliderDist','GLB.device_distance=Math.max(40,Math.min(1000,parseInt(this.value)||260))',esc(GLB.device_distance==null?260:GLB.device_distance),'40–1000 px · App 侧默认拖动距离','number',null,'260')
   +glcell('滑块只试首选','glbSliderOne','GLB.single_shot=this.checked',!!GLB.single_shot,'勾选=只试首选偏移；不勾=顺次试前 3 个候选','check')
+  +glcell('算数验证码','glbCapArithmetic','GLB.captcha_arithmetic=this.checked',GLB.captcha_arithmetic!==false,'简单算数题（3+7=?）文本解析；强人机仍不动手','check')
+  +glcell('文字验证码','glbCapText','GLB.captcha_text=this.checked',GLB.captcha_text!==false,'单行印刷体验证码本机 OCR 识别','check')
+  +glcell('OCR 放大倍数','glbCapOcrScale','GLB.captcha_ocr_scale=Math.max(1,Math.min(6,parseFloat(this.value)||3))',esc(GLB.captcha_ocr_scale==null?3:GLB.captcha_ocr_scale),'1–6 倍 · 小字号验证码放大后再 OCR','number',null,'3')
   +glcell('会话锁等待','glbWait','GLB.profile_wait_s=Math.max(0,Math.min(120,parseFloat(this.value)||0))',esc(GLB.profile_wait_s==null?0:GLB.profile_wait_s),'抢不到浏览器资料锁时最多等待 · 0=立刻让位（登录窗/探针占用时等一会儿比丢整轮划算）',null,'秒')
   +glcell('浏览器内核','glbBch','GLB.browser_channel=(this.value||"").trim()',esc(GLB.browser_channel||''),'空=Playwright Chromium；chrome=系统真 Chrome（重启生效）','text',null,'空 = 自带 Chromium')
   +glcell('命中验证自动开窗','glbAV','GLB.auto_verify=this.checked',!!GLB.auto_verify,'命中人机验证时自动弹出验证窗口（同一会话），同渠道 10 分钟只开一次','check')
@@ -23306,6 +23309,7 @@ const GLB_RANGES=[
  {id:'glbSliderCap',min:0,max:20,label:'滑块每日上限须为 0-20 次'},
  {id:'glbSliderFails',min:1,max:10,label:'滑块连续失败须为 1-10 次'},
  {id:'glbSliderDist',min:40,max:1000,label:'滑块拖动距离须为 40-1000 px'},
+ {id:'glbCapOcrScale',min:1,max:6,dec:1,label:'OCR 放大须为 1-6 倍'},
  {id:'glbWait',min:0,max:120,label:'会话锁等待须为 0-120 秒'},
  {id:'glbFast',min:5,max:1440,label:'快 TTL 须为 5-1440 分钟'},
  {id:'glbSlow',min:5,max:1440,label:'慢 TTL 须为 5-1440 分钟'},
@@ -34606,6 +34610,17 @@ class _Handler(BaseHTTPRequestHandler):
                                 "single_shot": bool(
                                     ((cfg.get("crawler") or {}).get(
                                         "slider") or {}).get("single_shot", False)),
+                                "captcha_arithmetic": bool(
+                                    ((cfg.get("crawler") or {}).get(
+                                        "captcha") or {}).get(
+                                            "arithmetic", True)),
+                                "captcha_text": bool(
+                                    ((cfg.get("crawler") or {}).get(
+                                        "captcha") or {}).get("text", True)),
+                                "captcha_ocr_scale": float(
+                                    ((cfg.get("crawler") or {}).get(
+                                        "captcha") or {}).get(
+                                            "ocr_scale", 3.0) or 3.0),
                                 "align_display": bool(
                                     (((cfg.get("android") or {}).get(
                                         "identity") or {}).get(
@@ -34911,6 +34926,19 @@ class _Handler(BaseHTTPRequestHandler):
                         _sl0["single_shot"] = bool(glb["single_shot"])
                     if _sl0:
                         _crw["slider"] = _sl0
+                    _cap0 = dict(_crw.get("captcha") or {})
+                    if glb.get("captcha_arithmetic") is not None:
+                        _cap0["arithmetic"] = bool(glb["captcha_arithmetic"])
+                    if glb.get("captcha_text") is not None:
+                        _cap0["text"] = bool(glb["captcha_text"])
+                    if glb.get("captcha_ocr_scale") is not None:
+                        try:
+                            _cs = float(glb["captcha_ocr_scale"])
+                        except (TypeError, ValueError):
+                            _cs = 3.0
+                        _cap0["ocr_scale"] = max(1.0, min(6.0, _cs))
+                    if _cap0:
+                        _crw["captcha"] = _cap0
                     if glb.get("browser_channel") is not None:
                         _bc = str(glb["browser_channel"]).strip().lower()
                         _crw["browser_channel"] = (
