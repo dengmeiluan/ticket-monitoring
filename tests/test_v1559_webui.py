@@ -266,20 +266,31 @@ class TestRebuildNoLockFreeze:
             w._build_state = real_build
 
     def test_swr_returns_stale_immediately(self):
-        """有旧值时签名失效：请求即刻回旧值并触发后台重建（零等待）。"""
+        """有旧值时签名失效：请求即刻回旧值并触发后台重建（零等待）。
+
+        后台线程必须在本测里被挡住：真实重建只要抢在 return 求值前
+        发布，就会把“旧值”换成新 payload（CI 慢机实测假红）。这里
+        分别钉「返回旧值」和「确实排了重建」，线程本身由上一个用例
+        真跑覆盖。
+        """
         import time as _t
         w = self.w
         w._STATE_CACHE["sig"] = "old"
         w._STATE_CACHE["payload"] = {"v": "stale"}
         orig_sig = w._state_signature
+        orig_async = w._state_rebuild_async
+        started = []
         w._state_signature = lambda: "new"
+        w._state_rebuild_async = lambda: started.append(True)
         try:
             t0 = _t.time()
             out = w._latest_state()
             assert _t.time() - t0 < 0.5, "SWR 路径被重建阻塞"
             assert out == {"v": "stale"}
+            assert started == [True], "SWR 路径没有触发后台重建"
         finally:
             w._state_signature = orig_sig
+            w._state_rebuild_async = orig_async
 
 
 class TestColdStartNoDeadlock:
