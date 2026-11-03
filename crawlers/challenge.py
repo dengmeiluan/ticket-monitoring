@@ -166,6 +166,39 @@ def current_handler():
     return _HANDLER
 
 
+def ensure_slider_handler(config=None, *, user_data_dir="user_data",
+                          profile: str = "", logger=None):
+    """按配置**自动**挂上滑块处理器（幂等，默认关）。
+
+    为什么需要这一层：``SliderHandler`` 写好了，但"谁去注册它"一直没人接——
+    ``crawler.slider.auto`` 配成 ``simple`` 也不会生效，功能等于死的
+    （2026-11-03 全仓搜过：``register_handler`` 只有在测试里被调用过）。
+
+    这里做成**幂等 + 失败静默**的引导函数，由 ``BaseCrawler.__init__`` 调用，
+    于是只要采集器启动就会按配置生效，不用改 main / webui：
+
+    * ``crawler.slider.auto`` 为假/未配 → **不注册**，保持"识别→记账→停手"；
+    * 为真 → 注册 ``SliderHandler``（内部仍会二次分级：强人机一律不碰）；
+    * 已经注册过同一个处理器 → 直接返回，不重复覆盖。
+
+    返回当前处理器（可能是 None）。
+    """
+    try:
+        from . import slider as slider_mod
+        cur = _HANDLER
+        want = slider_mod.should_attempt(
+            "probe", config, user_data_dir=user_data_dir, profile=profile)[0]
+        if not want:
+            return cur
+        if getattr(cur, "name", "") == "slider-handler":
+            return cur
+        return register_handler(slider_mod.SliderHandler(
+            config, user_data_dir=user_data_dir, profile=profile,
+            logger=logger))
+    except Exception:
+        return _HANDLER
+
+
 def _ctx_with(ctx, **kw):
     base = ctx if isinstance(ctx, ChallengeContext) else ChallengeContext()
     return replace(base, **kw)

@@ -243,6 +243,30 @@ python scripts\display_spoof.py --restore       # 回滚到出厂
 - `hardening` 每次会做**坐标基准体检**：设备分辨率 ≠ 900×1600 时明确告警
   「必须 set_design」，因为这种错在账本上只表现为「设城市失败」，很难追。
 
+#### 实机验证（2026-11-03，MuMu / Android 15）
+
+| 阶段 | 实测 |
+|---|---|
+| 改屏幕 | `1080×1920 @288`（override=True） |
+| 界面检查 | 162 个节点，非白屏 |
+| 换算 | `to_device(450,800)=(540,960)`，scale=**1.200** |
+| **真实点击** | 设计 `(450,300)` → 设备 `(540,360)` → 携程**跳转新 Activity**（`CtripHomeActivity` → `AirportCarPlantHomeActivity`）✅ |
+| 回滚 | `900×1600 @240`，override=False，scale 恢复 1.0 ✅ |
+
+**顺带修掉一个会静默毁掉全部坐标的 bug**：`AdbDevice.window_size()` 原来用
+`re.search(r"(\d+)x(\d+)")` 取**第一个**匹配 —— 而 `wm size` 的输出现有两行：
+
+```
+Physical size: 900x1600
+Override size: 1080x1920
+```
+
+于是屏幕被改过之后，`window_size()` 永远返回**物理**尺寸 → `scale` 恒等于
+1.0 → 写死的坐标按原值发出去 → 点击全偏，而账本上只表现成「设城市失败 /
+页面认不出」，极难追。
+
+现在改为**优先取 `Override size`**，读不到才退回 `Physical size`。
+
 ### ABI：写 arm64 能不能行，要看能不能验证——装置已经给你了
 
 **结论先说**：技术上可以改（`resetprop` 写 `ro.product.cpu.abi/abilist*`），

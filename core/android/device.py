@@ -361,9 +361,20 @@ class AdbDevice:
                    for line in out.splitlines())
 
     def window_size(self) -> tuple:
-        """(w, h)；解析失败返回 (0, 0)。"""
+        """当前**生效的**屏幕 (w, h)；解析失败返回 (0, 0)。
+
+        ⚠ 必须优先取 ``Override size``：``wm size`` 的输出有两行
+        （``Physical size: 900x1600`` + ``Override size: 1080x1920``），
+        取第一个匹配会永远拿到**物理**尺寸——屏幕被 ``wm size`` 改过之后，
+        坐标换算比例就恒等于 1.0，写死的坐标会按比例全偏，而账本上只表现成
+        「设城市失败 / 页面认不出」，极难追（2026-11-03 实机验证时踩到）。
+        """
         out = self._sh("shell", "wm", "size") or ""
-        m = re.search(r"(\d+)\s*x\s*(\d+)", out)
+        m = re.search(r"Override size:\s*(\d+)x(\d+)", out)
+        if not m:
+            m = re.search(r"Physical size:\s*(\d+)x(\d+)", out)
+        if not m:
+            m = re.search(r"(\d+)\s*x\s*(\d+)", out)
         return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
 
     def root(self) -> bool:

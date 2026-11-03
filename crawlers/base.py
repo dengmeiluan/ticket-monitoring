@@ -588,6 +588,17 @@ class BaseCrawler:
         # login_desktop 才强制桌面（手机 profile 上滑块更难拖时的退路，
         # 代价是登录与采集指纹不一致）。
         self.login_desktop: bool = bool(config.get("login_desktop", False))
+        # 挑战处置引导：`crawler.slider.auto` 开了就自动挂上滑块处理器。
+        # 放在这里而不是 main/webui——只要采集器被创建就生效，不用每个入口
+        # 各写一遍（之前就是因为没人注册，配置开了也不生效）。
+        try:
+            from .challenge import ensure_slider_handler
+            ensure_slider_handler(
+                config, user_data_dir=self.user_data_root,
+                profile=str(self.profile_name or self.name),
+                logger=getattr(self, "logger", None))
+        except Exception:
+            pass
 
     # ---------- 浏览器 ----------
     @property

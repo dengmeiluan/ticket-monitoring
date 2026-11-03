@@ -159,6 +159,50 @@ def test_design_off_is_byte_identical(monkeypatch):
     assert any(c.endswith("input tap 100 200") for c in calls), calls
 
 
+def test_window_size_prefers_override(monkeypatch):
+    """``wm size`` 有两行，必须取 Override —— 否则改屏幕后换算恒为 1.0。
+
+    2026-11-03 实机踩到：屏幕已改成 1080x1920，但 ``window_size`` 正则取到
+    第一个匹配（``Physical size: 900x1600``），于是 ``scale`` 恒等、
+    写死的坐标全部按原值发出去 → 点击位置全偏，而账本只表现成
+    「设城市失败 / 页面认不出」。
+    """
+    from core.android import device as devmod
+
+    class _P:
+        def __init__(self, out):
+            self.stdout = out.encode()
+            self.stderr = b""
+            self.returncode = 0
+
+    def _run(cmd, timeout, binary=False):
+        joined = " ".join(cmd)
+        if "wm" in joined and "size" in joined:
+            return _P("Physical size: 900x1600\nOverride size: 1080x1920")
+        return _P("")
+    monkeypatch.setattr(devmod, "_run", _run)
+    d = devmod.AdbDevice("adb", "s")
+    assert d.window_size() == (1080, 1920)      # 不是 (900, 1600)！
+
+
+def test_window_size_falls_back_to_physical(monkeypatch):
+    from core.android import device as devmod
+
+    class _P:
+        def __init__(self, out):
+            self.stdout = out.encode()
+            self.stderr = b""
+            self.returncode = 0
+
+    def _run(cmd, timeout, binary=False):
+        joined = " ".join(cmd)
+        if "wm" in joined and "size" in joined:
+            return _P("Physical size: 720x1280")     # 没有 override
+        return _P("")
+    monkeypatch.setattr(devmod, "_run", _run)
+    assert devmod.AdbDevice("adb", "s").window_size() == (720, 1280)
+
+
 def test_design_on_scales_tap_and_swipe(monkeypatch):
     d, calls = _device(monkeypatch, size="1080x1920")
     d.set_design(*DESIGN)                       # 1.2×
