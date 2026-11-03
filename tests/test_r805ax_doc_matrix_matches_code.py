@@ -133,8 +133,8 @@ def test_gate_catches_a_drifted_cell():
     assert ("app_qunar", "low_fare", "n", "y") in diffs, (
         "翻掉一格后判据没抓到：%r" % (diffs,))
 
-    gaps = _parse_gaps(base.replace("app_qunar=()",
-                                    "app_qunar=('calendar',)"))
+    gaps = _parse_gaps(base.replace("app_qunar=(multi_city)",
+                                    "app_qunar=()"))
     assert _gaps_diffs(gaps), "抹掉缺口后判据没抓到"
 
 

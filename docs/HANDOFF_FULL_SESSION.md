@@ -48,10 +48,9 @@
 > **2026-11-03 03:30 补（同程 App 国际往返 + 最终树）**：同程 App 国际往返真机接通
 > （上海⇌东京 11-16/19，7 条去程、最低 9C8515 ¥2209 含税总价；返程 `+¥N` 为加价），
 > `round_trip=y`（仅国际）；`PATH_CN` 补 `app-roundtrip`（r658 门禁曾点红）。
-> tracked collect **6212**（12:46）；全量非 UI **6192 passed / 19 skipped / 0 failed**
-> （12:54，workers 8，759.17s，共 6211；含 r951 历史、r952 门禁修复与 r953 CSV 导出）；
-> c1425d8 仅加 1 条真下载用例（定向 2 passed，产品代码未变），6212 全量待复跑；
-> UI **670/670**（11:18 全量复跑，零 JS 错误）；能力矩阵截图
+> tracked collect **6214**；全量非 UI **6236 passed / 19 skipped / 0 failed**
+> （14:46，workers 8，683.41s，共 6255，含未跟踪并行 WIP 测试）；矩阵升 y、
+> r958 配置控件与门禁修复均在其内；UI **670/670**（15:15 全量复跑，零 JS 错误，含矩阵 y 与 9 个新控件）；能力矩阵截图
 > `docs/screenshots/console-dims.png` 已按 10 渠道 + RT 状态重烘，
 > 静态站同步；`release_align_check --local` **25/25**。
 > **2026-11-03 05:18 补（r927 途牛 H5 国际往返）**：`m.tuniu.com/flight/` 往返档
@@ -124,7 +123,7 @@
 > 「多程超低价」卡两段并排（9C8515 + MM304），价 **¥1298** 明写
 > **「多程含税价」**，下方第一程候选也逐条写「¥N 起 · 多程含税价」。
 > 携程多程整单总价口径坐实；采集端因单 O-D 模型/多段配置未接，矩阵
-> `multi_city` 仍 `""`；3+ 段/缺口程未验。
+> `ctrip.multi_city` = **y（scope 仅 2 段，生产行 ¥1476）**；其余九家仍 `""`；3+ 段/缺口程未验。
 > 另对齐 r922 文档口径：`docs/APP_CHANNELS.md` 同程 App「未接」行、装机结论与
 > `app_tongcheng.detail` 说明统一为「国内明细已覆盖；国际只走日历」（后由 r923 推翻：
 > 国际明细已真机 6 条 ¥875）；r903/r822/docs/EOL **104 passed**、
@@ -247,7 +246,7 @@
 ```
 dims: ('domestic','intl','calendar','detail','round_trip','multi_city','low_fare')
 
-ctrip        domestic=y intl=y calendar=y detail=y round_trip=y  multi_city="" low_fare=y
+ctrip        domestic=y intl=y calendar=y detail=y round_trip=y  multi_city=y low_fare=y
 qunar        domestic=y intl=y calendar=y detail=y round_trip=y  multi_city="" low_fare=y
 fliggy       domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
 tongcheng    domestic=y intl=y calendar=y detail=y round_trip=y  multi_city="" low_fare=y
@@ -258,7 +257,7 @@ app_fliggy  domestic=y intl="" calendar="" detail=y round_trip="" multi_city="" 
 app_ctrip    domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
 app_tongcheng domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
 
-App 缺口：app_zhixing=()   app_qunar=()   app_fliggy=(intl,calendar,round_trip,low_fare)   app_ctrip=()   app_tongcheng=()
+App 缺口：app_zhixing=(multi_city)   app_qunar=(multi_city)   app_fliggy=(intl,calendar,round_trip,multi_city,low_fare)   app_ctrip=(multi_city)   app_tongcheng=(multi_city)
 ```
 
 **稳定基线 7 家**：浏览器 5（携程/去哪儿/飞猪/同程/途牛）+ App 2（**智行 App / 去哪儿 App**）。

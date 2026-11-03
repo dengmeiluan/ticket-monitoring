@@ -70,11 +70,11 @@ CHANNEL_DIMENSIONS = {
     #               国内 atp 组合总价；国际登录后 book1 RT 页的
     #               `ts/list` 直出 tp 含税总价（2026-11-03 实测）。
     #               三家都只采渠道总价，未做两段单程相加。
-    #   multi_city: 十家都未验证（"")：渠道/App 都有多程入口；ctrip PC 已接
-    #               配置卡/轮尾采集/概览整单卡/整单提醒/整单历史（页面自报整单
-    #               含税价），已有 2 段生产整单行（¥1476）；3+ 段实测无组合卡、
-    #               缺口程未验，仍记 ""；
-    #               不把"我们没做"伪装成"渠道没有"，也不把"已接采集面"写成"已支持"。
+    #   multi_city: ctrip PC **2 段已验证出数**（y，scope=仅 2 段）：配置卡/
+    #               轮尾采集/概览整单卡/整单提醒/整单历史/CSV 导出，页面自报
+    #               整单含税价，生产行 ¥1476（IJ004+MM304）；3+ 段实测无组合
+    #               卡、缺口程未验。其余九家仍 ""（有入口、采集端未接）。
+    #               不把"我们没做"伪装成"渠道没有"，也不把"仅 2 段"写成"全段支持"。
     #   low_fare:   **九家都有发现源**（10 家中飞猪 App 明确暂无可用源；
     #               r805z 三方对照 + 后续渠道核过）——来源以
     #               `core/specials.py::SPECIAL_CAPABILITY` 为单一事实源：
@@ -86,7 +86,7 @@ CHANNEL_DIMENSIONS = {
     #               旧注释写「只有 qunar 与 fliggy」是过期结论（该表当时
     #               还没收敛），与矩阵取值自相矛盾。
     "ctrip":     {"domestic": "y", "intl": "y", "calendar": "y", "detail": "y",
-                  "round_trip": "y", "multi_city": "", "low_fare": "y"},
+                  "round_trip": "y", "multi_city": "y", "low_fare": "y"},
     "qunar":     {"domestic": "y", "intl": "y", "calendar": "y", "detail": "y",
                   "round_trip": "y", "multi_city": "", "low_fare": "y"},
     "fliggy":    {"domestic": "y", "intl": "y", "calendar": "y", "detail": "y",
@@ -353,11 +353,10 @@ DIMENSION_NOTES = {
     # 多程同理：浏览器站点**产品上都有**多程入口，是采集端没做（选多段 →
     # 逐段出价 → 合并口径是一整条独立链路）。写 n 不解释，读者会以为
     # 渠道没有多程产品。
-    ("ctrip", "multi_city"): "站点有多程入口；已接配置卡（2–4 段）、轮尾"
-                             "采集（页面自报「多程含税价」整单总价）、概览"
-                             "整单卡/来源页、整单提醒与整单历史 sparkline；"
-                             "已有 2 段生产整单行（¥1476）；3+ 段实测无组合卡、"
-                             "缺口程未验，矩阵仍记未验证，不是渠道没有",
+    ("ctrip", "multi_city"): "站点有多程入口；2 段已生产验证（¥1476，"
+                             "IJ004+MM304）——配置卡/轮尾采集/概览/来源/提醒/"
+                             "历史/CSV 齐全，矩阵 ✓ 仅 2 段；3+ 段实测无组合卡、"
+                             "缺口程未验，不是渠道没有",
     ("qunar", "multi_city"): "站点有多程入口；采集端未实现，矩阵记未验证，"
                              "不是渠道没有",
     ("fliggy", "multi_city"): "站点有多程入口；采集端未实现，矩阵记未验证，"
@@ -509,6 +508,7 @@ DIMENSION_NOTES = {
 # 拼在渠道名后读作「飞猪仅国际」）。与 DIMENSION_NOTES 同源：改一端必须
 # 改另一端，`test_r805ae` 把「有 scope 必有 note」钉住。
 DIMENSION_SCOPE = {
+    ("ctrip", "multi_city"): "仅 2 段",
     ("fliggy", "round_trip"): "仅国际",
     ("qunar", "round_trip"): "仅国内",
     ("app_qunar", "round_trip"): "仅国内",

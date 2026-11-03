@@ -21,8 +21,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import crawlers
 from core.channels import (APP_BROWSER_PEER, APP_CHANNELS, BROWSER_CHANNELS,
-                           CHANNEL_DIMENSIONS, DIMENSIONS, app_alignment_gaps,
-                           dim_state, unsupported_dims)
+                           CHANNEL_DIMENSIONS, DIMENSIONS, DIMENSION_SCOPE,
+                           app_alignment_gaps, dim_state, unsupported_dims)
 
 
 def test_every_registered_channel_has_every_dimension():
@@ -96,13 +96,12 @@ def test_alignment_gaps_are_enumerable_not_vague():
     能力 App 都要对齐有），不是「某一家同源友商有」——按单个同行判会
     自证：携程自己 round_trip 未验证，于是「智行 ↔ 携程」永远算不出往返
     缺口，而网页端飞猪/同程明明支持。as of 2026-11-02 晚：智行与去哪儿
-    App 国内/国际/日历/明细/往返/低价机票**全部落地**；去哪儿 App 的
-    低价机票登录后落原生 RN 页，14 天真机出数；日历/低价均补齐。
+    App 国内/国际/日历/明细/往返/低价机票**全部落地**；2026-11-03 ctrip PC
+    多程 2 段升 y 后，App 端未接多程，缺口清单应**精确为** `("multi_city",)`。
     """
-    assert app_alignment_gaps("app_qunar") == (), (
-        "去哪儿 App 的日历/低价机票已真机补齐，不应再有缺口：%r"
-        % (app_alignment_gaps("app_qunar"),))
-    assert app_alignment_gaps("app_zhixing") == ()
+    assert app_alignment_gaps("app_qunar") == ("multi_city",), (
+        "去哪儿 App 仅剩多程缺口：%r" % (app_alignment_gaps("app_qunar"),))
+    assert app_alignment_gaps("app_zhixing") == ("multi_city",)
     # 缺口是空集合时，上面的 all(...) 会恒真——所以下面另造一个非空场景
     # 验证函数真的会报缺口（见 try 块），这里就不再写恒真式。
     # 函数本身不能因为「都对齐了」就退化成恒空：造一个「基准有、App 无」
@@ -191,18 +190,28 @@ def test_expired_snapshot_is_reported_not_silent():
 
 
 # ---------- 声明必须有代码证据（防"看起来应该支持"） ----------
-def test_multi_city_has_no_implementation_anywhere():
-    """五个 crawler 都没有多程实现 → 谁都不许声明 y。
+def test_multi_city_y_only_for_verified_ctrip_two_segments():
+    """只有 ctrip PC 2 段可声明 y，且必须带「仅 2 段」scope。
 
-    这条是负向守卫：将来真做了多程，把实现连同矩阵一起改；
-    在此之前写 y 就是给用户一个不会工作的能力。
+    2026-11-03 生产行 ¥1476（IJ004+MM304）证明 2 段整单链路可用；
+    3+ 段实测无组合卡、缺口程未验。其余渠道仍未接，不得声明 y。
     """
     import io
     import os
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     for plat in BROWSER_CHANNELS + APP_CHANNELS:
-        assert dim_state(plat, "multi_city") != "y",             "%s 声明支持多程，但代码里没有实现" % plat
-    for f in ("ctrip.py", "qunar.py", "fliggy.py", "tongcheng.py", "tuniu.py"):
+        if plat == "ctrip":
+            assert dim_state(plat, "multi_city") == "y", \
+                "ctrip 已有 2 段生产整单行，矩阵却未声明 y"
+            assert DIMENSION_SCOPE.get((plat, "multi_city")) == "仅 2 段", \
+                "ctrip 多程只验证 2 段，scope 必须写明"
+        else:
+            assert dim_state(plat, "multi_city") != "y", \
+                "%s 声明支持多程，但代码里没有实现" % plat
+    ctrip = io.open(os.path.join(root, "crawlers", "ctrip.py"),
+                    encoding="utf-8", newline="").read()
+    assert "def fetch_multi(" in ctrip, "ctrip 声明 y 但没有 fetch_multi"
+    for f in ("qunar.py", "fliggy.py", "tongcheng.py", "tuniu.py"):
         src = io.open(os.path.join(root, "crawlers", f),
                       encoding="utf-8", newline="").read()
         assert "multi_city" not in src and "多程查询" not in src, f

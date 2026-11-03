@@ -518,7 +518,7 @@ WC-P2-2 诊断: sh=rgb(11, 98, 214) 0px 0px 0px 2px active=true items=4
  ✓ W2 390 零新增横滚（溢出 -10px）
  ✓ W3 toast word-break=normal+overflow-wrap=anywhere（实测 normal/anywhere）
  ✓ W4 Esc 关抽屉焦点归还 fltBtn（实测 fltBtn）
- ✓ T1 demo 倒计时 chip 可见（实测 ⏱ 下轮 12:00（43 /flex）
+ ✓ T1 demo 倒计时 chip 可见（实测 ⏱ 下轮 15:13（40 /flex）
  ✓ R1a hdmeta 560 带独占行（flexBasis=100%）
  ✓ R1b 560 带页面零横滚（sw=550 cw=560）
  ✓ R1c 620 带回单行（flexBasis=auto）

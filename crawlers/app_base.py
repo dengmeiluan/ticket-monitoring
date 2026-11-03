@@ -323,6 +323,17 @@ class AppCrawler:
         if getattr(self, "_app_fresh", False):
             self._app_fresh = False
             return True
+        # keep_alive（默认关）：上一轮成功且 App 已在前台时不再冷启。
+        # 冷启本身是一串设备校验 + 首屏风控埋点，频繁冷启更「像自动化」；
+        # 但残留界面会吞点击（见上：设城市连续失败），所以默认仍冷启。
+        if self._keep_alive() and getattr(self, "_last_round_ok", False):
+            try:
+                act = str(dev.current_activity() or "")
+            except Exception:
+                act = ""
+            if self.package and act.split("/")[0].strip() == self.package:
+                self.logger.info("[%s] 复用前台 App（keep_app_alive）", self.name)
+                return True
         page = self._cold_start_and_probe(dev)
         self._app_fresh = False
         return bool(page and not self._looks_blank(page))
@@ -418,13 +429,116 @@ class AppCrawler:
                                  ret_date=ret_date) or []
             self.logger.info("[%s] 抓取完成，得到 %d 条记录",
                              self.name, len(results))
+            self._last_round_ok = bool(results)
             return results
         except Exception as e:  # 设备掉线/解析失败都走这里
+            self._last_round_ok = False
             self.last_error = f"{type(e).__name__}: {e}"
             self.logger.warning("[%s] 抓取失败: %s", self.name, self.last_error)
             if not any(p.get("status") == "error" for p in self.paths):
                 self.path_note("app-error", "error", detail=self.last_error)
             return []
+        finally:
+            # 登录账本与风险评分：**只记账、不改流程**（异常全吞）。
+            # 「连续登录失败后还按 30 分钟节奏重试」本身就是撞库特征，
+            # 是「越重登越登不上」的机制，所以必须跨进程记住连击数。
+            self._note_round_risk()
+            # 爬取率账本：与浏览器渠道同一口径（rows>0 才算 ok），
+            # 这样两端的成功率可以在同一张表里比。
+            self._note_round_yield()
+
+    def _note_round_yield(self) -> dict:
+        try:
+            from core.yield_stats import default_ledger, statuses_ok
+            root = str(self.config.get("user_data_dir") or "user_data")
+            profile = str(getattr(self, "profile_name", "") or self.name)
+            led = default_ledger(os.path.join(_REPO_ROOT, root), profile)
+            ok, rows, path = statuses_ok(self.paths)
+            if not ok and getattr(self, "_last_round_ok", False):
+                ok, rows = True, rows or 1
+                path = path or (self.last_path or "unknown")
+            led.note(self.name, path or "unknown", ok, rows=rows)
+            return {"ok": ok, "rows": rows, "path": path}
+        except Exception:
+            return {}
+
+    # ---------- 登录账本 / 风险评分 ----------
+    def _ledger(self):
+        """登录账本（懒加载；user_data 找不到/写入失败都当没有）。"""
+        led = getattr(self, "_login_ledger", None)
+        if led is not None:
+            return led
+        try:
+            from core.riskscore import default_ledger
+            root = str(self.config.get("user_data_dir") or "user_data")
+            # AppCrawler 没有 profile_name（那是浏览器基类的），用 getattr 取：
+            # 直接 self.profile_name 会抛 AttributeError，被这里吞掉后账本
+            # 静默失效——正是「记了但没记上」那类最难查的坑。
+            profile = str(getattr(self, "profile_name", "") or self.name)
+            self._login_ledger = default_ledger(os.path.join(
+                _REPO_ROOT, root), profile)
+        except Exception:
+            self._login_ledger = None
+        return self._login_ledger
+
+    def _round_signals(self) -> dict:
+        """从本轮账本里抽风控信号（全部是**已发生的事实**）。"""
+        statuses = [p.get("status") for p in (self.paths or [])]
+        return {
+            "login_wall": ("login" in statuses) or bool(self.login_suspect),
+            "captcha": any(s in ("captcha", "face") for s in statuses),
+            "soft": "soft_reject" in statuses,
+            "blocked": "blocked" in statuses,
+        }
+
+    def _note_round_risk(self) -> dict:
+        """把本轮结果写进登录账本，并按风险分给出「下一步该怎么办」。
+
+        App 渠道没有 HTTP 状态码，403/429 那一路信号取不到；这里只喂
+        能观测到的三类：登录墙、验证码/人脸、软拒。**不喂猜测值**。
+        """
+        try:
+            sig = self._round_signals()
+            led = self._ledger()
+            if led is None:
+                return {}
+            # **只记「登录相关」的结果**。这里不是「每轮成功/失败」的计数器：
+            # 超时、解析失败、真无票都跟登录无关，若也记成失败，几轮之后
+            # 退避会涨到 2 小时，把用户正常的重登窗口一起堵死。
+            login_hit = bool(sig["login_wall"] or sig["captcha"])
+            if login_hit:
+                led.note_result(self.name, False, device_risk=True)
+            elif getattr(self, "_last_round_ok", False):
+                led.note_result(self.name, True)
+            else:
+                return {}      # 与登录无关的失败：不给账本添噪声
+            from core.riskscore import assess
+            got = assess(self.name, ledger=led,
+                         captcha=sig["captcha"], login_wall=sig["login_wall"],
+                         soft=sig["soft"], blocked=sig["blocked"])
+            if got.get("level") not in ("calm",):
+                self.logger.warning(
+                    "[%s] 风控评分 %.0f（%s）：%s；建议 %s",
+                    self.name, got.get("score", 0), got.get("level"),
+                    got.get("advice", {}).get("text", ""),
+                    "／".join(got.get("reasons") or [])[:200])
+            return got
+        except Exception:
+            return {}
+
+    def _keep_alive(self) -> bool:
+        """是否复用「上一轮就在前台」的 App（``android.keep_app_alive``）。
+
+        默认关：仓库里已实证「复用上一轮界面」会让后续航线卡在设城市
+        （残留广告/子页吞点击），所以冷启是更稳的默认。开着它的唯一理由
+        是**降低 App 冷启次数**（每次冷启都会重跑设备校验与首屏风控埋点），
+        换来的是偶发点不动的风险——由操作员按现场权衡。
+        """
+        try:
+            return bool((self.config.get("android") or {}).get(
+                "keep_app_alive", False))
+        except Exception:
+            return False
 
     # ---------- 航线 / 城市名 / 逐日期记账（所有 App 渠道同一套语义） ----------
     #

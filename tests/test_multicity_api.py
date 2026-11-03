@@ -248,3 +248,43 @@ def test_config_post_round_trips_multicity(config_server):
     after = yaml.safe_load(io.open(cfg_path, encoding="utf-8"))
     assert len(after["users"][0]["routes"][0]["segments"]) == 2, \
         "坏配置不得落盘"
+
+
+def test_config_post_round_trips_stealth_android(config_server):
+    """r958：页面新增的 8 个 stealth/identity 键必须真写回并钳制。"""
+    import io
+    import yaml
+    base, cfg_path = config_server
+    payload = {"users": [], "globals": {
+        "humanize": False, "humanize_rounds": 5,
+        "browser_channel": "chrome",
+        "android": {"identity": {"enabled": True, "use_root": False,
+                                 "reboot": "full", "force": True},
+                    "stealth": {"enabled": True,
+                                "hide_dev_options": False},
+                    "keep_app_alive": True}}}
+    code, out = _post(base, payload)
+    assert code == 200 and out.get("ok"), out
+    saved = yaml.safe_load(io.open(cfg_path, encoding="utf-8"))
+    crw = saved.get("crawler") or {}
+    assert crw["humanize"] is False and crw["humanize_rounds"] == 5
+    assert crw["browser_channel"] == "chrome"
+    and_ = saved.get("android") or {}
+    assert and_["identity"]["use_root"] is False
+    assert and_["identity"]["reboot"] == "full"
+    assert and_["identity"]["force"] is True
+    assert and_["stealth"]["hide_dev_options"] is False
+    assert and_["keep_app_alive"] is True
+
+    # 非法值钳制：reboot 回 zygote、browser_channel 回空、use_root null 保留
+    bad = {"users": [], "globals": {
+        "humanize_rounds": 99, "browser_channel": "firefox",
+        "android": {"identity": {"use_root": None,
+                                 "reboot": "bogus"}}}}
+    code, out = _post(base, bad)
+    assert code == 200 and out.get("ok"), out
+    saved = yaml.safe_load(io.open(cfg_path, encoding="utf-8"))
+    assert saved["crawler"]["humanize_rounds"] == 6
+    assert saved["crawler"]["browser_channel"] == ""
+    assert saved["android"]["identity"]["use_root"] is None
+    assert saved["android"]["identity"]["reboot"] == "zygote"

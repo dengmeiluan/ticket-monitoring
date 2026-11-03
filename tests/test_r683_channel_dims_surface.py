@@ -76,8 +76,10 @@ def test_payload_answers_alignment_question():
     # 截至 2026-11-02 晚：去哪儿 App 往返已真机跑通；登录后「低价机票」
     # 落原生 RN 页（QReactNativeActivity1），14 天逐日价 41.2s 真出；
     # 日历整月也带价。两处旧缺口已补齐。
-    assert by["app_qunar"]["gaps"] == [], by["app_qunar"]["gaps"]
-    assert by["app_zhixing"]["gaps"] == [], by["app_zhixing"]["gaps"]
+    # 2026-11-03：ctrip PC 多程 2 段已生产验证 → 浏览器端出现该能力，
+    # 两家 App 仍未接多程，缺口只剩 multi_city（其余维度已对齐）。
+    assert by["app_qunar"]["gaps"] == ["multi_city"], by["app_qunar"]["gaps"]
+    assert by["app_zhixing"]["gaps"] == ["multi_city"], by["app_zhixing"]["gaps"]
 
     # 浏览器渠道没有基准，不该冒出「缺口」
     for p in ("ctrip", "qunar", "fliggy", "tongcheng", "tuniu"):
@@ -87,9 +89,10 @@ def test_payload_answers_alignment_question():
 def test_gaps_only_count_browser_supported_dims():
     """缺口只来自「浏览器端有而 App 没有」；App 更全不算缺口。"""
     from core.channels import app_alignment_gaps, browser_supported
-    # multi_city：五家浏览器渠道全是 n → 谁都没有，不算缺口。
-    assert "multi_city" not in app_alignment_gaps("app_qunar")
-    assert "multi_city" not in app_alignment_gaps("app_zhixing")
+    # multi_city：ctrip PC 2 段已 y → 浏览器端有；两家 App 未接，算缺口。
+    assert browser_supported("multi_city")
+    assert "multi_city" in app_alignment_gaps("app_qunar")
+    assert "multi_city" in app_alignment_gaps("app_zhixing")
     # round_trip：飞猪/同程为 y（携程自己 n）→ 浏览器端有；两家 App 都已
     # 真机跑通（2026-10-31），故不是缺口。
     assert browser_supported("round_trip")

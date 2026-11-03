@@ -172,6 +172,26 @@ crawler:
   # 指纹一致性（L3）：抹掉 navigator.webdriver 等「自动化浏览器」标记。
   # 只让页面看到一个普通 Chrome。
   stealth: true
+  # 预热时的拟人化动作（鼠标贝塞尔轨迹 / 分段滚动 / 停留）。
+  # 为什么值得：均匀间隔 + 零停留 + 瞬移点击是「形状」层面的机器人特征，
+  # 比 UA 更难洗。只在预热那一段做（约 4–8s/渠道/轮），采集中不插动作。
+  humanize: true
+  humanize_rounds: 2       # 1–6；轮数越多越像人在逛，耗时也越长
+  # 浏览器内核：空=用 Playwright 自带 Chromium（现状）；chrome=用系统真 Chrome。
+  # 自带 Chromium 与真 Chrome 在字体/编解码/sec-ch-ua 全版本串上仍有差异，
+  # 风控拿「Chromium 特征 + Chrome UA」就能配成矛盾。改了重启生效。
+  browser_channel: ''
+  # 会话被占用时最多等多久（秒）。登录窗口/探针只占锁几十秒，让采集等一会儿
+  # 比丢一整轮划算——历史上「抢不到自家锁」占了失败样本的 38.9%。
+  # 0=立刻让位（现行行为，不改变既有语义）。
+  profile_wait_s: 0
+  # ── 时区/语言与出口 IP 的地理对齐（可选）────────────────────────
+  # 挂着异地/境外出口而页面报 Asia/Shanghai + zh-CN，「IP 在 A 地、时区在
+  # B 地」是最便宜的一条矛盾判定。默认不写=保持 zh-CN/Asia/Shanghai 不变。
+  # 支持按渠道覆盖：qunar: {locale: zh-CN, timezone: Asia/Shanghai}
+  # geo:
+  #   locale: zh-CN
+  #   timezone: Asia/Shanghai
   # HTTP 出口的 TLS/JA3 指纹（core/net.py）：有 curl_cffi 时按此指纹发起请求，
   # 缺依赖自动退回 httpx。设为空串可整渠道强制走 httpx（排障用）。
   # 可选值见 curl_cffi 文档，默认 chrome。
@@ -239,3 +259,37 @@ android:
   boot_timeout_s: 180      # 冷启动实测 24–36s，留足余量
   action_timeout_s: 60     # 单条 adb 命令超时
   snapshot: true           # 登录态快照：网页登录一次后自动保存并在下次采集前恢复
+
+  # ── 设备身份（指纹）────────────────────────────────────────────
+  # 为什么需要：App 首启会用 android_id / 序列号 / Build 字段生成设备 ID
+  # （携程 c_guid、阿里系 utdid+umid）。模拟器出厂身份是高熵且可识别的一类
+  # （model 带 MuMu、ro.hardware=goldfish、tags=test-keys、无 SIM、无传感器），
+  # 而且每次重建实例都会变——两者都触发「新设备登录」= 短信/滑块二次校验，
+  # 也就是「能登录但一直要验证 / 刚登录就被踢」。
+  # 铁律：稳定优先（身份落盘，跨重启不变）、自洽优先（整台机型池取）、
+  # 不冒充改不了的（ABI/传感器/Play Integrity，见 fingerprint.audit 的 abi_note）。
+  identity:
+    enabled: true          # 缺省=开（与 crawler.stealth 同一约定）
+    use_root: null         # null=自动探测；false=只用 setprop（ro.* 改不动，会如实记 failed）
+    reboot: zygote         # zygote|full|none：Build 字段在 zygote 定型，改 props 必须重启框架
+                           #   zygote=stop;start（8–15s，保留实例与 adb）；full=实例重启
+    force: false           # true=非模拟器也强行应用（真机上别开）
+  # ── root / 模拟器痕迹隐藏 ─────────────────────────────────────
+  # 我们自己的采集必须用 root（快照要读 /data/data），所以策略不是「不要 root」，
+  # 而是「root 只对我们可见」：Magisk DenyList 让目标 App 看不到 su//data/adb，
+  # 同时把 ro.debuggable / ro.secure / build.tags 这些本地判定输入清干净。
+  stealth:
+    enabled: true
+    hide_dev_options: true # 关掉「开发者选项」开关（部分风控 SDK 会读）
+  # 复用「上一轮就在前台」的 App，少一次冷启（=少一轮设备校验与首屏埋点）。
+  # 默认关：仓库已实证复用残留界面会让后续航线卡在设城市。
+  keep_app_alive: false
+
+  # ── 实例调优（直接影响 APP 爬取率）──────────────────────────────
+  # App 渠道是坐标驱动的：动画未关时，dump 到的控件坐标在 tap 的那一刻已经
+  # 移走——账本记成「设城市失败 / 页面认不出」，与风控无关却整轮报废。
+  # 这里关三档动画 + 常亮 + 关屏保（息屏会让 screencap 拿黑图、dump 拿空层级）。
+  # 全部是 settings/svc，可逆、不碰身份；分辨率与 DPI 刻意不改（坐标是按现有
+  # 竖屏写死的，改了所有 App 渠道一起瘫）。
+  tuning:
+    enabled: true

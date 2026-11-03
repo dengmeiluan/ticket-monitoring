@@ -29,7 +29,9 @@ def test_matrix_marks_qunar_app_calendar_and_low_fare_as_verified():
     dims = CHANNEL_DIMENSIONS["app_qunar"]
     assert dims["calendar"] == "y", dims
     assert dims["low_fare"] == "y", dims
-    assert app_alignment_gaps("app_qunar") == (), app_alignment_gaps("app_qunar")
+    # 2026-11-03：ctrip PC 多程 2 段升 y 后，App 端仅剩 multi_city 缺口。
+    assert app_alignment_gaps("app_qunar") == ("multi_city",), \
+        app_alignment_gaps("app_qunar")
 
 
 def test_full_calendar_parses_day_cell_subtrees():

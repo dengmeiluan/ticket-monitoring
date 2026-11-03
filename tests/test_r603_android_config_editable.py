@@ -68,7 +68,9 @@ def test_control_ranges_match_backend_clamps():
 def test_post_persists_android_block():
     w = _w()
     i = w.index('if isinstance(glb.get("android"), dict):')
-    seg = w[i:i + 1600]
+    # r958 后 android 块新增 identity/stealth/keep_app_alive，窗口放宽；
+    # 断言仍锚在符号块内（cfg["android"] = _a0）。
+    seg = w[i:i + 3200]
     assert 'cfg["android"] = _a0' in seg, "POST 没有写回 cfg['android']"
     for field in ("enabled", "provider", "install_dir", "vm_index",
                   "boot_timeout_s", "action_timeout_s", "snapshot"):

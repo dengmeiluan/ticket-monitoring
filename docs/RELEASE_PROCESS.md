@@ -156,8 +156,8 @@ Do not push, retag, publish or rewrite shared history without explicit user auth
   SHA256 `3c472292102f8a0d45b06bfaef962a350d513359e3d7bba2666891b8a208a8a4`
   （含同程 App 国际往返与 `PATH_CN["app-roundtrip"]`；r919 旧包 `35a9c2c9…` 已作废）。
   仅存 `_scratch/ticket-monitoring-win64-candidate-root.zip`，未进 `dist_package`、未上传。
-- 当前树候选（2026-11-03 12:37，HEAD `80c63eb` 合并树）：PyInstaller 6.22.2
-  构建成功，`--version=1.5.307`，TOC 含 `core.multicity` / `crawlers.ctrip_multicity` /
-  `webui`；zip **61,742,809 bytes / 864 entries**，SHA256
-  `bdf974af562c238ac3c4b56618ff5526e3589369a1c847471f59a2d57e653d0e`，
+- 当前树候选（2026-11-03 14:47，含 r956 矩阵 + r958 配置控件的最终树）：PyInstaller
+  6.22.2 构建成功，`--version=1.5.307`，TOC 含 `core.multicity` /
+  `crawlers.ctrip_multicity` / `webui`；zip **61,805,134 bytes / 864 entries**，SHA256
+  `1fc4276e7cd4901393219b1bd927ea26eea1ae3eb53ad3908ccb8f56e59ac31e`，
   tests/config/user_data/data 条目 0；未上传。冻结后重算，不复用。

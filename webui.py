@@ -20844,6 +20844,10 @@ function buildForm(){if(!CFG)return;let h='',gh='';
   +glcell('采集超时','glbTo','GLB.timeout_seconds=Math.min(600,Math.max(10,parseInt(this.value)||45))',esc(GLB.timeout_seconds||45),'10–600 · 单渠道上限',null,'秒')
   +glcell('调试日志','glbDbg','GLB.debug=this.checked',!!GLB.debug,'接口现场存 debug/','check')
   +glcell('指纹一致性','glbStl','GLB.stealth=this.checked',GLB.stealth!==false,'抹掉 navigator.webdriver 等「自动化浏览器」标记；只让页面看到普通 Chrome','check')
+  +glcell('拟人化动作','glbHum','GLB.humanize=this.checked',GLB.humanize!==false,'预热阶段鼠标轨迹/分段滚动/停留；采集中不插动作','check')
+  +glcell('拟人化轮数','glbHumR','GLB.humanize_rounds=Math.max(1,Math.min(6,parseInt(this.value)||2))',esc(GLB.humanize_rounds||2),'1–6；轮数越多越像人，耗时也越长',null,'轮')
+  +glcell('会话锁等待','glbWait','GLB.profile_wait_s=Math.max(0,Math.min(120,parseFloat(this.value)||0))',esc(GLB.profile_wait_s==null?0:GLB.profile_wait_s),'抢不到浏览器资料锁时最多等待 · 0=立刻让位（登录窗/探针占用时等一会儿比丢整轮划算）',null,'秒')
+  +glcell('浏览器内核','glbBch','GLB.browser_channel=(this.value||"").trim()',esc(GLB.browser_channel||''),'空=Playwright Chromium；chrome=系统真 Chrome（重启生效）','text',null,'空 = 自带 Chromium')
   +glcell('命中验证自动开窗','glbAV','GLB.auto_verify=this.checked',!!GLB.auto_verify,'命中人机验证时自动弹出验证窗口（同一会话），同渠道 10 分钟只开一次','check')
   +glcell('错峰延迟 · 自','glbDn','GLB.delay_min=Math.max(0,parseInt(this.value)||0)',esc(GLB.delay_min==null?5:GLB.delay_min),'页面动作间随机延迟',null,'秒')
   +glcell('错峰延迟 · 至','glbDx','GLB.delay_max=Math.max(0,parseInt(this.value)||0)',esc(GLB.delay_max==null?15:GLB.delay_max),'与「自」组成随机区间',null,'秒')
@@ -20897,6 +20901,13 @@ function buildForm(){if(!CFG)return;let h='',gh='';
   +glcell('冷启动超时','glbAndBoot','GLB.android=Object.assign({},GLB.android||{},{boot_timeout_s:Math.max(10,Math.min(600,parseInt(this.value)||180))})',esc((GLB.android||{}).boot_timeout_s||180),'10–600 · 模拟器冷启动到可操作的上限；实测 24–36 秒','number',null,'180')
   +glcell('单命令超时','glbAndAct','GLB.android=Object.assign({},GLB.android||{},{action_timeout_s:Math.max(5,Math.min(900,parseInt(this.value)||60))})',esc((GLB.android||{}).action_timeout_s||60),'5–900 · 单条 adb 命令的超时上限','number',null,'60')
   +glcell('登录态快照','glbAndSnap','GLB.android=Object.assign({},GLB.android||{},{snapshot:this.checked})',(GLB.android||{}).snapshot!==false,'预留：保存/恢复登录态快照，减少重复扫码','check')
+  +glsec('设备身份 / 痕迹隐藏（r910）')
+  +glcell('设备身份指纹','glbAndIdEn','GLB.android=Object.assign({},GLB.android||{},{identity:Object.assign({},(GLB.android||{}).identity||{},{enabled:this.checked})})',((GLB.android||{}).identity||{}).enabled!==false,'稳定设备 ID（android_id/序列号/Build 字段），跨重启不变','check')
+  +glcell('use_root','glbAndRoot','GLB.android=Object.assign({},GLB.android||{},{identity:Object.assign({},(GLB.android||{}).identity||{},{use_root:(function(v){v=(v||"").trim().toLowerCase();return v==="true"?true:(v==="false"?false:null)})(this.value)})})',esc((((GLB.android||{}).identity||{}).use_root===undefined)?'auto':((((GLB.android||{}).identity||{}).use_root===null)?'auto':String(((GLB.android||{}).identity||{}).use_root))),'auto=自动探测；false=只用 setprop（ro.* 改不动会如实记 failed）','text',null,'auto')
+  +glcell('重启方式','glbAndReboot','GLB.android=Object.assign({},GLB.android||{},{identity:Object.assign({},(GLB.android||{}).identity||{},{reboot:(function(v){v=(v||"zygote").trim().toLowerCase();return ["zygote","full","none"].includes(v)?v:"zygote"})(this.value)})})',esc(((GLB.android||{}).identity||{}).reboot||'zygote'),'zygote=stop;start（8–15s，保留实例）；full=实例重启；none=不重启','text',null,'zygote')
+  +glcell('非模拟器也强制','glbAndForce','GLB.android=Object.assign({},GLB.android||{},{identity:Object.assign({},(GLB.android||{}).identity||{},{force:this.checked})})',!!((GLB.android||{}).identity||{}).force,'真机上别开','check')
+  +glcell('隐藏开发者选项','glbAndHideDev','GLB.android=Object.assign({},GLB.android||{},{stealth:Object.assign({},(GLB.android||{}).stealth||{},{hide_dev_options:this.checked})})',((GLB.android||{}).stealth||{}).hide_dev_options!==false,'关掉「开发者选项」开关（部分风控 SDK 会读）','check')
+  +glcell('复用前台 App','glbAndKeep','GLB.android=Object.assign({},GLB.android||{},{keep_app_alive:this.checked})',!!(GLB.android||{}).keep_app_alive,'复用上一轮前台 App，少一次冷启；仓库实证可能让后续航线卡在设城市，默认关','check')
   +'</div>'
   +glsec('♻ 启动级 · 运行与存储 · 路径可迁移 · 保存后重启生效 <button class="btn2 secrestart" title="打开重启与迁移中心：查看差量、迁移预案并重启" onclick="openRestartCenter()">'+ic('rotate')+' 重启中心</button>')
   +'<div class="storehead"><span class="sh-t">配置文件</span><span class="sh-path" title="'+esc((RUNTIME&&RUNTIME.config_path)||'')+'">'+esc((RUNTIME&&RUNTIME.config_path)||'config.yaml')+'</span>'
@@ -22936,6 +22947,7 @@ const GLB_RANGES=[
     这里按各自 onchange 的实际边界逐项登记（含小数类用 dec:1）。
     校验只拦「越界」，不拦「会被别的键夹取」——后者由 glbClamp 负责说明。 */
  {id:'glbJt',min:0,max:10080,label:'随机扰动须为 0-10080 分钟'},
+ {id:'glbHumR',min:1,max:6,label:'拟人化轮数须为 1-6 轮'},
  {id:'glbFast',min:5,max:1440,label:'快 TTL 须为 5-1440 分钟'},
  {id:'glbSlow',min:5,max:1440,label:'慢 TTL 须为 5-1440 分钟'},
  {id:'glbNear',min:0,max:1,dec:1,label:'邻近比例须为 0-1'},
@@ -34212,6 +34224,18 @@ class _Handler(BaseHTTPRequestHandler):
                                 "host": _bind_host(cfg),
                                 "headless": bool((cfg.get("crawler") or {}).get(
                                     "headless", True)),
+                                # r910/r958：拟人化与浏览器内核（原先只能改文件）
+                                "humanize": bool((cfg.get("crawler") or {}).get(
+                                    "humanize", True)),
+                                "humanize_rounds": int(
+                                    (cfg.get("crawler") or {}).get(
+                                        "humanize_rounds", 2) or 2),
+                                "browser_channel": str(
+                                    (cfg.get("crawler") or {}).get(
+                                        "browser_channel", "") or ""),
+                                "profile_wait_s": float(
+                                    (cfg.get("crawler") or {}).get(
+                                        "profile_wait_s", 0) or 0),
                                 "timeout_seconds": int(
                                     (cfg.get("crawler") or {}).get(
                                         "timeout_seconds", 45) or 45),
@@ -34479,6 +34503,25 @@ class _Handler(BaseHTTPRequestHandler):
                             bool(glb["run_on_start"])
                     # 采集参数：rt["cfg"] 单一事实源，保存热生效（起）
                     _crw = cfg.setdefault("crawler", {})
+                    # r958：拟人化/浏览器内核从此前「只能改文件」进入页面
+                    if glb.get("humanize") is not None:
+                        _crw["humanize"] = bool(glb["humanize"])
+                    if glb.get("humanize_rounds") is not None:
+                        try:
+                            _hr = int(glb["humanize_rounds"])
+                        except (TypeError, ValueError):
+                            _hr = 2
+                        _crw["humanize_rounds"] = max(1, min(6, _hr))
+                    if glb.get("browser_channel") is not None:
+                        _bc = str(glb["browser_channel"]).strip().lower()
+                        _crw["browser_channel"] = (
+                            _bc if _bc in ("", "chrome") else "")
+                    if glb.get("profile_wait_s") is not None:
+                        try:
+                            _pw = float(glb["profile_wait_s"])
+                        except (TypeError, ValueError):
+                            _pw = 0.0
+                        _crw["profile_wait_s"] = max(0.0, min(120.0, _pw))
                     if glb.get("timeout_seconds"):
                         _crw["timeout_seconds"] = min(
                             600, max(10, int(glb["timeout_seconds"])))
@@ -34527,6 +34570,34 @@ class _Handler(BaseHTTPRequestHandler):
                                 _a0[_ak] = max(_alo, min(_ahi, _av))
                         if _and.get("snapshot") is not None:
                             _a0["snapshot"] = bool(_and["snapshot"])
+                        # r958：设备身份/痕迹隐藏/前台复用（嵌套键，逐项钳制）
+                        _aid = _and.get("identity")
+                        if isinstance(_aid, dict):
+                            _id0 = dict(_a0.get("identity") or {})
+                            if _aid.get("enabled") is not None:
+                                _id0["enabled"] = bool(_aid["enabled"])
+                            if "use_root" in _aid:
+                                _ur = _aid.get("use_root")
+                                _id0["use_root"] = (
+                                    None if _ur is None else bool(_ur))
+                            if _aid.get("reboot") is not None:
+                                _rb = str(_aid["reboot"]).strip().lower()
+                                _id0["reboot"] = (
+                                    _rb if _rb in ("zygote", "full", "none")
+                                    else "zygote")
+                            if _aid.get("force") is not None:
+                                _id0["force"] = bool(_aid["force"])
+                            _a0["identity"] = _id0
+                        _ast = _and.get("stealth")
+                        if isinstance(_ast, dict):
+                            _st0 = dict(_a0.get("stealth") or {})
+                            for _sk in ("enabled", "hide_dev_options"):
+                                if _ast.get(_sk) is not None:
+                                    _st0[_sk] = bool(_ast[_sk])
+                            _a0["stealth"] = _st0
+                        if _and.get("keep_app_alive") is not None:
+                            _a0["keep_app_alive"] = bool(
+                                _and["keep_app_alive"])
                         cfg["android"] = _a0
                     if glb.get("debug") is not None:
                         _crw["debug"] = bool(glb["debug"])

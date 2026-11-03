@@ -28,25 +28,27 @@
 
 ### 1.0 当前状态快照（2026-11-03 12:02，先核验再干活）
 
-- **代码树**：HEAD `80c63eb`（合并 `feat/mc-history` / `feat/mc-export`）已含
-  r933–r953（多程数据层/配置形状/实际渠道错峰/日桶下限守卫/携程多程采集/
-  轮尾采集/只读 API/配置卡/概览整单卡/提醒接线/来源页可溯源/过期首段不提醒/
-  整单历史 sparkline/CSV 导出）；live 8765 于 **2026-11-03 08:58** 切到
-  `_release_ab04`（Release `ab04c22`，webui sha12 `6c85a00f14c1`，PID 47952；
-  `/api/channel-dims` 10 家）；r933–r953 尚未入该树。
-- **门禁**：tracked collect **6212**（2026-11-03 12:46，含 r953 导出/下载用例）；当前树
-  全量非 UI **6192 passed / 19 skipped / 0 failed**（2026-11-03 12:40，workers 4，
-  15:14；6211 tracked，导出下载用例新增后定向 2 passed，产品代码未变）。r952 已修掉此前的 4 个 xdist 假红（r320b `_State.cfg` 隔离、r286
-  误杀 8796/`networkidle`/固定等待）。定向：多程 5 文件 **31 passed**（11:18）；
-  合并后历史/导出 **17 passed**（12:46）；Release 正文 **8 passed**（10:36）；
-  日桶 **16 passed**（10:10）。
-  UI **670/670**（2026-11-03 11:18 全量复跑，零 JS 错误；含 r946 来源链接与
+- **代码树**：HEAD `c116273` 已含 r933–r956（多程数据层/配置形状/实际渠道错峰/
+  日桶下限守卫/携程多程采集/轮尾采集/只读 API/配置卡/概览整单卡/提醒接线/来源页
+  可溯源/过期首段不提醒/整单历史 sparkline/CSV 导出/2 段矩阵升 y）；live 8765 于
+  **2026-11-03 08:58** 切到 `_release_ab04`（Release `ab04c22`，webui sha12
+  `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r956 尚未入该树。
+- **门禁**：tracked collect **6214**；含未跟踪并行 WIP 的实收 **6255**。全量非 UI
+  **6236 passed / 19 skipped / 0 failed**（2026-11-03 14:46，workers 8，683.41s，
+  共 6255）。此前 7 红全部闭合：6 项单飞全绿（r319 proxy / r660 负控 / r845×2 /
+  r999×2，xdist 竞争）；r601 配置可达性已补 9 个页面控件 + 保存写回 + 钳制
+  （见 r958），r601 **4 passed**、配置往返 **12 passed**、真渲染 9 控件零 pageerror
+  （14:20）。矩阵升 y 由 **138 定向 passed** 覆盖（13:33）；r952 已修掉此前的
+  4 个 xdist 假红。定向：多程 5 文件 **31 passed**（11:18）；合并后历史/导出
+  **17 passed**（12:46）；Release 正文 **8 passed**（10:36）；日桶 **16 passed**（10:10）。
+  UI **670/670**（2026-11-03 15:15 全量复跑，零 JS 错误；含矩阵 ctrip 多程 ✓
+  仅 2 段与 r958 的 9 个配置控件；另含 r946 来源链接与
   r947 过期门；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、
   同程 App round_trip=国际；r905 新增的行内自检按钮另由 `test_r905` 真渲染 +
   `test_r640` 三档行高覆盖）；能力线 9 文件 **63 passed**（2026-11-03 09:55）；
   `channel_contract --strict` **10 家 × 11 轴无缺口**（2026-11-03 10:13）；
   `release_align_check --local` **25/25 PASS**（2026-11-03 13:03）；静态站已按
-  当前树重烘（站点戳 `code:338493de3e01`，13:03，5,659,629 bytes）。站点尚未
+  当前树重烘（站点戳 `code:eac4fcd5bcf9`，14:47，5,662,428 bytes）。站点尚未
   发布/部署，推送后 Pages 才会更新。
 - **唯一声明源**：`core/channels.py`。新增渠道/维度先跑 `python -m core.channel_contract --strict`
   与 `test_r903/r904/r905`；声明字典禁止重复键，hint 承诺的按钮必须真实渲染。
@@ -3082,7 +3084,7 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
     不含多程整单样本」，界面可把「没样本」和「读失败」分开。
   · 矩阵 `ctrip.multi_city` 说明同步：已有 `fetch_multi`/轮尾采集/只读 API；
     配置卡/概览整单卡在 r944、整单提醒与历史走势在 r944/r951 补齐；r954 已有
-    2 段生产整单行（¥1476），仍记 `""`（3+ 段/缺口程未验）；
+    2 段生产整单行（¥1476），后续 r956 升 `y`（仅 2 段），3+ 段/缺口程未验；
     不再写「采集端未实现」。
   · 门禁：多程 4 文件 **23 passed**（模型/解析/轮尾/API，2026-11-03 10:13），
     全量见 §1.0。
@@ -3111,6 +3113,47 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
     无 tests/config/user_data/data 条目，未上传。
   · 全量非 UI **6192 passed / 19 skipped / 0 failed**（12:54，workers 8，759.17s，
     共 6211），导出改动零回归。
+
+- r958 并行 stealth/identity WIP 的配置可达性缺口（2026-11-03 14:08；14:20 已修）：
+  · 全量实收 6253（含 9 个未跟踪 WIP 模块/测试）**6227 passed / 19 skipped /
+    7 failed**（736.92s）；6 红单飞全绿（r319 / r660 / r845×2 / r999×2，xdist 竞争）。
+  · 唯一真红 `r601`：`config.example.yaml` 新增 8 键无页面落点
+    （`crawler.humanize`、`humanize_rounds`、`browser_channel`、
+    `android.identity.use_root/reboot/force`、`android.stealth.hide_dev_options`、
+    `android.keep_app_alive`），用户只能改文件。
+  · 修法：全局参数面板新增 **9 个控件**（拟人化动作/轮数、浏览器内核、设备身份、
+    use_root、重启方式、非模拟器强制、隐藏开发者选项、复用前台 App）；保存端
+    写回 `crawler` 三键与 `android.identity/stealth/keep_app_alive`，并与后端钳制
+    一致（rounds 1–6、reboot 枚举、browser_channel 仅空/chrome、use_root null 保留）。
+  · 门禁：r601 **4 passed** + 配置 HTTP 往返 **12 passed**（14:20）；真渲染
+    **9 控件可见、标签正确、零 pageerror**（14:20）。
+  · 最终全量非 UI **6236 passed / 19 skipped / 0 failed**（14:46，workers 8，
+    683.41s，共 6255），含未跟踪并行 WIP 测试；tracked **6214**。
+  · 按最终树重烘站点：**5,662,428 bytes**，站点戳 `code:eac4fcd5bcf9`；
+    候选 zip **61,805,134 bytes / 864 entries**，SHA256
+    `1fc4276e7cd4901393219b1bd927ea26eea1ae3eb53ad3908ccb8f56e59ac31e`；
+    `release_align_check --local` **25/25**（14:50）。
+  · 静态站 file:// 真渲染（14:57）：矩阵 ctrip 多程格 **✓**、title 含
+    「仅 2 段」，App 缺口明确列「智行/去哪儿/携程/同程/飞猪 App 多程」；
+    390/900 档 9 个新控件均可见，页面 scrollWidth 380/890 ≤ 390/900，零 pageerror。
+  · UI 自检 **670/670**（15:15，零 JS 错误），覆盖矩阵 y 与 9 个新控件。
+
+- r956 矩阵 ctrip.multi_city 升 y（仅 2 段）（2026-11-03 13:10）：
+  · 依据 r954 生产行 ¥1476（IJ004+MM304）与配置/采集/概览/来源/提醒/历史/导出
+    闭环，`CHANNEL_DIMENSIONS["ctrip"]["multi_city"]` 由 `""` 升 `y`，
+    `DIMENSION_SCOPE` 写「仅 2 段」；3+ 段实测无组合卡、缺口程未验。
+  · App 对齐缺口由 `()` 变为 `("multi_city",)`（5 家 App 均未接多程）；
+    r677/r683 门禁改为「仅 ctrip 可 y、必须带 scope、ctrip 源码有 fetch_multi」。
+  · Release 正文/门禁改为「已有 2 段生产整单行 + 矩阵 ✓ 仅 2 段 + 3+ 段未验」；
+    矩阵/正文定向 **39 passed**（13:09）。
+  · 按当前树重烘静态站：**5,659,607 bytes**，站点戳
+    `1.5.307 code:338493de3e01 2026-11-03`；`release_align_check --local`
+    **25/25 PASS**（13:14）。
+  · 同树重建 Windows 候选：zip **61,742,031 bytes / 864 entries**，SHA256
+    `8f40c9946bb6f7157e45ecad0ac9dcdc85d24882382404dd6e2dd7414214fe35`；
+    无 tests/config/user_data/data 条目，未上传。
+  · 全量 **6180 passed / 26 skipped / 6 failed**（13:12，732.75s）；6 红均为
+    文档/旧断言，同步后定向 **138 passed**（13:33）；全量待并行 WIP 落定复跑。
 
 - r954 携程 PC 两段多程生产行（2026-11-03 12:52）：
   · 用 Ctrip profile **副本**（不碰 live 会话）跑 `collect_multicity`：
@@ -3196,7 +3239,7 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · `b49ae51`：轮尾按行程聚合订阅用户，只采「至少一个订阅用户勾选携程」的行程；
     提醒按行平台过滤，未勾携程的用户不再收到多程提醒——不替用户采/推他没选的渠道。
   · 定向多程 5 文件 **29 passed**（2026-11-03 10:53：模型/解析/API/轮尾/提醒）。
-    当前 tracked **6212**；主树全量复跑见 §1.0（不虚报未完成的绿）。
+    当前 tracked **6214**；主树全量复跑见 §1.0（不虚报未完成的绿）。
 
 - r944 多程配置卡 + 概览整单卡（2026-11-03 10:23）：
   · 配置页新增「添加多程行程」：2–4 段行编辑（三字码 + 日期）、整单心理价、

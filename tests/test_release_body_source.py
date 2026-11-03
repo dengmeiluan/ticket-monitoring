@@ -132,11 +132,12 @@ def _multi_city_errors(body):
     errs = []
     if "多程" not in body:
         errs.append("正文没写多程")
-    # 携程 PC 已有 2 段生产整单行（r954），但 3+ 段/缺口程未验；正文必须
-    # 同时保留「2 段已生产验证」和「3+ 段未验」，不能把「已接采集面」
-    # 写成「已支持」。
+    # 携程 PC 2 段已生产验证（矩阵 ✓ 仅 2 段），但 3+ 段/缺口程未验；
+    # 正文必须写清 scope，不能把「2 段已验证」写成「全段已支持」。
     if "已有 2 段生产整单行" not in body:
         errs.append("多程必须写明已有 2 段生产整单行")
+    if "仅 2 段" not in body:
+        errs.append("多程矩阵必须写明「仅 2 段」scope")
     if "3+ 段" not in body and "3+段" not in body:
         errs.append("多程必须写明 3+ 段未验")
     if '`""`' not in body:
@@ -185,8 +186,8 @@ def test_body_names_every_channel_and_scope():
 def test_body_keeps_multi_city_honest():
     body = _read()
     assert _multi_city_errors(body) == [], _multi_city_errors(body)
-    # 负控：把端到端缺口改成「已支持」必须报错
-    bad = body.replace("已有 2 段生产整单行", "已支持")
+    # 负控：把「仅 2 段」改成「全段已支持」必须报错
+    bad = body.replace("仅 2 段", "全段已支持")
     assert _multi_city_errors(bad), "负控失败：多程不实表述没被拦"
 
 

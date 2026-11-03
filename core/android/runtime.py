@@ -35,10 +35,19 @@ def reset_runtime_cache():
 class AndroidRuntime:
     """一台模拟器实例的生命周期与健康。"""
 
-    def __init__(self, cfg: Optional[dict], logger: Optional[logging.Logger] = None):
+    def __init__(self, cfg: Optional[dict], logger: Optional[logging.Logger] = None,
+                 full: Optional[dict] = None):
         self.cfg: AndroidConfig = normalize(cfg)
+        # 原始配置留两份：``raw`` 是 android: 段（身份/隐藏层读它的子段），
+        # ``full`` 是整份配置（要 user_data_dir 这种顶层键）。刻意不改
+        # AndroidConfig 数据类——test_android_config 把字段集钉住了。
+        self.raw: dict = dict(cfg) if isinstance(cfg, dict) else {}
+        self.full: dict = dict(full) if isinstance(full, dict) else {}
         self.logger = logger
         self.last_error = ""
+        self.identity_report: dict = {}
+        self.stealth_report: dict = {}
+        self.tuning_report: dict = {}
         self._mumu: Optional[MuMuManager] = None
         self._device: Optional[AdbDevice] = None
         self._state = "disabled" if not self.cfg.enabled else "unknown"
@@ -79,6 +88,10 @@ class AndroidRuntime:
             "device": self._device if self._state == "ready" else None,
             "enabled": self.cfg.enabled,
             "vm_index": self.cfg.vm_index,
+            # 身份/隐藏/调优的最近一次报告（UI 与风险评分都读它；空 = 还没跑过）
+            "identity": self.identity_report,
+            "stealth": self.stealth_report,
+            "tuning": self.tuning_report,
         }
 
     # ---------- 编排 ----------
@@ -125,7 +138,72 @@ class AndroidRuntime:
 
         self._state = "ready"
         self.last_error = ""
+        self._harden(dev)
         return True, "ready"
+
+    # ---------- 设备硬化（身份 + root/模拟器隐藏）----------
+    def _user_data_dir(self) -> str:
+        raw = self.full.get("user_data_dir") if self.full else ""
+        return str(raw or "user_data")
+
+    def _layer_cfg(self) -> dict:
+        """给身份/隐藏层的配置视图：``{"android": <android 段>}``。
+
+        这两层都用 ``config["android"][...]`` 取自己的子段（与
+        ``crawler.*`` 的读法一致），而 AndroidRuntime 手里只有 android 段，
+        所以在这里补一层壳——不复制、不猜默认值。
+        """
+        out = dict(self.full)
+        out["android"] = dict(self.raw)
+        return out
+
+    def _harden(self, dev) -> dict:
+        """在 adb 连通之后、任何 App 启动之前，把设备身份与 root 痕迹处理好。
+
+        为什么挂在这里而不挂在各 App 渠道：``android.os.Build`` 的字段在
+        zygote 里定型，**必须**在 App 进程起来之前改完（见
+        ``fingerprint`` 模块头）。``ensure_ready()`` 是全项目唯一决定
+        「模拟器起没起、adb 通不通」的地方，也是唯一能保证这个顺序的地方。
+
+        失败一律不阻塞采集：拿不到 root、设备掉线、没装 Magisk，都只让
+        报告变短（``identity`` / ``stealth`` 里能看到原因）。
+        """
+        rep = {}
+        try:
+            from . import fingerprint as fp_mod
+            from . import stealth as st_mod
+        except Exception as e:            # 模块被裁掉也不能拖垮启动
+            self.log("warning", "硬化层不可用：%s", e)
+            return rep
+
+        cfg_view = self._layer_cfg()
+        if self.cfg.enabled:
+            try:
+                rep["identity"] = fp_mod.ensure(
+                    dev, cfg_view, self.logger,
+                    user_data_dir=self._user_data_dir(),
+                    profile="device", vm=self.cfg.vm_index)
+            except Exception as e:
+                rep["identity"] = {"ok": False, "error": str(e)[:160]}
+            self.identity_report = rep.get("identity") or {}
+
+        try:
+            rep["stealth"] = st_mod.prepare(
+                dev, cfg_view, self.logger, vm=self.cfg.vm_index)
+        except Exception as e:
+            rep["stealth"] = {"ok": False, "error": str(e)[:160]}
+        self.stealth_report = rep.get("stealth") or {}
+
+        # 实例调优放在身份/隐藏之后：它改的是全局 settings（动画/常亮/屏保），
+        # 对之后启动的 App 生效，且与身份无关——失败也不影响身份层结果。
+        try:
+            from . import emulator_tuning as tune_mod
+            rep["tuning"] = tune_mod.apply(
+                dev, cfg_view, self.logger, vm=self.cfg.vm_index)
+        except Exception as e:
+            rep["tuning"] = {"ok": False, "error": str(e)[:160]}
+        self.tuning_report = rep.get("tuning") or {}
+        return rep
 
     def _wait_boot(self, mgr: MuMuManager) -> bool:
         deadline = time.time() + self.cfg.boot_timeout_s
@@ -168,7 +246,7 @@ def get_runtime(cfg: Optional[dict],
     with _CACHE_LOCK:
         rt = _RUNTIME_CACHE.get(key)
         if rt is None:
-            rt = AndroidRuntime(android_cfg, logger)
+            rt = AndroidRuntime(android_cfg, logger, full=cfg)
             _RUNTIME_CACHE[key] = rt
         elif logger is not None and rt.logger is None:
             rt.logger = logger
