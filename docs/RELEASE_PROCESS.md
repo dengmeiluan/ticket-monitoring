@@ -117,6 +117,7 @@ Do not push, retag, publish or rewrite shared history without explicit user auth
 - **资产 502 的回退**：`SHA256SUMS` 下载失败时，用 release API 的 `digest` 对正文 SHA 做**明确标注**的回退校验；不静默跳过，也不把代理 502 当产品失败。
 - **预跑实测（29/46）**：线上正文 intro/version 仍 1.5.306、**正文 SHA 只与 win64 当前资产一致（另 3 个 zip 的 API digest 不在正文）**、Pages 部署 **11 个**、站点戳 `2a326e3c` 旧树、source/tag/CI/release-build/ghcr 不同源；live 8765 1.5.307 通过。发版须重建正文+四资产（同一组 SHA）、`prune_deployments.py` 到 1、重烘站点、CI/release-build 绿、ghcr 新 SHA，再在线对账全绿。
 - **计数以冻结后的 tracked 为准**：并行会话与日期参数会让计数漂移；发布前冻结写者、重跑 4w、`git ls-files -z tests` 重新 collect 并同步 README/EN/UI，再做 root commit。
+- **资产必须用最终依赖重建**：依赖清单变化后旧资产不可复用——`e65cee1` 四平台包构建早于 `numpy` 声明，冻结包内滑块缺口检测会静默无候选。发版必须按最终 `requirements.txt` 重跑 release-build，并重算四资产 SHA、正文与 `SHA256SUMS.txt`。
 
 ### 6.3 发布后在线复核（2026-11-02 发布轮，发布树 0d4b058 / v1.5.307）
 
