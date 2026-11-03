@@ -34,6 +34,7 @@ from .models import PRICE_MAX, PRICE_MIN
 # 发现源（r319 五源：途牛榜单 / 携程低价日历 / 携程特价搜索榜 /
 # 飞猪 PC 榜；去哪儿 lowFlight 缓采、同程不采——见设计稿 §11 定谳表）
 SRC_TUNIU = "tuniu"
+SRC_TUNIU_CAL = "tuniucal"
 SRC_CTRIP = "ctrip"
 SRC_CTRIP_BD = "ctripbd"
 SRC_FLIGGY = "fliggy"
@@ -46,11 +47,11 @@ SRC_APP_QUNAR = "app_qunar"
 SRC_APP_ZHIXING = "app_zhixing"
 SRC_APP_TONGCHENG = "app_tongcheng"
 SRC_APP_CTRIP = "app_ctrip"
-_KNOWN_SOURCES = (SRC_TUNIU, SRC_CTRIP, SRC_CTRIP_BD, SRC_FLIGGY,
+_KNOWN_SOURCES = (SRC_TUNIU, SRC_TUNIU_CAL, SRC_CTRIP, SRC_CTRIP_BD, SRC_FLIGGY,
                   SRC_QUNAR, SRC_TONGCHENG, SRC_APP_QUNAR, SRC_APP_ZHIXING,
                   SRC_APP_TONGCHENG, SRC_APP_CTRIP)
 # 推送词面：源价口径标注（tuniu/ctripbd/fliggy=榜单裸价 / ctrip=日历价）
-_SRC_LABEL = {SRC_TUNIU: "榜单", SRC_CTRIP: "日历",
+_SRC_LABEL = {SRC_TUNIU: "榜单", SRC_TUNIU_CAL: "途牛日历", SRC_CTRIP: "日历",
               SRC_CTRIP_BD: "主题榜", SRC_FLIGGY: "飞猪榜",
               SRC_QUNAR: "去哪日历", SRC_TONGCHENG: "同程日历",
               SRC_APP_QUNAR: "App低价", SRC_APP_ZHIXING: "智行特价",
@@ -61,7 +62,8 @@ _SRC_LABEL = {SRC_TUNIU: "榜单", SRC_CTRIP: "日历",
 SPECIAL_CAPABILITY = {
     "ctrip": {"sources": [SRC_CTRIP_BD, SRC_CTRIP],
               "note": "主题榜 + 低价日历"},
-    "tuniu": {"sources": [SRC_TUNIU], "note": "特价榜单（无公开特价页）"},
+    "tuniu": {"sources": [SRC_TUNIU_CAL, SRC_TUNIU],
+              "note": "官方 H5 日历（裸价不含税）+ 特价榜单"},
     "fliggy": {"sources": [SRC_FLIGGY], "note": "PC 特价榜"},
     # 去哪儿 / 同程此前被写成 `sources: []`（「缓采 / 未接入」），但雷达里
     # `_qunar_deals`（官方 H5 低价日历，页面 JS 自签名）与

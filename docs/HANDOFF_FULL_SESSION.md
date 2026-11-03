@@ -250,7 +250,7 @@ ctrip        domestic=y intl=y calendar=y detail=y round_trip=y  multi_city=y lo
 qunar        domestic=y intl=y calendar=y detail=y round_trip=y  multi_city="" low_fare=y
 fliggy       domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
 tongcheng    domestic=y intl=y calendar=y detail=y round_trip=y  multi_city="" low_fare=y
-tuniu        domestic=y intl=y calendar=n detail=y round_trip=y multi_city="" low_fare=y
+tuniu        domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
 app_zhixing  domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
 app_qunar    domestic=y intl=y calendar=y detail=y round_trip=y multi_city="" low_fare=y
 app_fliggy  domestic=y intl="" calendar="" detail=y round_trip="" multi_city="" low_fare=""

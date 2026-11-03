@@ -99,13 +99,17 @@ CHANNEL_DIMENSIONS = {
     #              r769 实测发现国内**接口原生支持**往返（两段 segment 的
     #              返回价即往返总价，判据见上），已接线 → 国内 y。
     #              国际 productList 是单段结构、未做两段实测 → 国际 unsupported。
-    #   calendar: 途牛**没有**独立日历通路（r805z 三方对照查出）——
-    #             它的 `_hoop`/`_hoop_intl` 只按单日打 listFlight，
-    #             源码里没有任何 calendar/日历 端点；账本侧 48h 内
-    #             也只有 `H5/API` 一种 entry_path，从无 `日历`。
-    #             此前记 y 是过度声明（其余四家各有独立日历通路名：
-    #             ctrip 日历 / fliggy 日历 / tongcheng 窗历 / qunar 内嵌）。
-    "tuniu":     {"domestic": "y", "intl": "y", "calendar": "n", "detail": "y",
+    #   calendar: 途牛**有**官方 H5 单航线日历（r916 纠偏）——
+    #             `crawlers/special.py::fetch_tuniu_calendar` 调
+    #             `flight-api.tuniu.com/query/flight/v1/calendar`（type=1），
+    #             与页面点日期控件同一 XHR；2026-11-03 真实 H5 搜索流
+    #             点「查询/日历」后返回 125 个逐日价
+    #             （2026-11-03..2027-08-25，¥360–1790，11-05 ¥420，裸价
+    #             不含税）。r805z 只扫了 `crawlers/tuniu.py` 才误记 n；
+    #             现在 `TuniuCrawler.calendar()` 复用同一接口并写
+    #             `日历/calendar` 账本，特价雷达 `tuniucal` 源同源。
+    #             国际该接口无日历，`DIMENSION_SCOPE` 记「仅国内」。
+    "tuniu":     {"domestic": "y", "intl": "y", "calendar": "y", "detail": "y",
                   "round_trip": "y", "multi_city": "", "low_fare": "y"},
     # App 渠道（同 APP_PLAT_NAME 里的名字；与对应浏览器渠道逐项可比）
     #   intl: 两个 App 都有独立的国际档（智行「国际」标签页 / 去哪儿城市页
@@ -264,7 +268,7 @@ CHANNEL_SURFACES = {
     "ctrip":     {"pc": "y", "h5": "y"},
     "qunar":     {"pc": "n", "h5": "y"},
     "fliggy":    {"pc": "y", "h5": ""},
-    "tongcheng": {"pc": "y",  "h5": "y"},
+    "tongcheng": {"pc": "y",  "h5": ""},
     "tuniu":     {"pc": "",  "h5": "y"},
 }
 SURFACES = ("pc", "h5")
@@ -286,7 +290,11 @@ SURFACE_NOTES = {
                       "不是渠道没有",
     ("tongcheng", "pc"): "www.ly.com 列表页的 getflightlist（需切桌面身份）；"
                          "2026-11-01 17:45 生产首条 PC 出数（SHA→HAK 5 条/¥2110）",
-    ("tongcheng", "h5"): "m.ly.com/ft/touch/book1，XHR 拦截",
+    ("tongcheng", "h5"): "m.ly.com/ft/touch/book1，XHR 拦截；"
+                         "2026-10-31~11-01 生产 35 次 ok / 1224 行，"
+                         "最近一次 11-01 17:07；近 48h 定时任务走 PC/窗历、"
+                         "无 H5 出数，故端面记未验证（历史通路可用，"
+                         "不是渠道没有，也不是采集端未实现）",
     ("tuniu", "pc"): "flight.tuniu.com/domestic/list 的 SSR 列表；通路已实现，"
                      "不是没有做。2026-11-01 20:42/20:46 生产被滑块拦住"
                      "（账本 blocked）；2026-11-02 03:55 窗口显示已登录列表、"
@@ -372,8 +380,14 @@ DIMENSION_NOTES = {
                                    "不是渠道没有",
     ("app_qunar", "multi_city"): "App 有「单程/往返/多程」三档入口；采集端"
                                  "只接了前两档，矩阵记未验证，不是渠道没有",
-    ("tuniu", "calendar"): "途牛没有独立日历通路（r805z 三方对照）；日历价"
-                           "不单独落库",
+    ("tuniu", "calendar"): "官方 H5 单航线日历（与页面点日期控件同一 "
+                           "`query/flight/v1/calendar` XHR）；2026-11-03 "
+                           "真实搜索流实测 125 个逐日价（2026-11-03.."
+                           "2027-08-25，¥360–1790，11-05 ¥420），裸价"
+                           "不含税；特价雷达 `tuniucal` 同源。PC 入口"
+                           "2026-11-03 探针弹滑块（未绕过），故日历证据"
+                           "取 H5 官方接口，PC 端面仍记未验证；国际该接口"
+                           "无日历，矩阵 y 指国内",
     ("qunar", "detail"): "有航班号/时刻/价格；机型与舱位覆盖率低"
                          "（机型 17%、舱位 1%），不是每家都带",
     ("fliggy", "detail"): "PC 列表有完整航班号/时刻；国际日历行无航班号"
@@ -516,6 +530,7 @@ DIMENSION_SCOPE = {
     ("qunar", "round_trip"): "仅国内",
     ("app_qunar", "round_trip"): "仅国内",
     ("app_tongcheng", "round_trip"): "仅国际",
+    ("tuniu", "calendar"): "仅国内",
 }
 
 

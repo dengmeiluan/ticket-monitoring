@@ -2602,7 +2602,7 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · 负控已验：注入 `<div><img class="bic" data-plat="ctrip"><b>智行 App</b></div>` 后判据立刻报 `智行 App / got=ctrip`。
   · 顺带核实两处「看着像缺陷、其实不是」：关注页的 App 名字出现在 `<select><option>` 里（原生控件放不了图标，且收起时尺寸为 0，按可见性已被排除）；特价雷达的「携程」在 `div.chband-name` 里、旁边就有 `data-plat=ctrip` 的官方图标。
   · 另外确认：特价雷达生产库 `special_deals`/`radar_snapshots`/`radar_runs` **全为空**——`low_fare=y` 的口径是「有发现源」（`SPECIAL_CAPABILITY` 7 家齐全、`_app_zhixing_deals`/`_app_qunar_deals` 已接进雷达分发 772/774 行），不是「已出数」；UI 空态也如实写「还没有监控记录」。
-- r805aw 又一处过度声明：`app_qunar.calendar = "y"` → **n**。判据与当初把 `tuniu.calendar` 从 y 降为 n 完全同型：去哪儿 App **有**日历页（登录后 6 天真实价），但采集只把它当「选日」用、随后进列表取明细，源码里 **0 处** `path_note("日历", ...)`（智行是 4 处、账本 49 行），账本全历史也只有 `航班明细` 一种 entry_path。按「calendar = 独立日历通路」的定义不能记 y。同时补 `DIMENSION_NOTES[("app_qunar","calendar")]`，悬停里讲清「App 有日历页，但只用于选日」。
+- r805aw 又一处过度声明：`app_qunar.calendar = "y"` → **n**。判据与当初把 `tuniu.calendar` 从 y 降为 n 完全同型：去哪儿 App **有**日历页（登录后 6 天真实价），但采集只把它当「选日」用、随后进列表取明细，源码里 **0 处** `path_note("日历", ...)`（智行是 4 处、账本 49 行），账本全历史也只有 `航班明细` 一种 entry_path。按「calendar = 独立日历通路」的定义不能记 y。同时补 `DIMENSION_NOTES[("app_qunar","calendar")]`，悬停里讲清「App 有日历页，但只用于选日」。**（r916 纠偏：途牛官方 H5 日历在 `crawlers/special.py`，r805z 只扫了 `crawlers/tuniu.py`；`tuniu.calendar` 已升 y/仅国内）**
   · **漏检根因**：r805z 的日历判据只覆盖浏览器四家，注释却写着「App 渠道由 r700/r701 覆盖」——**那两条是往返门禁，不覆盖 calendar**。已改正注释并新增 `test_app_calendar_is_backed_by_a_real_path`（双向：y 必须真有 `path_note("日历")`；n 必须确实没有且配了悬停说明）。负控把声明改回 y 立刻红。
   · 连带修正两处旧期望（缺口清单从此不再「为空」）：`test_r677` 与 `test_r683` 现在都断言 `app_alignment_gaps("app_qunar") == ("calendar",)`——缺口如实出现在界面的「App 渠道相对浏览器端仍缺：日历」里。
   · 判据教训：**注释里的「由 X 门禁覆盖」也要被验证**。一句想当然的覆盖声明，让一个过度声明躲过了所有门禁；写「已覆盖」时至少要指出覆盖它的用例名并确认它真的测这一维。
@@ -2717,7 +2717,7 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · 门禁两道：`test_r805ae::test_every_unsupported_round_trip_is_explained`（每个 `round_trip=n` 必须有说明）+ `test_r901::test_unsupported_round_trip_says_why_on_hover`（**真渲染**：往返行每列内层 `.cell` 的 title 里读得到该说明，防「写了但读不到」）。r901 扩展了探针，额外收集维度行每格 title。
   · 复跑：`test_r901` 7 passed（含新用例）、`test_r805ae` 全绿、`test_r805aj`（飞猪弹窗等待期进度，r805aj 已把「慢」定位到同步 `/api/login` 并加了排队/秒数反馈）+ 文档/EOL/维度矩阵 **117 passed**。
 - r813o 全量 pytest 第二轮（最终哈希前）：`tools/test_all.py --no-ui --workers 8` → **5839 passed / 16 skipped / 1 failed（411.9s）**，唯一红是探针 aria-label 的旧字面量断言（`test_v284_batch_probe::test_probe_ui_priority_order_source`）；且跑测期间产品代码被并行会话改写，工具判本轮**作废**。已把 aria 保留「优先级 5 家 + App 需勾选」两层语义并同步该断言，定向 **11 passed**。随后在最终哈希 `c8773dd` 上再跑一轮（日志 `_scratch/test_all_final.log`），以跑前/跑后哈希一致为准。
-- r805bx 能力矩阵「写 n 就必须解释」推广到所有维度：补齐 7 家 `multi_city` 与 `tuniu.calendar` 的悬停说明——浏览器站点**产品上都有多程入口**、去哪儿 App 有「单程/往返/多程」三档，只是采集端没接；只显示「不支持」会被读成「渠道没有这个产品」，正是用户「为啥不都实现」的来源。措辞按事实分两类：浏览器「站点有多程入口，采集端未实现」 / App「采集端未接多程」 / 途牛日历「没有独立日历通路（r805z）」。
+- r805bx 能力矩阵「写 n 就必须解释」推广到所有维度：补齐 7 家 `multi_city` 与 `tuniu.calendar` 的悬停说明——浏览器站点**产品上都有多程入口**、去哪儿 App 有「单程/往返/多程」三档，只是采集端没接；只显示「不支持」会被读成「渠道没有这个产品」，正是用户「为啥不都实现」的来源。措辞按事实分两类：浏览器「站点有多程入口，采集端未实现」 / App「采集端未接多程」 / 途牛日历「r805z 曾误记没有独立日历通路；r916 纠偏为官方 H5 日历（仅国内）」。
   · 门禁升级：`test_r805ae::test_every_unsupported_cell_is_explained` 从只查 `round_trip` 扩到**所有维度**（当前 0 个漏写）；`test_r901::test_unsupported_cells_say_why_on_hover` 在真渲染里遍历每个维度行的每列 `.cell` title，断言 n 格都读得到说明（≥10 格）。
   · 复跑：`test_r805ae + test_r901` 与全量跑里报红的 `test_v284_batch_probe::test_probe_ui_priority_order_source`、`test_r660_pacing_reading_not_clipped`（3 档 + 负控）、`test_r805aj_login_wait_progress` 一起钉哈希复跑 **17 passed**——那 5 条红是在 `webui.py` 被并行会话改写期间测到的（全量跑自己也打了「产品代码被改写，本次结果作废」）。当前 webui 哈希 `c8773ddddb` 前后一致。
   · 审计后仍为 `""` 的端面只有两格，说明均已写明事实：飞猪 H5（代码与解析实测可出数，但生产账本尚无记录）、途牛 PC（生产两次都被滑块拦住，需人工在登录窗口验证）；`qunar.pc=n` 有停服说明。7 面在场性普查 `test_r805ag`（含健康/检索/配置/登录/节流）与登录行对齐 `test_r412/r718/r477` 复跑 **35 passed**（哈希钉住）。
@@ -3157,6 +3157,32 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
     「仅 2 段」，App 缺口明确列「智行/去哪儿/携程/同程/飞猪 App 多程」；
     390/900 档 9 个新控件均可见，页面 scrollWidth 380/890 ≤ 390/900，零 pageerror。
   · UI 自检 **670/670**（15:15，零 JS 错误），覆盖矩阵 y 与 9 个新控件。
+
+- r916 途牛日历纠偏：官方 H5 日历接入监控（2026-11-03 18:23）：
+  · 事实核验：`crawlers/special.py::fetch_tuniu_calendar` 调
+    `flight-api.tuniu.com/query/flight/v1/calendar`（type=1），与途牛页面
+    点日期控件同一 XHR；真实 H5 搜索流点「查询/日历」后返回 **125 个
+    逐日价**（2026-11-03..2027-08-25，¥360–1790，11-05 ¥420，裸价不含税）。
+    r805z 只扫了 `crawlers/tuniu.py`，漏掉特价雷达已在用的 `special.py`，
+    把 `tuniu.calendar` 误记 n。
+  · 接入：新增 `TuniuCrawler.calendar()`，复用同一接口并写
+    `path_note("日历","calendar", rows=N)`；国际 unsupported、请求失败
+    error、无价 empty，日历价不冒充含税明细。
+  · PC 入口实测：临时 profile + 已保存 cookie 打开 PC 列表页，页面弹
+    「安全验证·拖动下方滑块」；未绕过，PC 日历不记已验证，证据取 H5
+    官方日历接口（用户截图 2 的 H5 日期弹层同源）。
+  · 去哪儿 App 日期控件（截图 3）：既有 `_pick_date` 点日期行打开日历、
+    `calendar()` 解析 `q_flight_calendarDayItem#`（2026-11-02 真机
+    BJS→SHA 61 天 ¥380–420）；账本无「日历」entry_path 是因探针不写
+    生产库，`app_qunar.calendar=y` 仍由源码 + 真机探针支撑，不冒充
+    生产账本。
+  · 口径：`CHANNEL_DIMENSIONS["tuniu"]["calendar"]="y"`，
+    `DIMENSION_SCOPE=("tuniu","calendar")="仅国内"`，悬停写 125 行实测价
+    与裸价口径；`SPECIAL_CAPABILITY["tuniu"].sources` 补 `tuniucal`
+    （不再只写「特价榜单」）。
+  · 门禁：`tests/test_r916_tuniu_calendar.py` 5 条 + r805z/r805ax/r677/
+    special radar **56 passed**；`core.channel_contract --strict` 10×11
+    无缺口；文档矩阵 HANDOFF 两处 n→y；站点待重烘/对齐。
 
 - r956 矩阵 ctrip.multi_city 升 y（仅 2 段）（2026-11-03 13:10）：
   · 依据 r954 生产行 ¥1476（IJ004+MM304）与配置/采集/概览/来源/提醒/历史/导出

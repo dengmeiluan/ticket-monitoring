@@ -63,6 +63,7 @@ def test_calendar_y_requires_a_real_calendar_path():
         "fliggy": ("cheapestCalendar",),
         "tongcheng": ("ts/calendar", "calendar_lowest", "窗历"),
         "qunar": ("lowFlight", "calendar"),
+        "tuniu": ("fetch_tuniu_calendar", 'path_note("日历"'),
     }
     for p, needles in marks.items():
         if CHANNEL_DIMENSIONS[p].get("calendar") != "y":

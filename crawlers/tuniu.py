@@ -1561,6 +1561,34 @@ class TuniuCrawler(BaseCrawler):
             self._sleep()
         return results
 
+    def calendar(self, from_city: str, to_city: str,
+                 departure_date: str = "") -> List[dict]:
+        """国内逐日日历：与页面点日期控件同一官方 H5 日历 XHR。
+
+        2026-11-03 实测：真实 H5 搜索流点「查询/日历」触发
+        `query/flight/v1/calendar`（type=1），返回 125 个逐日价
+        （2026-11-03..2027-08-25，¥360–1790，11-05 ¥420）。
+        零登录/零签名；国际该接口无日历。价格是渠道裸价（不含税），
+        与特价雷达 `tuniucal` 同源；日历价不冒充含税明细。
+        """
+        self.path_reset()
+        if is_intl_route(from_city, to_city):
+            self.path_note("日历", "unsupported",
+                           detail="国际无官方低价日历（不拿榜单冒充）")
+            return []
+        anchor = str(departure_date or _dtm.date.today().isoformat())[:10]
+        from crawlers.special import fetch_tuniu_calendar
+        rows = fetch_tuniu_calendar(from_city, to_city, anchor, self.logger)
+        if rows is None:
+            self.path_note("日历", "error", detail="官方 H5 日历请求失败")
+            return []
+        if not rows:
+            self.path_note("日历", "empty", detail="官方 H5 日历暂无价格")
+            return []
+        self.path_note("日历", "calendar", rows=len(rows),
+                       detail="官方 H5 日历逐日裸价（不含税）")
+        return rows
+
     @staticmethod
     def _to_price(v: Any) -> Optional[float]:
         # 价格带 300–50000 与其余四渠道对齐（补下限：单渠道

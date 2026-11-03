@@ -38,9 +38,14 @@ python -m py_compile main.py webui.py report.py wizard.py core/*.py crawlers/*.p
 
 > **CI 分片并发**：`.github/workflows/ci.yml` 把全量 pytest 按 `tests/ci_durations.json`
 > 的历史耗时贪心分成 4 片，跑在 4 台 runner 上（片内仍 `pytest -n 4 --dist loadfile`）。
-> 分片并集=全部 `tests/test_*.py`，由 `python tools/ci_shard.py --stats 4` 在跑测前自检；
+> 分片并集=全部 `tests/test_*.py`，由 `tools/ci_shard.py` 在跑测前自检（各片文件数/耗时）；
 > 新增测试文件即使不在耗时快照里也会进组（按 20s 计权），不会漏跑。测试规模明显
-> 变化后用一次全量 JUnit 重建快照：`python tools/ci_shard.py --snapshot _scratch/test_run/<ts>/pytest.xml`。
+> 变化后用一次全量 JUnit 重建快照，命令见下。
+
+```bash
+python tools/ci_shard.py --stats 4
+python tools/ci_shard.py --snapshot _scratch/test_run/<ts>/pytest.xml
+```
 
 > **`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` 不是可选项**（Windows 实测）：本机第三方 pytest 插件（如 `langsmith`）
 > 依赖不全时，pytest 在**加载插件阶段**就崩（`ModuleNotFoundError: No module named 'requests_toolbelt'`），一行用例都跑不到。
