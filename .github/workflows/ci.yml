@@ -37,6 +37,13 @@ jobs:
       # webui 行为钉（共享时间轴轴位等）走真实渲染管线：demo 实例 +
       # Playwright Chromium，与 uitest 岗同款安装——缺内核时该族用例
       # 在 setup 即 ERROR（本地绿 CI 红的环境差异型失败）
+      - name: 缓存 Playwright 内核
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ms-playwright-${{ runner.os }}-
       - name: 安装 Chromium 内核（webui 行为钉真渲染管线）
         run: playwright install --with-deps chromium
       # 中文字体：报告/表格渲染类用例（report.py 用 msyh 度量换行与行高）
@@ -85,6 +92,13 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: pip install -r requirements.txt
+      - name: 缓存 Playwright 内核
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ms-playwright-${{ runner.os }}-
       - name: 安装 Chromium 内核
         run: playwright install --with-deps chromium
       - name: 全功能 UI 自检（任何 JS 报错即失败）
