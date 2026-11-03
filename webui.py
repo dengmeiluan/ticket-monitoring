@@ -1581,21 +1581,13 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  .mcseg .mcno{flex:none;width:42px;font-size:11px;color:var(--mut);
    font-family:var(--num)}
  .mcseg input[type=text]{width:64px;text-align:center;text-transform:uppercase;
-   font-family:var(--num);letter-spacing:.5px}
+   font-family:var(--num)}
  .mcseg input[type=date]{width:150px;padding:0 8px}
  .mcseg .ropbtn{height:28px}
  .mcadd{margin-top:8px}
  #cfgform .addrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;
   margin:8px 0 2px}
  #cfgform .addrow .addrbtn{margin:0;width:100%}
- @media(max-width:540px){#cfgform .addrow{grid-template-columns:1fr}}
- @media(max-width:540px){
-  .rmc .mcrow{flex-direction:column;align-items:stretch;gap:4px}
-  .rmc .mcrow .slab{min-width:0;overflow:visible}
-  .rmc .mcrow .sctl{max-width:none;width:100%}
-  .mcseg .mcno{width:34px}
-  .mcseg input[type=text]{width:58px}
-  .mcseg input[type=date]{width:132px}}
  .srow .sctl{flex:none;display:flex;align-items:center;gap:8px;max-width:72%;flex-wrap:wrap}
  .srow .sctl[style*="flex:1"]{flex:1;max-width:none}
  .srow .sctl input{max-width:100%}
@@ -10249,6 +10241,16 @@ html[data-theme="dark"] #opscard .opsbtns>button:first-child{color:#0b1220!impor
 #searchview .srx-chlinks>summary em{display:none!important}
 #searchview .srx-probestatus{max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #searchview .srx-probe.open>.srx-probefoot:has(.srx-probestatus:not(:empty)) .srx-probestatus{max-width:none;white-space:normal}
+/* 多程窄档：置尾独立块，不改动既有 ≤540 首个断点块（多处门禁按
+   首个 @media(max-width:540px) 取块；插入前置会截断它们的窗口）。 */
+@media(max-width:540px){
+ #cfgform .addrow{grid-template-columns:1fr}
+ .rmc .mcrow{flex-direction:column;align-items:stretch;gap:4px}
+ .rmc .mcrow .slab{min-width:0;overflow:visible}
+ .rmc .mcrow .sctl{max-width:none;width:100%}
+ .mcseg .mcno{width:34px}
+ .mcseg input[type=text]{width:58px}
+ .mcseg input[type=date]{width:132px}}
 </style></head><body><div class="wrap">
 <svg class="svgdefs" aria-hidden="true" focusable="false"><defs>
  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M2 20h20"/></symbol>
@@ -34264,9 +34266,9 @@ class _Handler(BaseHTTPRequestHandler):
                     import yaml as _y
                     with open(st.config_path, encoding="utf-8") as _yf:
                         cfg = _y.safe_load(_yf) or {}
+                    cfg["users"] = body.get("users") or []
                     try:
-                        cfg["users"] = _normalize_mc_users(
-                            body.get("users") or [])
+                        _normalize_mc_users(cfg["users"])
                     except ValueError as _mce:
                         # 多程形状是数据契约：坏段在这里拒绝，别等下一轮
                         # build_routes 才让整轮扫描起不来。
