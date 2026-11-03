@@ -667,6 +667,52 @@ class CtripCrawler(BaseCrawler):
                 boundary = i + 2
         return rows
 
+    def fetch_multi(self, segments: List[dict],
+                    wait_ms: int = 9000) -> List[FlightPrice]:
+        """多程采集（Ctrip PC）：只搬「多程超低价」组合卡的总价。
+
+        总价必须是页面自报「多程含税价」；legs 只进 extra，不做两段相加。
+        尚未接调度/UI，调用方需自行落库（core.multicity / itinerary_daily）。
+        """
+        from core.multicity import MultiCityError, normalize_segments
+        from .ctrip_multicity import build_multi_url, parse_multi_text
+        try:
+            segs = normalize_segments(segments)
+        except MultiCityError as e:
+            self.path_note("多程", "error", detail=str(e))
+            return []
+        url = build_multi_url(segs)
+        self.path_reset()
+        try:
+            with self.browser() as ctx:
+                page = self.new_page(ctx)
+                page.goto(url, wait_until="domcontentloaded")
+                page.wait_for_timeout(wait_ms)
+                text = page.inner_text("body")
+        except Exception as e:  # noqa: BLE001
+            self.logger.warning("[ctrip][多程] 页面不可用: %s", e)
+            self.path_note("多程", "error", detail=str(e)[:160], url=url)
+            return []
+        try:
+            got = parse_multi_text(text, segs)
+        except MultiCityError as e:
+            status = "empty" if "多程超低价" in text else "error"
+            self.logger.warning("[ctrip][多程] %s", e)
+            self.path_note("多程", status, detail=str(e)[:160], url=url)
+            return []
+        self.path_note("多程", "ok", rows=1,
+                       detail="页面自报多程含税价", url=url)
+        return [FlightPrice(
+            platform=self.name,
+            from_city=segs[0]["from"], to_city=segs[-1]["to"],
+            depart_date=segs[0]["date"], price=got["price"],
+            airline=got["legs"][0].get("airline", ""),
+            extra=json.dumps(got["extra"], ensure_ascii=False),
+            prov=json.dumps({"path": "多程", "url": url,
+                             "totalBasis": got["total_basis"]},
+                            ensure_ascii=False),
+        )]
+
     def _fetch_rt(self, from_city: str, to_city: str,
                   dates: List[str], ret_date: str) -> List[FlightPrice]:
         """PC 往返列表：只落产品往返总价（r815i）。
