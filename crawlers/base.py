@@ -1187,6 +1187,42 @@ class BaseCrawler:
             self.logger.warning("[%s] 预热失败: %s", self.name, e)
             return False
 
+    # ---------- 预热时序（日历/深链前置） ----------
+    def wait_risk_cookies(self, ctx, names=None, timeout_s: float = 12.0,
+                          poll_s: float = 0.8) -> list:
+        """等**风控 cookie 真的落下**再继续，而不是死等固定秒数。
+
+        为什么不能靠 ``page.wait_for_timeout(4000)``：预热的价值不在"停留了
+        几秒"，而在"服务端把会话 cookie 发下来了"。固定等待有两个失败模式：
+
+        * 快了 → cookie 还没下来就去打深链/日历，服务端当新会话 → 444/202 软拒
+          （仓库既有归因里 444 占 23.8%，很大一部分就是这种时序错）；
+        * 慢了 → 白等，且下一轮并不会因此更稳。
+
+        这里改成**轮询到 cookie 出现即返回**：命中就立刻走（比固定等待快），
+        没命中就等满超时并如实返回空列表（调用方据此记"预热未生效"，
+        而不是假装成功）。
+
+        ``names`` 省略时用渠道自己的 ``RISK_COOKIES``。
+        """
+        want = tuple(names or getattr(self, "RISK_COOKIES", ()) or ())
+        if not want:
+            return []
+        end = time.time() + max(0.0, float(timeout_s))
+        hit = []
+        while True:
+            try:
+                names_now = {c.get("name") for c in ctx.cookies()}
+            except Exception:
+                names_now = set()
+            hit = [n for n in want if n in names_now]
+            if hit:
+                return hit
+            if time.time() >= end:
+                break
+            time.sleep(max(0.1, float(poll_s)))
+        return hit
+
     # ---------- 工具 ----------
     def _humanize(self) -> tuple:
         """(是否启用, 轮数)：``crawler.humanize`` / ``crawler.humanize_rounds``。

@@ -528,8 +528,11 @@ class AppZhixingCrawler(AppCrawler):
             return [], False
         got: List[FlightPrice] = []
         for i, target in enumerate(targets):
-            rows, block = self._one_date_detail(dev, from_city, to_city,
-                                                target, first=(i == 0))
+            # 单日隔离：某天抛异常不再拖垮整段（保持 (rows, blocked) 契约）
+            rows, block = self.date_guard(
+                target, self._one_date_detail,
+                dev, from_city, to_city, target, first=(i == 0),
+                _default=([], None))
             if block is not None and block.blocking:
                 # 拦截要如实入账，且不强当「这天没票」继续跑完：
                 # 广告可以关，验证码/人脸只能等人，继续跑只会连环误报。

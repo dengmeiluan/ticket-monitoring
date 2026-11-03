@@ -5,6 +5,7 @@ import inspect
 import json
 import logging
 import os
+import re
 import sys
 import threading
 import time
@@ -17,6 +18,29 @@ import pytest  # noqa: E402
 
 def _log(name="p0c"):
     return logging.getLogger(name)
+
+
+def _fn_src(name):
+    """按函数名从**磁盘**取一段源码（不用 ``inspect.getsource``）。
+
+    为什么不用 getsource：``webui.py`` 有 4 MB，而且会被其它会话/发布脚本
+    重写。进程内 linecache 记的是导入时的行号，文件被改写后行号整体位移，
+    getsource 就会返回**另一个函数**的源码——实测踩过：拿
+    ``_probe_start_task`` 的内容去断言 ``_probe_search``，于是三条源码钉
+    在批量跑里随机变红、单独跑又全绿。
+    按函数名在磁盘文本里切片，永远对得上，也不受并发改写影响。
+    """
+    path = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "webui.py")
+    with open(path, encoding="utf-8") as f:
+        src = f.read()
+    m = re.search(r"^def %s\(" % re.escape(name), src, re.M)
+    if not m:
+        return ""
+    start = m.start()
+    nxt = re.search(r"^(?:def |class |@)", src[start + 1:], re.M)
+    end = start + 1 + nxt.start() if nxt else len(src)
+    return src[start:end]
 
 
 # ---------------- shared gate ----------------
@@ -95,7 +119,7 @@ def test_probe_exc_status_maps_session_busy_and_parse_error():
     assert webui._probe_exc_status(
         json.JSONDecodeError("x", "", 0)) == "parse_error"
     assert webui._probe_exc_status(RuntimeError("x")) == "error"
-    src = inspect.getsource(webui._probe_search)
+    src = _fn_src("_probe_search")
     assert "_probe_exc_status(e)" in src
 
 
@@ -111,7 +135,7 @@ def test_probe_retry_filters_challenge_cooling_channels():
     assert blocked == ["ctrip"]
     allowed, blocked = webui._probe_filter_want(["ctrip"], now=2000.0)
     assert allowed == ["ctrip"] and blocked == []
-    src = inspect.getsource(webui._probe_search)
+    src = _fn_src("_probe_search")
     assert "_probe_filter_want" in src
     assert "_PROBE_CHALLENGE_TS[p]" in src
     assert "_PROBE_CHALLENGE_TS.pop(p" in src
@@ -128,10 +152,10 @@ def test_retry_endpoint_filters_before_task_creation():
 
 def test_probe_retry_bypasses_global_cooldown():
     import webui
-    src = inspect.getsource(webui._probe_search)
+    src = _fn_src("_probe_search")
     assert "retry=False" in src
     assert "if not retry and _now0 - _PROBE_LAST" in src
-    src2 = inspect.getsource(webui._probe_start_task)
+    src2 = _fn_src("_probe_start_task")
     assert "retry=retry" in src2
     assert "retry:true" in webui.PAGE
 

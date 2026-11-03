@@ -243,20 +243,30 @@ _PREFLIGHT_STOP = "blocked"
 
 
 def capabilities(dev) -> dict:
-    """探测「这台实例到底能不能改 ro.*」——三条路各测一次，全部只读。
+    """探测「这台实例到底能不能改 ro.*」——四条路各测一次，全部只读。
 
     2026-11-03 在 MuMu（Android 15，无 Magisk）实测：
 
-    ==============  ==========================================  ======
+    ==============  ==========================================  ================
     路径             探测方法                                    结果
-    ==============  ==========================================  ======
-    ``resetprop``   ``command -v resetprop``                    无
-    ``setprop``     写 ro.* 后读回                               不变（静默失败）
+    ==============  ==========================================  ================
+    ``resetprop``   ``command -v resetprop``                    无（无 Magisk）
+    ``setprop``     写 ro.* 后读回                               不变（**返回 0 静默无效**）
     ``remount rw``  ``mount -o remount,rw /`` + ``touch``      ``'…sda6' is read-only``
-    ==============  ==========================================  ======
+    ``blockdev``    ``blockdev --setrw`` + ``--getro``           仍为 1（**同样静默无效**）
+    ==============  ==========================================  ================
 
-    三条全堵 → ABI 伪装在本实例上**技术上不可行**。把这条固化成能力探测，
-    免得以后每一次都重新试一遍、也免得把"命令返回 0"误当成"改成功了"。
+    三层根因（一层比一层深）：
+
+    1. **Android props 层**：``ro.*`` 只读，``setprop`` 返回 0 但不生效；
+    2. **Android 块设备层**：``/dev/block/sda6`` 的 ro 标志清不掉；
+    3. **VirtualBox 设备层**：实例配置 ``vms/<实例>/<实例>.nemu`` 里
+       ``system.vdi`` 的 ``type="Readonly"`` —— 系统盘以**只读**方式挂给
+       虚拟机，这是最底层根因。
+
+    结论：**本实例上 ABI 伪装技术上不可行**，除非 MuMu 官方放开系统盘写入
+    或安装 Magisk。把这条固化成能力探测，免得以后每一次都重新试一遍、
+    也免得把"命令返回 0"误当成"改成功了"。
     """
     from .fingerprint import _magisk
 
@@ -279,6 +289,21 @@ def capabilities(dev) -> dict:
     except Exception:
         pass
     rep["can_write_ro"] = bool(rep["resetprop"]) or rep["remount_rw"]
+    # blockdev 只读标志：能清掉的话 remount 才有戏（实测清不掉，返回 0 但 ro 仍 1）
+    try:
+        out = _text(_call(
+            dev, "shell", "sh", "-c",
+            "blockdev --getro /dev/block/sda6 2>/dev/null || echo NA; "
+            "blockdev --setrw /dev/block/sda6 2>/dev/null; "
+            "blockdev --getro /dev/block/sda6 2>/dev/null || echo NA"))
+        vals = [x.strip() for x in out.splitlines() if x.strip()]
+        rep["blockdev_ro_before"] = vals[0] if vals else ""
+        rep["blockdev_ro_after"] = vals[-1] if len(vals) > 1 else ""
+        if rep["blockdev_ro_after"] == "1" and not rep["remount_rw"]:
+            rep["note"] = ("块设备只读标志清不掉（blockdev --setrw 返回 0 但 ro 仍 1）；"
+                           "根因是系统盘以只读方式挂给虚拟机（system.vdi type=Readonly）")
+    except Exception:
+        pass
     if not rep["can_write_ro"] and not rep["note"]:
         rep["note"] = "无可用的 ro.* 写入通道（无 Magisk 且不能 remount）"
     return rep

@@ -1143,9 +1143,21 @@ class CtripCrawler(BaseCrawler):
             try:
                 page.goto("https://m.ctrip.com/html5/",
                           wait_until="domcontentloaded")
-                page.wait_for_timeout(4000)
+                # 预热时序：等风控 cookie（cticket/_bfa/MKT_CKID）真的落下再打
+                # 日历接口。原来是死等 4s——cookie 没下来就去打 = 服务端当新
+                # 会话，日历返回空/软拒，账本却记成"该日无价"。
+                hit = self.wait_risk_cookies(ctx, timeout_s=12.0)
+                warm_ok = bool(hit)
+                if hit:
+                    self.logger.info("[ctrip] 日历预热就绪：%s", "/".join(hit))
+                else:
+                    self.logger.warning(
+                        "[ctrip] 日历预热未拿到风控 cookie（%s 均无），"
+                        "日历大概率仍被软拒",
+                        "/".join(getattr(self, "RISK_COOKIES", ()) or ("",)))
             except Exception as e:
                 self.logger.warning("[ctrip] 预热失败: %s", e)
+                warm_ok = False
             for date in dates:
                 url = self._entry_url(fc, tc, date)
                 self.logger.info("[ctrip][intl] GET %s", url)
@@ -1183,11 +1195,19 @@ class CtripCrawler(BaseCrawler):
                     if not flights:
                         self.logger.warning(
                             "[ctrip][intl] %s 未拿到日历价", date)
-                        self.path_note(
-                            "日历", _cal_status, date=date,
-                            detail=("登录/验证页，非空结果"
+                        # 预热没把风控 cookie 养下来时，"没价"更可能是软拒
+                        # 而不是"该日无票"——如实记 soft_reject，别把
+                        # 会话没养熟写成"没有航班"（账本红线）。
+                        if _cal_status == "empty" and not warm_ok:
+                            _status, _why = ("soft_reject",
+                                             "预热未落下风控 cookie，按软拒记")
+                        else:
+                            _status = _cal_status
+                            _why = ("登录/验证页，非空结果"
                                     if _cal_status != "empty" else
-                                    "国际日历未返回该日报价"),
+                                    "国际日历未返回该日报价")
+                        self.path_note(
+                            "日历", _status, date=date, detail=_why,
                             ms=int((time.time() - t_cal) * 1000))
                         self._sleep()
                         continue

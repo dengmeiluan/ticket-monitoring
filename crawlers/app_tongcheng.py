@@ -218,7 +218,9 @@ class AppTongchengCrawler(AppCrawler):
                 return []
             out = []
             for date in dates:
-                got = self._one_date(dev, from_city, to_city, date)
+                # 单日隔离：一天抛异常不再拖垮整段
+                got = self.date_guard(
+                    date, self._one_date, dev, from_city, to_city, date)
                 if got:
                     out.append(got)
             return out

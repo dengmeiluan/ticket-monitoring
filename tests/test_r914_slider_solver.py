@@ -217,6 +217,9 @@ class _Page:
         return self.shot
 
     def query_selector(self, sel):
+        # 成功后控件被移除（真实页面就是这样，也是 _slider_gone 的主判据）
+        if self.solved:
+            return None
         if "btn" in sel or "Button" in sel or "n1z" in sel or "Block" in sel:
             return _El({"x": 40, "y": 300, "width": 48, "height": 40})
         if "slide" in sel or "slider" in sel or "scale" in sel:

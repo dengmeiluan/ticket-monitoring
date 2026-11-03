@@ -6216,6 +6216,10 @@ def main():
                    and _srxd["tabs"] >= 5
                    and (_srxd["raw"] > 0 or "原始行回放失败" in _rawtxt
                         or "无当轮 raw" in _rawtxt))
+                _wait_until(pg, "()=>{const a=[...document.querySelectorAll"
+                                "('#srxDetail .srx-dtitle img.bic')];"
+                                "return a.length>=2&&a.every(i=>i.complete"
+                                "&&i.naturalWidth>0);}", cap_ms=4000)
                 _bicd = pg.evaluate("""()=>({
                   air:document.querySelectorAll(
                     '#srxDetail .srx-dtitle img.bic-air').length,
@@ -7330,7 +7334,9 @@ def main():
                 # goal: 关注航线/关注航班曲线与检索/明细筛选统一
                 pg.set_viewport_size({"width": 1440, "height": 900})
                 pg.evaluate("switchView('mon');showMonTab('overview')")
-                pg.wait_for_timeout(800)
+                _wait_until(pg, "()=>document.querySelectorAll"
+                                "('#monWatchList .monwatch svg').length>0",
+                            cap_ms=5000)
                 _u = pg.evaluate("""()=>({
                   routeCard:getComputedStyle(document.querySelector('#monRouteCard')).display!=='none',
                   routes:document.querySelectorAll('#monRouteList .monroute').length,

@@ -452,6 +452,44 @@ def _shot(page) -> bytes:
         return b""
 
 
+def _slider_gone(page) -> bool:
+    """滑块是不是真的过去了——**看控件，不看文案**。
+
+    踩过的坑：成功后页面里往往还留着 `.slide-verify` / `.slideBlock` 的
+    CSS 类名（样式块不随控件删除），拿 ``classify(page.content())`` 复判会
+    把"已通过"重新判成 simple，于是明明解开了却报失败（2026-11-03 E2E 实测）。
+
+    可靠的信号按强度排：
+      1. 滑块手柄元素消失 → 一定通过；
+      2. 手柄还在但提示文案（"拖动滑块"等）没了 → 大概率通过；
+      3. 手柄被复位到最左 → 明确失败（页面通常会归位让人重试）。
+    """
+    try:
+        box = _first_box(page, _BTN_SELECTORS)
+    except Exception:
+        return False
+    if box is None:
+        return True
+    try:
+        body = page.inner_text("body")[:2000]
+    except Exception:
+        body = ""
+    still_text = any(m in body for m in _SIMPLE_MARKS)
+    if still_text:
+        return False
+    # 手柄还在、文案没了：再看它是否被归位到最左（归位=失败重试）
+    try:
+        edges = page.query_selector("[class*=sliderContainer]") \
+            or page.query_selector("[class*=slider]")
+        if edges is not None:
+            tb = edges.bounding_box()
+            if tb and box["x"] - tb["x"] <= 6:
+                return False
+    except Exception:
+        pass
+    return True
+
+
 def attempt_page(page, plat: str, config: dict = None, *, tier=None,
                  logger=None, user_data_dir="user_data", profile="",
                  rng: random.Random = None) -> bool:
@@ -514,8 +552,8 @@ def attempt_page(page, plat: str, config: dict = None, *, tier=None,
                     logger.info("[%s] 滑块拖动异常：%s", plat, e)
                 continue
             time.sleep(0.8)
-            after = classify(_safe_html(page), _safe_text(page))
-            if not after.solvable and after.name != "strong":
+            # 验证看**控件是否消失**，不用 classify 复判（残留 CSS 类名会误判）
+            if _slider_gone(page):
                 note_result(plat, True, config, user_data_dir=user_data_dir,
                             profile=profile)
                 if logger:
@@ -578,8 +616,11 @@ def attempt_device(dev, plat: str, config: dict = None, *, tier=None,
 
         apply_trajectory(_move, sx, sy, dist, rng=r)
         time.sleep(0.6)
-        after = classify(dev.dump() or "", "")
-        if not after.solvable:
+        # App 侧同理：看**界面里还有没有滑块控件/文案**，不要拿 classify 复判
+        after_xml = dev.dump() or ""
+        still = any(m in after_xml for m in _SIMPLE_MARKS) or \
+            any(m in after_xml for m in _SIMPLE_DOM)
+        if not still:
             note_result(plat, True, config, user_data_dir=user_data_dir,
                         profile=profile)
             if logger:

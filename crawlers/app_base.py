@@ -718,6 +718,37 @@ class AppCrawler:
         return self.path_note(path, "timeout", date=date,
                               detail="未取到可用结果：%s" % (why or "unknown"))
 
+    def date_guard(self, date: str, fn, *args, _default=None, **kwargs):
+        """**单日隔离**：某一天抛异常只死这一天，不许拖垮整段。
+
+        为什么需要：App 渠道的日期循环原本是
+
+            for date in dates:
+                got = self._one_date(dev, ..., date)   # ← 一抛异常，整个 fetch 结束
+                if got: out.append(got)
+
+        ``_one_date`` 里任何一处异常（设备掉线、uiautomator 卡死、弹层没关掉、
+        解析越界）都会让**后面所有日期**一起丢掉——账本上表现为整条航线
+        「timeout」，而实际可能只有 1 天有问题。按日期隔离之后，失败被压缩成
+        「这一天没采到」，其余日期照常出数，爬取率按天而不是按航线计。
+
+        ``_default``：返回多值元组的渠道（如智行返回 ``(rows, blocked)``）
+        传它自己的空值，保持调用方解包不变。
+
+        记账口径沿用 ``note_date``：异常日一律记 timeout 并写明卡点，
+        **绝不记 empty**（"没采到" ≠ "没票"，这是账本红线）。
+        """
+        t0 = time.time()
+        try:
+            return fn(*args, **kwargs)
+        except Exception as e:
+            why = "%s: %s" % (type(e).__name__, str(e)[:100])
+            self.logger.warning("[%s] 日期 %s 单独失败（其余日期继续）：%s",
+                                self.name, date, why)
+            self.note_date(date, [], why, ms=int((time.time() - t0) * 1000))
+            # 单值渠道拿 []（与 _one_date 的空值同形）；元组渠道传自己的空值。
+            return [] if _default is None else _default
+
     # ---------- 子类必须实现 ----------
     def fetch(self, from_city: str, to_city: str, dates: List[str],
               ret_date: str = "") -> List[FlightPrice]:
