@@ -140,6 +140,7 @@
 - **本地绿 / CI 红的环境差异（已实证）**：`crawlers/slider.py` 用可选 `import numpy`，本地全局环境有 numpy，CI 只装 `requirements.txt` 而当时未声明 numpy → `find_gap()` 恒返回空候选，r914/r916 四条同时红。修复=把 `numpy>=1.26` 写进 `requirements.txt`（CI、release-build、Docker 同一来源），并给缺依赖加一次性告警 + 负控（屏蔽 numpy 时仍红、装上才绿），不把测试改成 skip。
 - 分片串行排障口径：先看失败片日志的 `FAILED` 行，再判断是本片代码问题还是并行 WIP 的跨片问题；本次第二红（`android.vendor.apply` 无 UI 落点 + 加固 ok 被只读探测拖红）就是并行提交引入、与 numpy 无关。
 - 第三红（`b345486`）：`test_swr_returns_stale_immediately` 在 CI 慢机假红——SWR 分支触发的后台重建线程先在断言前发布新 payload，`out == {"v":"stale"}` 变成新状态。产品语义没问题，修测试：当测里把 `_state_rebuild_async` 换成记录器，分别断言「立即回旧值」和「确实排了重建」，线程本身由 `test_async_build_does_not_hold_lock` 真跑覆盖。教训：断言不要依赖不可控线程调度。
+- **UI 岗仍是关键路径（约 6 分钟）**：`docs/uitest.py` 已有 `UITEST_SECTIONS`（0–49 段）可做分片，但段间有状态依赖——实测冷跑 25–49 时 r299 两条 computed 断言红、27–49 时 r358 健康日志格为空。当前保持 UI 串行；下一步要把这些段改成自给自足（自己打开渠道/健康面板并等数据）后再切 2 片，不能直接按段号硬切。
 
 ### 2.4 多程（能力矩阵当前口径）
 
