@@ -184,6 +184,7 @@ def collect_multicity(users, crawlers, storage, logger, today=""):
     from core.multicity import segments_key
     routes = {}
     for u in users or []:
+        _has_ctrip = "ctrip" in (u.get("platforms") or [])
         for r in u.get("routes") or []:
             segs = getattr(r, "segments", None)
             if not segs:
@@ -193,7 +194,10 @@ def collect_multicity(users, crawlers, storage, logger, today=""):
             except Exception as e:  # noqa: BLE001
                 logger.warning("[多程] 行程形状不合法，跳过：%s", e)
                 continue
-            routes.setdefault(key, (r, segs))
+            rec = routes.setdefault(
+                key, {"route": r, "segs": segs, "ctrip": False})
+            if _has_ctrip:
+                rec["ctrip"] = True
     if not routes:
         return 0
     crawler = next((c for c in crawlers or [] if c.name == "ctrip"), None)
@@ -203,7 +207,12 @@ def collect_multicity(users, crawlers, storage, logger, today=""):
     import datetime as _dt
     today = today or _dt.date.today().isoformat()
     saved = 0
-    for key, (_route, segs) in routes.items():
+    for key, rec in routes.items():
+        if not rec["ctrip"]:
+            # 用户没勾携程：不拿别家浏览器/外部会话替他采
+            logger.info("[多程] 订阅用户未启用携程，跳过 %s", key)
+            continue
+        segs = rec["segs"]
         if segs[0]["date"] < today:
             logger.info("[多程] 首段已过期，跳过 %s", key)
             continue
@@ -3083,7 +3092,14 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
         # 多程整单采集算在本轮内：耗时/异常都计入脉冲，不能跑在
         # PULSE.end() 之后变成看不见的尾巴。
         try:
-            collect_multicity(users, get_crawlers(plats), storage, logger)
+            _mc_want = any(
+                "ctrip" in (u.get("platforms") or [])
+                and any(getattr(r, "segments", None)
+                        for r in (u.get("routes") or []))
+                for u in users)
+            collect_multicity(
+                users, get_crawlers(["ctrip"]) if _mc_want else [],
+                storage, logger)
         except Exception as e:
             logger.warning("[多程] 轮尾采集异常: %s", e)
         try:

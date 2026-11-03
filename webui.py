@@ -30536,6 +30536,9 @@ def _multicity_alert_round(user, notifier, storage, logger, base_url="",
         if not rows:
             continue
         row = rows[0]
+        if str(row.get("platform") or "") not in (
+                _mc_field(user, "platforms", []) or []):
+            continue
         try:
             price = float(row.get("total_price") or 0)
         except (TypeError, ValueError):

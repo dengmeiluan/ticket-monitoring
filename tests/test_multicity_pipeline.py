@@ -51,7 +51,8 @@ def _route():
 
 def test_collect_multicity_dedups_and_saves_page_total():
     c, s = C(), S()
-    users = [{"routes": [_route()]}, {"routes": [_route()]}]
+    users = [{"platforms": ["ctrip"], "routes": [_route()]},
+             {"platforms": ["ctrip"], "routes": [_route()]}]
     n = main.collect_multicity(users, [c], s, logging.getLogger("mc"),
                                today="2026-11-01")
     assert n == 1
@@ -65,9 +66,14 @@ def test_collect_multicity_dedups_and_saves_page_total():
 
 def test_collect_multicity_skips_without_ctrip_or_after_expiry():
     s = S()
-    users = [{"routes": [_route()]}]
+    users = [{"platforms": ["ctrip"], "routes": [_route()]}]
     assert main.collect_multicity(users, [], s, logging.getLogger("mc"),
                                   today="2026-11-01") == 0
     assert main.collect_multicity(users, [C()], s, logging.getLogger("mc"),
                                   today="2026-12-01") == 0
+    no_ctrip = [{"platforms": ["qunar"], "routes": [_route()]}]
+    c = C()
+    assert main.collect_multicity(no_ctrip, [c], s, logging.getLogger("mc"),
+                                  today="2026-11-01") == 0
+    assert c.calls == [], "用户没勾携程不得替他采"
     assert s.rows == []

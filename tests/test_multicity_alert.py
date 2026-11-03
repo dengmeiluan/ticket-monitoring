@@ -30,8 +30,8 @@ class Notifier:
         return self.res
 
 
-def _user(thr=1500):
-    return {"name": "u", "routes": [{
+def _user(thr=1500, platforms=None):
+    return {"name": "u", "platforms": platforms or ["ctrip"], "routes": [{
         "from": "SHA", "to": "OSA", "dates": ["2026-11-20", "2026-11-23"],
         "alert_threshold": thr, "segments": SEGS}]}
 
@@ -78,6 +78,9 @@ def test_no_threshold_stale_and_rejected_are_silent(tmp_path):
     st, n = _db(tmp_path), Notifier()
     assert webui._multicity_alert_round(
         _user(0), n, st, logging.getLogger("mc")) == 0
+    assert webui._multicity_alert_round(
+        _user(platforms=["qunar"]), n, st,
+        logging.getLogger("mc")) == 0, "未勾携程的用户不得收到多程提醒"
 
     st.save_itinerary("ctrip", KEY, SEGS, 900.0, LEGS,
                       fetched_at="2020-01-01 00:00:00")
