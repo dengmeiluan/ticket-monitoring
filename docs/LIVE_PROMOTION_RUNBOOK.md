@@ -17,7 +17,7 @@
 | live 配置 | `_release_ab04/config.yaml` 与主树 `config.yaml` **diff=0** |
 | 数据/日志/登录态 | live 树的 `data`、`logs`、`user_data` 都是**主树的符号链接**（同一份文件） |
 | live 当前能力 | **10 渠道代码**（Release `ab04c22`，webui sha12 `6c85a00f14c1`）；`/api/channel-dims` 10 家；`enabled_platforms` 6（配置未变） |
-| 主树候选 | 10 渠道 + App/浏览器国际往返；tracked collect **6211**（2026-11-03 12:35，含 r953 导出用例）；全量非 UI **6191 passed / 19 skipped / 0 failed**（12:30，workers 8，648.73s，r953 前共 6210；r952 修掉 r320b 配置隔离与 r286 误杀 8796/`networkidle` 四类假红）；r953 导出定向 **14 passed**，当前树全量待复跑；UI **670/670**（11:18）；候选包 SHA256 `bdf974af562c238ac3c4b56618ff5526e3589369a1c847471f59a2d57e653d0e`（**2026-11-03 12:37 按 `80c63eb` 合并树构建；61,742,809 bytes / 864 entries；冻结后若树再变必须重算**） |
+| 主树候选 | 10 渠道 + App/浏览器国际往返；tracked collect **6211**（2026-11-03 12:35）；全量非 UI **6192 passed / 19 skipped / 0 failed**（12:54，workers 8，759.17s，共 6211；含 r951 历史、r952 门禁修复与 r953 CSV 导出）；UI **670/670**（11:18）；候选包 SHA256 `bdf974af562c238ac3c4b56618ff5526e3589369a1c847471f59a2d57e653d0e`（**2026-11-03 12:37 按 `80c63eb` 合并树构建；61,742,809 bytes / 864 entries；冻结后若树再变必须重算**） |
 
 因为数据/日志/登录态共享，切换**不需要迁移数据库、日志或登录快照**；旧 live 树保留作回滚。
 

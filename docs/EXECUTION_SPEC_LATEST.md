@@ -3081,8 +3081,8 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
     库/表缺失返回 `items=[] + note`（不建库建表、不 500）；演示态明说「演示数据
     不含多程整单样本」，界面可把「没样本」和「读失败」分开。
   · 矩阵 `ctrip.multi_city` 说明同步：已有 `fetch_multi`/轮尾采集/只读 API；
-    配置卡/概览整单卡在 r944、整单提醒与历史走势在 r944/r951 补齐；仍无生产
-    整单行，仍记 `""`；
+    配置卡/概览整单卡在 r944、整单提醒与历史走势在 r944/r951 补齐；r954 已有
+    2 段生产整单行（¥1476），仍记 `""`（3+ 段/缺口程未验）；
     不再写「采集端未实现」。
   · 门禁：多程 4 文件 **23 passed**（模型/解析/轮尾/API，2026-11-03 10:13），
     全量见 §1.0。
@@ -3109,6 +3109,19 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · 同树重建 Windows 候选：zip **61,742,809 bytes / 864 entries**，SHA256
     `bdf974af562c238ac3c4b56618ff5526e3589369a1c847471f59a2d57e653d0e`；
     无 tests/config/user_data/data 条目，未上传。
+  · 全量非 UI **6192 passed / 19 skipped / 0 failed**（12:54，workers 8，759.17s，
+    共 6211），导出改动零回归。
+
+- r954 携程 PC 两段多程生产行（2026-11-03 12:52）：
+  · 用 Ctrip profile **副本**（不碰 live 会话）跑 `collect_multicity`：
+    SHA→TYO 11-20 / TYO→OSA 11-23，页面自报多程含税价 **¥1476**，
+    legs **IJ004 + MM304**；来源 URL
+    `flights.ctrip.com/online/list/multi-sha-tyo-tyo-osa?depdate=2026-11-20_2026-11-23...`。
+  · 临时库 `itinerary_daily` 1 行 + `itinerary_history` 1 点；`tripType=MC`、
+    `totalBasis=page_multicity_total`、`prov{path,url,totalBasis}` 均落库；
+    **未写 live 库**。
+  · 矩阵仍 `""`：2 段已有生产整单行，3+ 段与缺口程未验；`core/channels.py`、
+    HANDOFF、Release 正文同步「已有 2 段生产整单行」。
 
 - r951 多程整单历史 + 概览 sparkline（2026-11-03 11:58，`feat/mc-history` 合并）：
   · `PriceStorage` 新增 `itinerary_history`（append-only，90 天保留，按
