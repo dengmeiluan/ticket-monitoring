@@ -40,8 +40,8 @@
 > r908 文档摘要/携程 App 往返口径、r909 320 档 pacing 行高、r910 同程国际
 > 往返 API 负结论；能力矩阵截图与静态站已按 10 渠道 + 携程 App 国内/国际
 > 往返重烘（当时站戳 `3a7ea543ba18`；当前站戳见下），`release_align_check --local` **25/25**；
-> Release/正文/四资产/tag 已于 ab04c22 同源；ghcr `sha-ab04c22` 单独存在，`latest` 已随 HEAD 走到 `sha-934e108`（非同 digest）；
-> Release `v1.0` → `ab04c22` 已发（10 渠道正文，资产 4/4）；live 8765 已于
+> Release 当前 `v1.0` → `e65cee1`（09:54 由 `ab04c22` 重指，正文/四资产/tag 同源）；ghcr `latest` = `sha-e65cee1` digest `5fb025bb3488…`（同 digest），`sha-ab04c22` 单独存在（digest `9b72acb1a6b9…`）；
+> Release `v1.0` 当前 → `e65cee1`（首发 `ab04c22`，10 渠道正文，资产 4/4）；live 8765 已于
 > 2026-11-03 08:58 切到 `_release_ab04`（PID 47952）。r933–r953 已入库（至 `80c63eb`），
 > live 树仍停在 ab04c22；多程采集/配置卡/概览整单卡/来源页/整单历史与日桶下限守卫见
 > SPEC r941–r951。

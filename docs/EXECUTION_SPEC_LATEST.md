@@ -31,7 +31,7 @@
 - **代码树**：HEAD `c116273` 已含 r933–r956（多程数据层/配置形状/实际渠道错峰/
   日桶下限守卫/携程多程采集/轮尾采集/只读 API/配置卡/概览整单卡/提醒接线/来源页
   可溯源/过期首段不提醒/整单历史 sparkline/CSV 导出/2 段矩阵升 y）；live 8765 于
-  **2026-11-03 08:58** 切到 `_release_ab04`（Release `ab04c22`，webui sha12
+  **2026-11-03 08:58** 切到 `_release_ab04`（live 树 `ab04c22`，webui sha12
   `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r956 尚未入该树。
 - **门禁**：tracked collect **6370**。2026-11-03 20:19 clean HEAD `bc96947`
   全量非 UI **6326 passed / 44 skipped / 0 failed**（workers 8，409.47s，共 6370；
@@ -80,7 +80,7 @@
   像素门禁 `test_app_zhixing_icon_has_no_promo_banner`。
 - **唯一声明源**：`core/channels.py`。新增渠道/维度先跑 `python -m core.channel_contract --strict`
   与 `test_r903/r904/r905`；声明字典禁止重复键，hint 承诺的按钮必须真实渲染。
-- **发布状态**：Release `v1.0` → `ab04c22`（v1.5.307，10 渠道正文/四资产 digest 4/4/CI/Pages 同源）；ghcr `sha-ab04c22` digest `9b72acb1a6b9…`，`latest` = `sha-934e108` digest `c8fe5de9383c…`（latest 跟随更新 HEAD，非同 digest；要 Release 同源请 pin `sha-ab04c22`）；live 8765 已切 `_release_ab04`；
+- **发布状态**：Release `v1.0` → `e65cee1`（2026-11-03 09:54 由 `ab04c22` 重指，多 4 个提交；v1.5.307，10 渠道正文/四资产 digest 4/4；CI/release-build/Pages 在 `e65cee1` 均 success）；ghcr `sha-e65cee1` = `latest` digest `5fb025bb3488…`（同 digest）；`sha-ab04c22` 仍可拉取（digest `9b72acb1a6b9…`）但已不对应 Release；公开站点戳 `code:4179e3223c14` 由更新后的 main 部署（release 树 webui 为 `6c85a00f14c1`）；live 8765 仍是 `_release_ab04`（`ab04c22` 树）；
   工作树未提交/未发布，推送、tag、Release、Pages、live 切换均需明确授权。
   live 切换的可执行步骤与回滚见 `docs/LIVE_PROMOTION_RUNBOOK.md`。
 - **本文结构**：§1–§12 是执行口径；§12 之后是历次门禁与时序台账，**不是当前状态**；
@@ -3362,7 +3362,7 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · 线上 390 真渲染（只读）：矩阵 **10 列 / 10 行**、滚到最右首列 `left=28`=容器左缘（冻结生效）、滑动提示可见、10 个探针 chip、零 pageerror。
   · live 树**不含** r933–r935（多程数据层/`Route.segments`/实际渠道错峰）；旧 `_release_final_72d` 保留作回滚。
 
-- r936 线上 Release 初版正文回核（2026-11-03 09:18）：
+- r936 线上 Release 初版正文回核（2026-11-03 09:18 时点；**09:54 起 tag 已重指 `e65cee1`，本节保留当时记录**）：
   · GitHub latest：tag `v1.0`、名称「机票监控台 · 初版（滚动更新）」、updated 00:57Z；正文已是 10 家渠道。
   · 用同一套正文门禁跑**线上正文**：`count/name/multi/surface/rt_row` 全 0 错、10 行矩阵、0 个 `{{…}}` 占位符；正文写 6169 tracked / 6149 passed / 670 UI，四资产 digest 与正文 SHA **4/4 相等**；源码 `ab04c22`。
   · 说明：`ab04c22` 早于 r933–r935（多程数据层/配置隔离不在该 Release，产品叙事仍准确）；live 8765 进程是否仍跑旧 7 渠道代码与 Release 正文是两件事，不能互相冒充。

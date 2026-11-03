@@ -41,13 +41,14 @@
 UI **670/670**（2026-11-03 16:50 全量复跑，零 JS 错误；页面 JS 为最终态，此后仅服务端
 label/提醒改动由全量 pytest 覆盖；含矩阵 ctrip 多程 ✓ 仅 2 段与 r958 的 9 个配置控件；含 r946 多程来源链接与 r947 过期门；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、同程 App round_trip=国际；r901 新增 390 档冻结首列 + 900 档无假提示真渲染；含 r905 行内自检按钮，另由 r905 真渲染 + r640 四档行高覆盖）、
 `release_align_check.py --local` **25/25 PASS**（2026-11-03 20:22，HEAD `c985ce0`，tracked 6370 / UI 670）、站点戳 `code:4179e3223c14` = 当前 `webui.py`（2026-11-03 20:xx 按最终树重烘）。
-**2026-11-03 09:20 在线复核（Release ab04c22 / v1.5.307）**：tag `v1.0` → `ab04c22`；Release 正文
-v1.5.307 + 源码 ab04c22；四资产 digest 与正文 SHA **4/4 相等**；CI/release-build/Pages
-在 ab04c22 success；ghcr `sha-ab04c22` digest `9b72acb1a6b9…`，`latest` = `sha-934e108`
-digest `c8fe5de9383c…`（latest 跟随更新 HEAD，**非同 digest**；要 Release 同源请 pin
-`sha-ab04c22`）；0 open issues / 0 open PRs。Release 正文/资产/tag 已同源，镜像层面需按此口径表述。
-**发布状态**：Release `v1.0` → `ab04c22`（10 渠道正文，四资产 digest 4/4）；
-live 8765 已于 2026-11-03 08:58 切到 `_release_ab04`（PID 47952，webui sha12
+**2026-11-03 21:12 在线复核（Release e65cee1 / v1.5.307）**：tag `v1.0` → `e65cee1`
+（09:54 由 `ab04c22` 重指，多 4 个提交）；Release 正文源码 `e65cee1`；CI/release-build/Pages
+在 `e65cee1` 均 success；ghcr `sha-e65cee1` = `latest` digest `5fb025bb3488…`（**同 digest**），
+`sha-ab04c22` 仍可拉取（digest `9b72acb1a6b9…`）但已不对应 Release；公开站点戳
+`code:4179e3223c14` 来自更新后的 main（release 树 webui 为 `6c85a00f14c1`）；
+0 open issues / 0 open PRs。Release 正文/资产/tag 已同源。
+**发布状态**：Release `v1.0` → `e65cee1`（10 渠道正文，四资产 digest 4/4）；
+live 8765 已于 2026-11-03 08:58 切到 `_release_ab04`（`ab04c22` 树，PID 47952，webui sha12
 `6c85a00f14c1`，`/api/channel-dims` 10 家）。r933–r935 的源码增量尚未入该树。
 
 ### 历史记录（2026-11-02 01:52 预发布；数字非当前）

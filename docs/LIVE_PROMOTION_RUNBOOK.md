@@ -5,7 +5,7 @@
 > **执行结果**：live PID **47952**，cwd `D:\idea_project\_release_ab04`，启动
 > 08:58:06；`/api/channel-dims` **10 家**、`webui.py` sha12 `6c85a00f14c1`、
 > config 与主树 diff=0；`enabled_platforms` 6、诊断卡 7（5 浏览器 + 2 个已启用 App）。
-> Release `v1.0` → `ab04c22`，正文 10 渠道，四资产 digest 4/4。该树**不含**
+> Release 当前为 `v1.0` → `e65cee1`（2026-11-03 09:54 由 `ab04c22` 重指，ghcr `latest` 同 digest）；live 树 `ab04c22` 正文 10 渠道，四资产 digest 4/4。该树**不含**
 > r933–r953（多程数据层/采集/只读 API/配置卡/概览整单卡/来源页/整单历史/CSV 导出/日桶守卫等），仍待下一次发版。
 
 ## 0. 现场事实（切换前复核，不要凭本文直接操作）
@@ -16,7 +16,7 @@
 | live 启动命令 | `python main.py --restart-delay 3` |
 | live 配置 | `_release_ab04/config.yaml` 与主树 `config.yaml` **diff=0** |
 | 数据/日志/登录态 | live 树的 `data`、`logs`、`user_data` 都是**主树的符号链接**（同一份文件） |
-| live 当前能力 | **10 渠道代码**（Release `ab04c22`，webui sha12 `6c85a00f14c1`）；`/api/channel-dims` 10 家；`enabled_platforms` 6（配置未变） |
+| live 当前能力 | **10 渠道代码**（live 树 `ab04c22`，webui sha12 `6c85a00f14c1`）；`/api/channel-dims` 10 家；`enabled_platforms` 6（配置未变） |
 | 主树候选 | 10 渠道 + App/浏览器国际往返；tracked collect **6214**（2026-11-03 12:46）；全量非 UI **6236 passed / 19 skipped / 0 failed**（14:46，workers 8，683.41s，共 6255，含未跟踪并行 WIP 测试；tracked 6214）；UI **670/670**（15:15）；候选包 SHA256 `1fc4276e7cd4901393219b1bd927ea26eea1ae3eb53ad3908ccb8f56e59ac31e`（**2026-11-03 14:47 按含 r956 矩阵 + r958 配置控件的最终树构建；61,805,134 bytes / 864 entries；冻结仍按最终树重算**） |
 
 因为数据/日志/登录态共享，切换**不需要迁移数据库、日志或登录快照**；旧 live 树保留作回滚。
@@ -125,8 +125,8 @@ powershell -ExecutionPolicy Bypass -File start.ps1
 ## 4.5 GitHub Release 正文同步（发布时必须，正文不是 Live 开关）
 
 名称与叙事保持「初版式」不变，但**渠道/矩阵/轴计数必须来自最终树**。
-线上 Release 已于 **2026-11-03 00:57Z** 更新为 10 渠道正文（源码 `ab04c22`，
-四资产 digest 4/4 与正文 SHA 一致）；下一次发版仍以 `docs/RELEASE_BODY.md`
+线上 Release 已于 **2026-11-03 01:54Z** 更新为 10 渠道正文（当前源码 `e65cee1`；
+00:57Z 时点为 `ab04c22`；两轮四资产 digest 均与正文 SHA 一致）；下一次发版仍以 `docs/RELEASE_BODY.md`
 为 canonical 源，替换 `{{…}}` 占位符后发布；`tests/test_release_body_source.py`
 会拦旧计数/漏渠道/多程不实。
 
