@@ -41,7 +41,9 @@ def test_overview_card_and_state_contract():
     for token in ("function monMCCard(", 'id="monMCList"',
                   "u.mcRoutes", "多程行程 · 整单总价",
                   "整单总价只取渠道页面，不由段价相加",
-                  "m.history", "mcspark", "trendSparkSvg"):
+                  "m.history", "mcspark", "trendSparkSvg",
+                  "function mcExport(", "function mcCsvRows(",
+                  "function _csvCell("):
         assert token in page, token
     for token in ('"mcRoutes": mc_routes', "_multicity_payload(",
                   "def _multicity_history(", "mode=ro",
