@@ -387,8 +387,10 @@ python docs/demo_build.py         # rebake the static demo site (docs/site)
 CI splits the full pytest suite across **four runners** using the recorded per-file
 durations in `tests/ci_durations.json` (`tools/ci_shard.py`; a pre-run `--stats 4`
 check proves the shard union equals every test file, with new files auto-assigned;
-`ci-ok` aggregates the pytest and UI lanes). The UI self-check remains a separate
-parallel job.
+`ci-ok` aggregates the pytest and UI lanes). The UI self-check is split across
+**two runners** by section range (0–24 / 25–49; `tools/ui_shard.py --stats 2`
+proves the shard union equals every section and matches the workflow, with new
+sections auto-assigned).
 
 ## FAQ
 
