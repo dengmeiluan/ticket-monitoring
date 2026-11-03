@@ -672,7 +672,8 @@ class CtripCrawler(BaseCrawler):
         """多程采集（Ctrip PC）：只搬「多程超低价」组合卡的总价。
 
         总价必须是页面自报「多程含税价」；legs 只进 extra，不做两段相加。
-        尚未接调度/UI，调用方需自行落库（core.multicity / itinerary_daily）。
+        已接轮尾调度（main.collect_multicity）与配置/概览/提醒面；落库由
+        core.storage.save_itinerary 负责。
         """
         from core.multicity import MultiCityError, normalize_segments
         from .ctrip_multicity import build_multi_url, parse_multi_text

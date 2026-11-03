@@ -1585,7 +1585,10 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  .mcseg input[type=date]{width:150px;padding:0 8px}
  .mcseg .ropbtn{height:28px}
  .mcadd{margin-top:8px}
- .maddr{margin-left:8px}
+ #cfgform .addrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  margin:8px 0 2px}
+ #cfgform .addrow .addrbtn{margin:0;width:100%}
+ @media(max-width:540px){#cfgform .addrow{grid-template-columns:1fr}}
  @media(max-width:540px){
   .rmc .mcrow{flex-direction:column;align-items:stretch;gap:4px}
   .rmc .mcrow .slab{min-width:0;overflow:visible}
@@ -20998,8 +21001,10 @@ function buildForm(){if(!CFG)return;let h='',gh='';
       return `<span class="chip schip${on?' on':''}" title="${lo?lo+'–'+hi:'不限'}" onclick="quickArr(${i},${j},this,'${lo}','${hi}')">${n}</span>`;}).join('')
     +`<input type="time" value="${esc(r.arr_time_min||'')}" onchange="setRoute(${i},${j},'arr_time_min',this.value);customArrWin(this)"><span class="sunit">→</span><input type="time" value="${esc(r.arr_time_max||'')}" onchange="setRoute(${i},${j},'arr_time_max',this.value);customArrWin(this)"></div></div>
    </div>`;});
-   h+=`<button class="btn2 addrbtn" onclick="addRoute(${i})">${ic('plus')} 添加关注航线</button>`
-    +`<button class="btn2 addrbtn maddr" onclick="addMCRoute(${i})">${ic('plus')} 添加多程行程</button>`;
+   h+=`<div class="addrow">`
+    +`<button class="btn2 addrbtn" onclick="addRoute(${i})">${ic('plus')} 添加关注航线</button>`
+    +`<button class="btn2 addrbtn" onclick="addMCRoute(${i})">${ic('plus')} 添加多程行程</button>`
+    +`</div>`;
   /* —— D 关注航班（用户卡内直接展开既有清单与表单，不弹层不跳走）—— */
   h+=glab('D','关注航班','','<span id="uwsum-'+i+'">按用户独立</span>');
   h+=`<div class="rline" style="background:var(--card);padding:0 2px 4px">
@@ -31611,9 +31616,14 @@ def _user_state(u):
             "latest": _latest0,
         })
 
+    _routes_txt_all = _routes_txt(routes)
+    if mc_routes:
+        _routes_txt_all = "、".join(
+            ([_routes_txt_all] if _routes_txt_all else [])
+            + ["多程 " + m["label"] for m in mc_routes])
     return {
         "name": u.get("name", ""),
-        "routesTxt": _routes_txt(routes),
+        "routesTxt": _routes_txt_all,
         "mcRoutes": mc_routes,
         "th": {"direct": th_d, "transfer": th_t},
         "best": {
