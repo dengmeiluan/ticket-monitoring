@@ -77,7 +77,11 @@ def test_login_state_view_carries_stale(q_cls, tmp_path):
     (tmp_path / "qunar").mkdir()
     (tmp_path / "qunar" / "marker").write_text("x", encoding="utf-8")
     old_cfg = webui._State.cfg
+    old_boot = getattr(webui._State, "boot_cfg", None)
     webui._State.cfg = {"crawler": {"user_data_dir": str(tmp_path)}}
+    # _effective_crawler_config 优先读 boot_cfg；只替换 cfg 会被前序测试
+    # 留下的启动快照遮蔽（xdist 换文件顺序时 saved=False）。
+    webui._State.boot_cfg = None
     try:
         q_cls.login_suspect = False
         v = webui._login_state_view()
@@ -89,6 +93,7 @@ def test_login_state_view_carries_stale(q_cls, tmp_path):
         assert v["plats"]["qunar"]["stale"] is True
     finally:
         webui._State.cfg = old_cfg
+        webui._State.boot_cfg = old_boot
         q_cls.login_suspect = False
 
 
