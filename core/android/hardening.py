@@ -113,6 +113,42 @@ def _sec(config: dict, name: str) -> dict:
     return {}
 
 
+def _coordinate_check(dev, config: dict, logger=None) -> dict:
+    """坐标基准体检：设备分辨率 vs App 渠道写死的设计基准。
+
+    App 渠道的坐标全部按 **900×1600 竖屏**写死（见 ``device.py`` 里横屏
+    1600×900 让坐标全偏的现场记录）。所以一旦有人改了屏幕，就必须同时
+    ``AdbDevice.set_design(900, 1600)`` 做换算，否则点击会按比例偏——
+    这种错在账本上表现为「设城市失败 / 页面认不出」，很难追到根因。
+
+    这里只做**体检 + 明确告警**，不替调用方开换算（开换算属于
+    ``display.spoof`` 的配套动作，由 ``scripts/display_spoof.py`` 负责）。
+    """
+    design = (900, 1600)
+    try:
+        sec = _sec(config, "display")
+        d = sec.get("design")
+        if isinstance(d, (list, tuple)) and len(d) == 2:
+            design = (int(d[0]), int(d[1]))
+    except Exception:
+        pass
+    try:
+        got = display_mod.actual(dev)
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:120]}
+    same = (got.get("width"), got.get("height")) == design
+    rep = {"ok": same, "design": list(design),
+           "actual": [got.get("width"), got.get("height")],
+           "density": got.get("density"), "override": got.get("override", False)}
+    if not same and logger:
+        logger.warning(
+            "[android] 屏幕 %sx%s ≠ 坐标基准 %dx%d：App 渠道写死坐标会偏，"
+            "必须 dev.set_design(%d, %d)（或用 scripts/display_spoof.py --restore 回滚）",
+            got.get("width"), got.get("height"), design[0], design[1],
+            design[0], design[1])
+    return rep
+
+
 def harden(dev, config: dict = None, logger=None, *, vm: int = 0,
            user_data_dir: str = "user_data", profile: str = "device",
            force: bool = False) -> dict:
@@ -162,6 +198,9 @@ def harden(dev, config: dict = None, logger=None, *, vm: int = 0,
             rep["steps"].append(("display-align", True))
         else:
             rep["steps"].append(("display-align", True))
+        # 坐标基准体检：设备分辨率≠设计基准时**必须**开 set_design，
+        # 否则写死坐标会按比例偏（仓库吃过一次横屏 1600×900 坐标全偏的亏）。
+        rep["display"]["coordinate"] = _coordinate_check(dev, config, logger)
     except Exception as e:
         rep["display"] = {"error": str(e)[:160]}
         rep["steps"].append(("display-align", False))
