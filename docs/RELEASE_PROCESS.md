@@ -96,7 +96,7 @@ Do not push, retag, publish or rewrite shared history without explicit user auth
 - **对账的 pytest 项数是「已跟踪测试」**（`git ls-files tests` + `pytest --collect-only`），不是工作树全量。新增测试未入库时不计入；把它们 stage/commit 后数字会变。因此：**对齐放最后**，任何 staging/提交之后同步 README/EN 的跟踪口径并重跑 `release_align_check.py --local`。
 - **对账的 UI 项数读 `HEAD:docs/uitest_result.txt`**（已提交版本），不是工作树。工作树新跑出 670/670 并不会让对账变 670；发布提交要把新的 uitest 结果一起入库，README 的 UI 断言数同步改成结果文件里的实际值，再对账。
 - **全量门禁在并发会话下用 `--workers 4`**：8 worker 曾出现 demo free-port 竞态（`test_r851` setup 连接拒绝，已加三次新端口重试）与内存压力。跑前/跑后必须看工具的 CODE_GLOBS 哈希 WARN；一旦产品代码被改写，整轮作废，不得把其中的 passed 当绿证。
-- **线上 8765 只在写会话停止后重启**：比较进程启动时间与 `webui.py` mtime；启动早于最后一次改动即为旧代码。重启后复验 `/api/health` 诊断卡 7 家、探针 7 chip、390 无横向溢出。
+- **线上 8765 只在写会话停止后重启**：比较进程启动时间与 `webui.py` mtime；启动早于最后一次改动即为旧代码。重启后复验 `/api/health` 诊断卡 10 张（5 浏览器 + 5 App）、探针 10 chip、390 无横向溢出。
 - **本地 25/25 是快照**：它证明 README/截图/站点戳/计数在当前 tracking 下自洽；在线 Release/tag/四平台包/ghcr 镜像仍需带 token 的在线对账与 `release-build` 工作流。
 
 ### 6.1 在线面预检（2026-11-02 01:00 +0800 实测）
