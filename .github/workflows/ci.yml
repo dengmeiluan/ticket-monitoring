@@ -53,7 +53,7 @@ jobs:
           set -o pipefail
           # 文件级分组并行：单机串行 30–40 分钟，4 worker 约 10 分钟；
           # loadfile 避免同文件内共享 demo 端口/会话状态的用例被拆散。
-          python -m pytest tests/ -q -n 4 --dist loadfile 2>&1 | tee pytest.log
+          python -m pytest tests/ -q -n 4 -p xdist.plugin --dist loadfile 2>&1 | tee pytest.log
       - name: 失败测试摘要
         if: failure()
         run: |
