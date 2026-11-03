@@ -164,7 +164,7 @@ def test_normalize_mc_users_derives_ends_and_dates():
     mc, plain = users[0]["routes"]
     assert mc["from"] == "SHA" and mc["to"] == "OSA"
     assert mc["dates"] == ["2026-11-20", "2026-11-23"]
-    assert mc["from_name"] == "SHA" and mc["to_name"] == "OSA"
+    assert mc["from_name"] == "上海" and mc["to_name"] == "大阪"
     assert "segments" not in plain, "单 O-D 不得被写入多程键"
     with pytest.raises(ValueError, match="多程行程不合法"):
         webui._normalize_mc_users([{"routes": [{"segments": SEGS_A[:1]}]}])
@@ -225,6 +225,7 @@ def test_config_post_round_trips_multicity(config_server):
     route = saved["users"][0]["routes"][0]
     assert route["from"] == "SHA" and route["to"] == "OSA"
     assert route["dates"] == ["2026-11-20", "2026-11-23"]
+    assert route["from_name"] == "上海" and route["to_name"] == "大阪"
     assert [s["from"] for s in route["segments"]] == ["SHA", "TYO"]
 
     bad = {"users": [{"name": "u", "routes": [

@@ -501,6 +501,14 @@ def _normalize_mc_users(users):
     与 segments 一致，界面标题不再依赖另一份单 O-D 字段。
     """
     from core.multicity import MultiCityError, normalize_segments
+    from wizard import CITY as _CITY
+    _rev = {}
+    for _n, _c in _CITY.items():
+        _rev.setdefault(_c, _n)
+    try:
+        _intl = (_intl_payload() or {}).get("map") or {}
+    except Exception:
+        _intl = {}
     for u in users or []:
         for r in (u.get("routes") or []):
             if "segments" not in r:
@@ -518,8 +526,11 @@ def _normalize_mc_users(users):
             r["from"] = segs[0]["from"]
             r["to"] = segs[-1]["to"]
             r["dates"] = list(dict.fromkeys(s["date"] for s in segs))
-            r["from_name"] = str(r.get("from_name") or r["from"])
-            r["to_name"] = str(r.get("to_name") or r["to"])
+            # 段码是唯一事实源：名称从段码反查，避免改段后沿用旧城市名
+            r["from_name"] = _rev.get(r["from"]) or _intl.get(
+                r["from"]) or r["from"]
+            r["to_name"] = _rev.get(r["to"]) or _intl.get(
+                r["to"]) or r["to"]
     return users
 
 
@@ -30478,6 +30489,120 @@ def _flight_trend(payload, days=14):
         "trans": entry.get("trans"), "cross": entry.get("cross"),
         "stop": entry.get("stop"), "cabin": entry.get("cabin")}
     return out
+
+
+def _mc_field(r, name, default=None):
+    """多程航线字段：配置 dict 与运行时 Route 两形同读。"""
+    if isinstance(r, dict):
+        return r.get(name, default)
+    return getattr(r, name, default)
+
+
+def _multicity_alert_round(user, notifier, storage, logger, base_url="",
+                           drop_min=10):
+    """多程整单达标提醒：只按渠道页面自报总价判定，按行程去抖。
+
+    与关注航班同一套纪律：价格回到线上方清 0，下次跌破可再提醒；
+    继续下探仅在跌幅达 drop_min 时补推；通知未被接受不写状态。
+    """
+    from core.multicity import segments_key
+    if notifier is None or storage is None:
+        return 0
+    uname = _mc_field(user, "name", "") or ""
+    routes = _mc_field(user, "routes", []) or []
+    sent = 0
+    for r in routes:
+        if _mc_field(r, "enabled", True) is False:
+            continue
+        segs = _mc_segments_of(r)
+        if not segs:
+            continue
+        try:
+            key = segments_key(segs)
+            thr = float(_mc_field(r, "alert_threshold", 0) or 0)
+        except Exception:
+            continue
+        if thr <= 0:
+            continue
+        try:
+            rows = storage.itineraries(segments_key=key, limit=1)
+        except Exception:
+            continue
+        if not rows:
+            continue
+        row = rows[0]
+        try:
+            price = float(row.get("total_price") or 0)
+        except (TypeError, ValueError):
+            continue
+        if price <= 0:
+            continue
+        try:
+            age = (datetime.now() - datetime.strptime(
+                str(row.get("fetched_at") or ""),
+                "%Y-%m-%d %H:%M:%S")).total_seconds()
+        except (TypeError, ValueError):
+            age = 1e9
+        if age > 6 * 3600:
+            continue
+        dk = "mc|%s|%s|%s" % (uname, key, int(round(thr)))
+        try:
+            last = storage.get_alert_state(dk)
+        except Exception:
+            last = None
+        if price > thr:
+            if last not in (None, 0):
+                try:
+                    storage.set_alert_state(dk, 0)
+                except Exception:
+                    pass
+            continue
+        if last is not None and last > 0 and price > last - drop_min:
+            continue
+        pname = Alerter.plat_cn(str(row.get("platform") or "")) or "渠道"
+        chain = segs[0]["from"] + "".join("→" + s["to"] for s in segs)
+        extra = row.get("extra") or {}
+        leg_lines = []
+        for i, leg in enumerate(extra.get("legs") or []):
+            times = "%s→%s" % (leg.get("dep") or "—", leg.get("arr") or "—")
+            leg_lines.append("- 第%d段 %s %s→%s %s %s" % (
+                i + 1, leg.get("flight_no") or "—",
+                leg.get("from") or "", leg.get("to") or "",
+                leg.get("date") or "", times))
+        base = (base_url or "").rstrip("/")
+        if re.match(r"^https?://(127\.0\.0\.1|localhost)([:/]|$)", base):
+            base = ""
+        link = base or ""
+        title = "🚨 多程整单达标｜%s ¥%s" % (chain, int(round(price)))
+        desp = (
+            "### 多程整单总价达标\n\n"
+            "**%s** · %d 段\n\n"
+            "- 当前整单：**¥%s**（%s，%s）\n"
+            "- 心理价：¥%s，低于目标 **¥%s**\n"
+            "- 整单口径：渠道页面自报「多程含税价」，不是各段单程相加\n"
+            "%s%s"
+        ) % (
+            chain, len(segs), int(round(price)), pname,
+            row.get("fetched_at") or "—", int(round(thr)),
+            int(round(thr - price)),
+            ("\n" + "\n".join(leg_lines)) if leg_lines else "",
+            ("\n\n[打开控制台核对行程](%s)" % link) if link else "")
+        try:
+            res = notifier.send(title, desp)
+        except Exception as e:
+            logger.warning("[多程] %s %s 提醒发送失败：%s", uname, chain, e)
+            continue
+        if res is False:
+            logger.warning("[多程] %s %s 提醒未被通知器接受", uname, chain)
+            continue
+        try:
+            storage.set_alert_state(dk, price)
+        except Exception:
+            pass
+        sent += 1
+        logger.info("[多程] %s %s 达标 ¥%s ≤ ¥%s，已提醒",
+                    uname, chain, int(round(price)), int(round(thr)))
+    return sent
 
 
 def _watch_alert_round(user, notifier, storage, logger, base_url="",

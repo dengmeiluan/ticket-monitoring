@@ -3086,6 +3086,16 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
             collect_multicity(users, get_crawlers(plats), storage, logger)
         except Exception as e:
             logger.warning("[多程] 轮尾采集异常: %s", e)
+        try:
+            from webui import _multicity_alert_round
+            for _ui, _u in enumerate(users):
+                if _ui >= len(alerters or []):
+                    break
+                _multicity_alert_round(
+                    _u, alerters[_ui].notifier, storage, logger,
+                    base_url=getattr(alerters[_ui], "base_url", ""))
+        except Exception as e:
+            logger.warning("[多程] 轮次提醒异常: %s", e)
         PULSE.end()
         _mark_scan(_dtm.now().strftime("%Y-%m-%d %H:%M:%S"))
         # 渠道整轮零记录哨（本轮全部查询聚合行数；风控断供「零记录」
