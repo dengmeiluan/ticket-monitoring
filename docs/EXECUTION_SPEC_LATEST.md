@@ -34,11 +34,11 @@
   整单历史 sparkline/CSV 导出）；live 8765 于 **2026-11-03 08:58** 切到
   `_release_ab04`（Release `ab04c22`，webui sha12 `6c85a00f14c1`，PID 47952；
   `/api/channel-dims` 10 家）；r933–r953 尚未入该树。
-- **门禁**：tracked collect **6211**（2026-11-03 12:35，含 r953 导出用例）；当前树
+- **门禁**：tracked collect **6212**（2026-11-03 12:46，含 r953 导出/下载用例）；当前树
   全量非 UI **6192 passed / 19 skipped / 0 failed**（2026-11-03 12:40，workers 4，
-  15:14）。r952 已修掉此前的 4 个 xdist 假红（r320b `_State.cfg` 隔离、r286
+  15:14；6211 tracked，导出下载用例新增后定向 2 passed，产品代码未变）。r952 已修掉此前的 4 个 xdist 假红（r320b `_State.cfg` 隔离、r286
   误杀 8796/`networkidle`/固定等待）。定向：多程 5 文件 **31 passed**（11:18）；
-  合并后历史/导出 **16 passed**（12:22）；Release 正文 **8 passed**（10:36）；
+  合并后历史/导出 **17 passed**（12:46）；Release 正文 **8 passed**（10:36）；
   日桶 **16 passed**（10:10）。
   UI **670/670**（2026-11-03 11:18 全量复跑，零 JS 错误；含 r946 来源链接与
   r947 过期门；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、
@@ -3102,7 +3102,7 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · 概览多程卡「导出 CSV」只导真实落库历史点（route/segments/价格/阈值/
     渠道/时刻/最新 legs）；公式注入单元格前缀 `'` 转义；无 latest/历史不显示。
   · `test_multicity_export` 真浏览器求值 + UI 契约；合并后（2026-11-03 12:22）
-    定向 **16 passed**（含历史/API/JS 语法/div 平衡）。
+    定向 **17 passed**（2026-11-03 12:46，含历史/API/JS 语法/div 平衡与真下载）。
   · 按 `80c63eb` 重烘静态站：**5,659,402 bytes**，站点戳
     `1.5.307 code:ccfc38542bf3 2026-11-03`；`release_align_check --local`
     **25/25 PASS**（12:40）。
@@ -3118,7 +3118,7 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · 概览多程卡在 **≥2 个真实整单点**时画 sparkline（心理价线、aria 播报），
     单点或空历史不画空图；接口随 `mcRoutes.history` 返回。
   · 定向 `test_multicity_history` + API/UI 契约 **13 passed**（12:01）；
-    tracked 计数 6207→**6210**（r953 导出用例后为 6211）。
+    tracked 计数 6207→**6210**（r953 导出/下载用例后为 6212）。
   · 合并后按 `80c655a` 重烘静态站：`docs/site/index.html` **5,657,639 bytes**，
     站点戳 `1.5.307 code:28872766340e 2026-11-03`；`release_align_check --local`
     **25/25 PASS**（12:02）。
@@ -3180,7 +3180,7 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · `b49ae51`：轮尾按行程聚合订阅用户，只采「至少一个订阅用户勾选携程」的行程；
     提醒按行平台过滤，未勾携程的用户不再收到多程提醒——不替用户采/推他没选的渠道。
   · 定向多程 5 文件 **29 passed**（2026-11-03 10:53：模型/解析/API/轮尾/提醒）。
-    当前 tracked **6211**；主树全量复跑见 §1.0（不虚报未完成的绿）。
+    当前 tracked **6212**；主树全量复跑见 §1.0（不虚报未完成的绿）。
 
 - r944 多程配置卡 + 概览整单卡（2026-11-03 10:23）：
   · 配置页新增「添加多程行程」：2–4 段行编辑（三字码 + 日期）、整单心理价、

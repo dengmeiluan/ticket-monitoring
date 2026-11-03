@@ -32,3 +32,19 @@ def test_mc_csv_rows_and_formula_guard(page):
     assert rows[2][2] == 1180 and "9C8515" in rows[2][6]
     assert page.evaluate("s => _csvCell(s)", "=1+1") == "'=1+1"
     assert page.evaluate("s => _csvCell(s)", 'a,"b"') == '"a,""b"""'
+
+
+def test_mc_export_downloads_real_csv(page):
+    """导出按钮必须真产生可读 CSV（不是只拼字符串）。"""
+    _goto(page)
+    with page.expect_download() as dl:
+        page.evaluate(
+            "m => { S.users[U].mcRoutes = [m]; mcExport(0); }", SAMPLE)
+    path = dl.value.path()
+    text = open(path, encoding="utf-8-sig").read()
+    lines = text.splitlines()
+    assert lines[0] == ("route,segments,total_price,threshold,platform,"
+                        "fetched_at,legs")
+    assert len(lines) == 3
+    assert "SHA→TYO→OSA" in lines[1] and "1398" in lines[1]
+    assert "1180" in lines[2] and "9C8515" in lines[2]
