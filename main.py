@@ -228,7 +228,8 @@ def collect_multicity(users, crawlers, storage, logger, today=""):
                 storage.save_itinerary(
                     row.platform, key, segs, row.price,
                     extra.get("legs") or [],
-                    depart_date=row.depart_date)
+                    depart_date=row.depart_date,
+                    prov=getattr(row, "prov", ""))
                 saved += 1
             except Exception as e:  # noqa: BLE001
                 logger.warning("[多程] %s 落库失败：%s", key, e)

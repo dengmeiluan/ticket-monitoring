@@ -1399,8 +1399,12 @@ class PriceStorage:
                       "date('now','localtime','-400 days')")
 
     def save_itinerary(self, platform, route_id, segments, total_price,
-                       legs, depart_date="", fetched_at=""):
-        """落一条多程整单总价；只接受渠道页面自报总价，段价不得进 legs。"""
+                       legs, depart_date="", fetched_at="", prov=None):
+        """落一条多程整单总价；只接受渠道页面自报总价，段价不得进 legs。
+
+        prov 只保留来源页的 path/url/totalBasis（可溯源）；旧行没有该键时
+        概览不显示来源链接，不伪造。
+        """
         from .multicity import (build_mc_extra, normalize_segments,
                                 segments_key)
         segs = normalize_segments(segments)
@@ -1412,6 +1416,19 @@ class PriceStorage:
         if price <= 0:
             raise ValueError("多程总价必须为正数（只接受渠道整单总价）")
         extra = build_mc_extra(legs)
+        if prov:
+            if isinstance(prov, str):
+                try:
+                    prov = json.loads(prov or "null")
+                except ValueError:
+                    prov = None
+            if isinstance(prov, dict):
+                clean = {k: str(prov[k]) for k in ("path", "url")
+                         if str(prov.get(k) or "").strip()}
+                if str(prov.get("totalBasis") or "").strip():
+                    clean["totalBasis"] = str(prov["totalBasis"])
+                if clean:
+                    extra["prov"] = clean
         if len(extra["legs"]) != len(segs):
             raise ValueError("legs 段数与 segments 不一致：%d vs %d"
                              % (len(extra["legs"]), len(segs)))

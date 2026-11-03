@@ -4,6 +4,7 @@
 口径：只接受渠道自报整单总价；legs 不得携带价格字段，从形状上禁止
 「两段单程相加冒充多程总价」。矩阵 multi_city 在接通前仍为 ""。
 """
+import json
 import os
 import sys
 
@@ -85,6 +86,21 @@ def test_itinerary_daily_upsert_and_read(tmp_path):
     assert rows[0]["total_price"] == 5219.0
     assert rows[0]["extra"]["tripType"] == "MC"
     assert rows[0]["extra"]["legs"][1]["flight_no"] == "MM304"
+
+
+def test_itinerary_daily_keeps_source_url_and_drops_bad_prov(tmp_path):
+    db = PriceStorage(str(tmp_path / "prices.db"))
+    url = "https://flights.ctrip.com/online/list/multi-sha-tyo-tyo-osa"
+    db.save_itinerary("ctrip", "r1", SEGS, 1298.0, LEGS,
+                      prov=json.dumps({"path": "多程", "url": url,
+                                       "totalBasis": "page_multicity_total"},
+                                      ensure_ascii=False))
+    extra = db.itineraries(route_id="r1")[0]["extra"]
+    assert extra["prov"]["url"] == url
+    assert extra["prov"]["path"] == "多程"
+    # 坏 JSON/非对象不落来源，也不影响整单总价
+    db.save_itinerary("ctrip", "r1", SEGS, 1299.0, LEGS, prov="{oops")
+    assert "prov" not in db.itineraries(route_id="r1")[0]["extra"]
 
 
 def test_itinerary_daily_refuses_non_page_total(tmp_path):

@@ -33,7 +33,10 @@ LEGS_B = [{"flight_no": "CA975", "from": "PEK", "to": "SIN",
 def _make_db(tmp_path):
     db = str(tmp_path / "prices.db")
     st = PriceStorage(db)
-    st.save_itinerary("ctrip", segments_key(SEGS_A), SEGS_A, 1298.0, LEGS_A)
+    st.save_itinerary("ctrip", segments_key(SEGS_A), SEGS_A, 1298.0, LEGS_A,
+                      prov={"path": "多程",
+                            "url": "https://flights.ctrip.com/online/list/"
+                                   "multi-sha-tyo-tyo-osa"})
     st.save_itinerary("ctrip", segments_key(SEGS_B), SEGS_B, 2600.0, LEGS_B)
     return db
 
@@ -48,6 +51,7 @@ def test_payload_reads_page_total_and_legs(tmp_path):
     assert item["total_price"] == 1298.0
     assert item["extra"]["tripType"] == "MC"
     assert len(item["extra"]["legs"]) == 2
+    assert item["extra"]["prov"]["url"].startswith("https://flights.ctrip.com/")
     assert "legs_json" not in item
 
 

@@ -42,12 +42,14 @@
 > 往返重烘（当时站戳 `3a7ea543ba18`；当前站戳见下），`release_align_check --local` **25/25**；
 > Release/正文/四资产/tag 已于 ab04c22 同源；ghcr `sha-ab04c22` 单独存在，`latest` 已随 HEAD 走到 `sha-934e108`（非同 digest）；
 > Release `v1.0` → `ab04c22` 已发（10 渠道正文，资产 4/4）；live 8765 已于
-> 2026-11-03 08:58 切到 `_release_ab04`（PID 47952）。r933–r935 源码增量仍未提交。
+> 2026-11-03 08:58 切到 `_release_ab04`（PID 47952）。r933–r947 已入库，live 树仍停在 ab04c22；
+> 多程采集/配置卡/概览整单卡/来源页与日桶下限守卫见 SPEC r941–r947。
 > **2026-11-03 03:30 补（同程 App 国际往返 + 最终树）**：同程 App 国际往返真机接通
 > （上海⇌东京 11-16/19，7 条去程、最低 9C8515 ¥2209 含税总价；返程 `+¥N` 为加价），
 > `round_trip=y`（仅国际）；`PATH_CN` 补 `app-roundtrip`（r658 门禁曾点红）。
-> 全量非 UI **6165 passed / 19 skipped / 0 failed**（09:55，workers 8，当前代码树；App 采集代码/测试指纹
-> 前后一致）；UI **670/670**（05:54 全量复跑，零 JS 错误）；能力矩阵截图
+> tracked collect **6207**（11:13，当前树）；全量冒烟 **6184 passed / 19 skipped /
+> 1 failed / 3 errors**（11:48，共 6207），4 红单飞 **7 passed**（浏览器/demo 竞争），
+> 按单跑口径 **6188 passed / 19 skipped / 0 failed**；UI **670/670**（11:18 全量复跑，零 JS 错误）；能力矩阵截图
 > `docs/screenshots/console-dims.png` 已按 10 渠道 + RT 状态重烘，
 > 静态站同步；`release_align_check --local` **25/25**。
 > **2026-11-03 05:18 补（r927 途牛 H5 国际往返）**：`m.tuniu.com/flight/` 往返档
@@ -389,12 +391,12 @@ md5sum webui.py | cut -c1-32 | diff - _scratch/_h1.txt && echo HASH-STABLE
 |---|---|---|
 | **已补齐** | `app_qunar.calendar/low_fare` | 2026-11-02 真机、已登录：低价机票落原生 RN 页（QReactNativeActivity1），low_fare 41.2s 出 14 天；整月日历也带逐日价。已改 y，并写 `path_note("日历","calendar")`。 |
 | 中 | 浏览器往返：携程 PC（国内/国际）、去哪儿 touch（仅国内）、同程（国内 + 登录后 PC 国际 `ts/list`）、途牛（国内 `listFlight` + 国际 H5 `queryFlight` `avgTotalPrice`，SHA→NRT 35 条 ¥3010）。去哪儿国际仍待通路恢复（表单可提交，`touchInterList` 1999 软频控）；飞猪仅国际、去哪儿仅国内 | 绝不能两段单程相加 |
-| 中 | `multi_city` 全 ""（产品有入口，采集端未实现） | 需做"选多段→逐段出价→合并口径"整条链路，属独立特性 |
+| 中 | `multi_city` 全 ""；携程 PC 已有 `fetch_multi` + 轮尾采集 + 只读 `/api/multicity`，缺配置入口/结果面/推送 | 其余渠道仍缺整条链路；矩阵解锁前先做结果面与配置入口 |
 | 低 | 能力对照卡 320 档 | 目前只验了 430/900/1512 |
 
 ## P3 · 收尾
 
-- 19 个未跟踪测试文件要**随发版一起提交**（否则门禁在别人机器上不存在）。
+- 发版前跑 `release_align_check --local`；README/EN 的 tracked 计数必须与干净树实收一致，未跟踪测试不得计入。
 - `docs/HANDOFF_GUIDE.md` §0「当前差距」段已过期，发版后更新。
 - 清理 `_scratch/` 中间产物（不进仓库）。
 

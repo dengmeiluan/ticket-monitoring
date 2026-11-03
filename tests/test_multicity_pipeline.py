@@ -33,7 +33,11 @@ class C:
         return [FlightPrice(
             platform="ctrip", from_city="SHA", to_city="OSA",
             depart_date="2026-11-20", price=1298.0,
-            extra=json.dumps(build_mc_extra(LEGS), ensure_ascii=False))]
+            extra=json.dumps(build_mc_extra(LEGS), ensure_ascii=False),
+            prov=json.dumps({"path": "多程",
+                             "url": "https://flights.ctrip.com/online/list/"
+                                    "multi-sha-tyo-tyo-osa"},
+                            ensure_ascii=False))]
 
 
 class S:
@@ -62,6 +66,7 @@ def test_collect_multicity_dedups_and_saves_page_total():
     assert args[0] == "ctrip" and args[1] == segments_key(SEGS)
     assert args[3] == 1298.0
     assert kw["depart_date"] == "2026-11-20"
+    assert "flights.ctrip.com" in kw["prov"], "来源页必须随行落库"
 
 
 def test_collect_multicity_skips_without_ctrip_or_after_expiry():

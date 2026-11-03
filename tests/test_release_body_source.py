@@ -132,8 +132,11 @@ def _multi_city_errors(body):
     errs = []
     if "多程" not in body:
         errs.append("正文没写多程")
-    if "采集端尚未实现" not in body:
-        errs.append("多程必须写采集端未实现")
+    # 携程 PC 已接配置/采集/概览（并可能继续补推送），但尚无生产整单行、
+    # 3+ 段未验；正文必须保留这个未验证事实，不能把「已接采集面」写成
+    # 「已支持」。
+    if "尚无生产整单行" not in body:
+        errs.append("多程必须写明尚无生产整单行")
     if '`""`' not in body:
         errs.append("多程矩阵必须写未验证空值")
     matrix = body.split("## 能力矩阵", 1)[-1].split("## 快速开始", 1)[0]
@@ -180,8 +183,8 @@ def test_body_names_every_channel_and_scope():
 def test_body_keeps_multi_city_honest():
     body = _read()
     assert _multi_city_errors(body) == [], _multi_city_errors(body)
-    # 负控：把「采集端尚未实现」改成「已支持」必须报错
-    bad = body.replace("采集端尚未实现", "已支持", 1)
+    # 负控：把端到端缺口改成「已支持」必须报错
+    bad = body.replace("尚无生产整单行", "已支持")
     assert _multi_city_errors(bad), "负控失败：多程不实表述没被拦"
 
 

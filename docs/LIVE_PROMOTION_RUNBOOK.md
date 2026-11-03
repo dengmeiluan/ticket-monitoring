@@ -6,7 +6,7 @@
 > 08:58:06；`/api/channel-dims` **10 家**、`webui.py` sha12 `6c85a00f14c1`、
 > config 与主树 diff=0；`enabled_platforms` 6、诊断卡 7（5 浏览器 + 2 个已启用 App）。
 > Release `v1.0` → `ab04c22`，正文 10 渠道，四资产 digest 4/4。该树**不含**
-> r933–r935（多程数据层/配置隔离/实际渠道错峰），仍待下一次发版。
+> r933–r947（多程数据层/采集/只读 API/配置卡/概览整单卡/来源页/日桶守卫等），仍待下一次发版。
 
 ## 0. 现场事实（切换前复核，不要凭本文直接操作）
 
@@ -17,24 +17,20 @@
 | live 配置 | `_release_ab04/config.yaml` 与主树 `config.yaml` **diff=0** |
 | 数据/日志/登录态 | live 树的 `data`、`logs`、`user_data` 都是**主树的符号链接**（同一份文件） |
 | live 当前能力 | **10 渠道代码**（Release `ab04c22`，webui sha12 `6c85a00f14c1`）；`/api/channel-dims` 10 家；`enabled_platforms` 6（配置未变） |
-| 主树候选 | 10 渠道 + App/浏览器国际往返；全量非 UI **6165 passed / 19 skipped / 0 failed**（2026-11-03 09:55）；UI **670/670**（07:51）；`release_align_check --local` **25/25**；候选包 SHA256 `3c472292102f8a0d45b06bfaef962a350d513359e3d7bba2666891b8a208a8a4` **构建早于 r931 矩阵窄档修复，切换前必须按最终树重建并重算 SHA** |
+| 主树候选 | 10 渠道 + App/浏览器国际往返；tracked collect **6207**（2026-11-03 11:13），全量冒烟 **6184 passed / 19 skipped / 1 failed / 3 errors**（11:48，共 6207；4 红单飞 7 passed，按单跑口径 **6188/19/0**）；UI **670/670**（11:18）；候选包 SHA256 `e7c5ac26f699cbb57a86ca34d857192dd3bd96ed93bd2e73cf69bf8c5eac46d2`（**2026-11-03 11:24 按当前工作树构建；61,740,889 bytes / 864 entries；冻结后若树再变必须重算**） |
 
 因为数据/日志/登录态共享，切换**不需要迁移数据库、日志或登录快照**；旧 live 树保留作回滚。
 
-> **2026-11-03 09:44 待入库增量（发版必须显式收口）**：`core/multicity.py`、
-> `tests/test_multicity_model.py` 尚未跟踪；`main.py`、`core/storage.py`、
-> `core/models.py`、`core/pacing.py`、`core/health.py`、`core/health_diag.py`、
-> `crawlers/app_qunar_parse.py`、`tests/test_pacing.py`、
-> `tests/test_r664_qunar_parse.py`、`tests/test_health_diag.py` 及本轮
-> HANDOFF/SPEC/正文改动仍在工作树。
-> 单根提交若不显式加入，发行包会缺多程数据层、`Route.segments` 调度隔离与
-> r932 实际渠道错峰。**计数陷阱**：干净 HEAD 的 README 为 **6168**；本批
-> `tests/test_multicity_model.py`（12 条）+ `tests/test_pacing.py` 1 条 +
-> `tests/test_r664_qunar_parse.py` 2 条 + `tests/test_health_diag.py` 1 条，
-> 入库后 tracked 变为 **6184**，
-> README/EN 与 `release_align_check --local` 必须同步，再构建四平台包。干净 HEAD worktree 实测 align **25/25**；当前
-> 脏树因 README 6168 与未提交用例收集 6169 会显示 23/25，属预期，不要据此
-> 把 README 改成 6169。
+> **2026-11-03 11:18 待发版增量**：r933–r947 已入库（多程数据层/配置形状/实际
+> 渠道错峰/日桶下限守卫/携程多程解析与 `fetch_multi`/轮尾采集/只读 API/
+> 配置卡/概览整单卡/来源页/过期首段不提醒）；live
+> `_release_ab04` 仍停在 `ab04c22`，下一次发版必须按最终树重建四平台包；当前
+> 候选 `e7c5ac26` 只是工作树快照（含未提交的 r946/r947），冻结后若树再变必须重算。**计数陷阱**：README/EN 的 tracked 计数必须按干净 HEAD 实收
+> 同步；本轮新增多程解析/轮尾/API/配置/概览/来源页用例，当前 tracked **6207**（旧 6168 已过期）。`release_align_check
+> --local` 必须 **25/25**；当前实测 **25/25 PASS**（2026-11-03 11:31），静态站已
+> 按当前工作树重烘（站点戳 `code:3860ec683303`）。站点尚未发布，推送后 Pages 才更新。
+> 脏树若因未提交文档/测试不同步显示 <25，先分清「值变了」和「设计坏了」，不要为了
+> 让门禁变绿改测试。
 
 ## 1. 切换前检查（只读）
 
@@ -137,7 +133,7 @@ powershell -ExecutionPolicy Bypass -File start.ps1
 - 渠道表补齐 **携程 App / 同程 App / 飞猪 App**；往返范围按
   `core/channels.py::DIMENSION_SCOPE` 生成（含「同程 PC 国际」「途牛 H5 国际」
   「同程 App 仅国际」等），不手写第二份。
-- 多程仍写「渠道有入口、采集端未实现，矩阵 `""`」；**不写已支持**。
+- 多程写「渠道有入口、只有携程 PC 接了整单总价采集；配置入口、结果面、推送/走势未接；矩阵 `""`」；不得宣称整条链路可用。
 - 正文里的测试/UI/树/资产数字只用**冻结后**的门禁与真实包；版本号/SHA 与
   tag、资产一致；发布后用 API 回读 name/body/tag/assets 四者一致。
 

@@ -41,8 +41,8 @@
 | 远程 `v1.0` tag | **`0d4b058`** |
 | 发布资产 | 四平台包 v1.5.307（2026-11-02T08:07Z），SHA256SUMS 与 API digest **4/4 相等** |
 | 工作区 | 10 渠道（5 浏览器 + 5 App）+ 国际往返/日历/多程解析等未提交；10 渠道改动**未发布** |
-| 全量非 UI | **6165 passed / 19 skipped / 0 failed**（2026-11-03 09:55，workers 8，含 r926/r927 国际往返、Release 正文 8 条门禁、多程解析器/存储层/配置隔离、r931 矩阵窄档与 r932 实际渠道错峰） |
-| UI | **670/670**（2026-11-03 05:54 全量复跑，零 JS 错误；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、同程 App round_trip=国际；r905 行内按钮另由 r905 + r640 四档覆盖） |
+| 全量非 UI | tracked collect **6207**（2026-11-03 11:13）；全量冒烟 **6184 passed / 19 skipped / 1 failed / 3 errors**（11:48，共 6207）；4 红单飞 **7 passed**（r320b 1 + r286 3，浏览器/demo 竞争），按单跑口径 **6188 passed / 19 skipped / 0 failed**；含 r926/r927 国际往返、Release 正文 8 条门禁、多程解析器/存储层/配置隔离/配置卡/概览整单卡/来源页/过期首段不提醒、r931 矩阵窄档与 r932 实际渠道错峰 |
+| UI | **670/670**（2026-11-03 11:18 全量复跑，零 JS 错误；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、同程 App round_trip=国际；r905 行内按钮另由 r905 + r640 四档覆盖） |
 | 发布对齐 | `release_align_check --local` **25/25** |
 | live 8765 | **已切 10 渠道**（`_release_ab04`，Release `ab04c22`，PID 47952）；切换/回滚记录见 `docs/LIVE_PROMOTION_RUNBOOK.md` |
 

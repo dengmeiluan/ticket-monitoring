@@ -1066,6 +1066,8 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  .monroute-foot .sp{margin-left:auto}
  .monroute-foot button{height:28px;padding:0 9px;border:1px solid var(--line2);border-radius:var(--r3);background:var(--card);color:var(--tx2);font-size:10px;cursor:pointer}
  .monroute-foot button:hover{border-color:var(--blue);color:var(--blue)}
+ .monroute-foot a.mcsrc{height:28px;display:inline-flex;align-items:center;padding:0 9px;border:1px solid var(--line2);border-radius:var(--r3);background:var(--card);color:var(--tx2);font-size:10px;text-decoration:none}
+ .monroute-foot a.mcsrc:hover{border-color:var(--blue);color:var(--blue)}
  /* 多程卡片复用航线卡骨架，右侧位放段/整单说明（没有走势，不画空图） */
  .monroute.mcm{grid-template-columns:minmax(160px,.9fr) minmax(180px,1.2fr);
   grid-template-areas:"head head" "main side" "foot foot"}
@@ -12749,6 +12751,9 @@ function togChart(i){if(!S||!S.users.length)return;
   else if(!l)why='尚无多程整单行——等待下一轮采集';
   const side=why?('<span>'+he(why)+'</span>')
    :('<b>'+he(m.segments.length+' 段')+'</b><span>'+he(legs||'渠道未回传班级明细')+'</span>');
+  /* 只有落库时保存过 http(s) 来源页才给链接；旧行/坏值不伪造来源。 */
+  let src=(l&&l.prov&&l.prov.url)?String(l.prov.url):'';
+  if(!/^https?:\/\//i.test(src))src='';
   return '<article class="monroute mcm"><div class="monroute-h"><b>'+he(m.label||m.from+'→'+m.to)+'</b>'
    +'<span>'+he((m.dates||[]).slice(0,3).join(' / '))+'</span></div>'
    +'<div class="monroute-main"><span>最近整单总价'+(hit?' <b class="mchit">· 已达标</b>':'')+'</span>'
@@ -12757,7 +12762,9 @@ function togChart(i){if(!S||!S.users.length)return;
    +(l&&l.platform?(' · '+he(l.platform)):'')+'</span></div>'
    +'<div class="mcside">'+side+'</div>'
    +'<div class="monroute-foot"><span>'+(l&&l.fetched_at?('最近采于 '+he(l.fetched_at)):'整单总价只取渠道页面，不由段价相加')
-   +'</span><span class="sp"></span><button type="button" data-mc="'+i+'" onclick="switchView(\'cfg\');showCfgPanel(\'users\')">配置多程行程</button></div></article>';
+   +'</span><span class="sp"></span>'
+   + (src?('<a class="mcsrc" href="'+esc(src)+'" target="_blank" rel="noopener noreferrer" title="打开渠道多程结果页（新窗口）">来源</a>'):'')
+   +'<button type="button" data-mc="'+i+'" onclick="switchView(\'cfg\');showCfgPanel(\'users\')">配置多程行程</button></div></article>';
  }
  function renderMonRoutes(){
   const u=(S&&S.users&&S.users[U])||null,routes=(u&&u.routesArr)||[],
@@ -30533,6 +30540,9 @@ def _multicity_alert_round(user, notifier, storage, logger, base_url="",
         segs = _mc_segments_of(r)
         if not segs:
             continue
+        # 首段已过期不提醒（与关注航班同一纪律；行龄 6h 挡不住隔夜过期行程）
+        if segs[0]["date"] < datetime.now().strftime("%Y-%m-%d"):
+            continue
         try:
             key = segments_key(segs)
             thr = float(_mc_field(r, "alert_threshold", 0) or 0)
@@ -31613,6 +31623,7 @@ def _user_state(u):
                     "fetched_at": str(_row0.get("fetched_at") or ""),
                     "depart_date": str(_row0.get("depart_date") or ""),
                     "legs": ((_row0.get("extra") or {}).get("legs") or []),
+                    "prov": ((_row0.get("extra") or {}).get("prov") or {}),
                 }
         except Exception:
             _latest0 = None

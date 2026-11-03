@@ -74,6 +74,25 @@ def test_above_threshold_resets_so_next_crossing_alerts(tmp_path):
     assert len(n.sent) == 2
 
 
+def test_expired_first_segment_never_alerts(tmp_path):
+    old = [{"from": "SHA", "to": "TYO", "date": "2020-01-01"},
+           {"from": "TYO", "to": "OSA", "date": "2020-01-03"}]
+    old_legs = [{"flight_no": "X1", "from": "SHA", "to": "TYO",
+                 "date": "2020-01-01"},
+                {"flight_no": "X2", "from": "TYO", "to": "OSA",
+                 "date": "2020-01-03"}]
+    st = PriceStorage(str(tmp_path / "prices.db"))
+    st.save_itinerary("ctrip", segments_key(old), old, 900.0, old_legs)
+    u = {"name": "u", "platforms": ["ctrip"], "routes": [{
+        "from": "SHA", "to": "OSA",
+        "dates": ["2020-01-01", "2020-01-03"],
+        "alert_threshold": 1500, "segments": old}]}
+    n = Notifier()
+    assert webui._multicity_alert_round(
+        u, n, st, logging.getLogger("mc")) == 0
+    assert n.sent == [], "首段已过期不得按隔夜行提醒"
+
+
 def test_no_threshold_stale_and_rejected_are_silent(tmp_path):
     st, n = _db(tmp_path), Notifier()
     assert webui._multicity_alert_round(
