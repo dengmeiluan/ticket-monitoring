@@ -36,8 +36,8 @@
 - **门禁**：tracked collect **6484**（2026-11-03 22:51 核对，含 r920 +2 / r921 +10 / r922 +14 / r923 +12 / r924 +47 / UI shard +5）。
   本地 clean 全量在 HEAD `3f14c0c`：**6379 passed / 44 skipped / 2 failed**
   （workers 8，402.86s；两红均为 `display_spoof` 未入库，已由 `922186d` 修复）。
-  CI **4 测试片 + 2 UI 片**在 `de44d464` **全绿**（test 284/358/240/282s、
-  UI 234/185s、`ci-ok` success）；分片权重已含 1.0s/文件导入开销。
+  CI **4 测试片 + 2 UI 片**在 `8a69a1a` **全绿**（test 264/310/206/278s、
+  UI 224/189s、`ci-ok` success，整轮 6m11s）；分片权重已含 1.0s/文件导入开销。
   CI 已把全量 pytest 拆到 4 台 runner：
   `tools/ci_shard.py` 按 `tests/ci_durations.json` 历史耗时贪心均分，跑测前
   `--stats 4` 自检并集=全部 `tests/test_*.py`（新增文件按 20s 自动进组）+ workflow
@@ -61,8 +61,8 @@
   同程 App round_trip=国际；r905 新增的行内自检按钮另由 `test_r905` 真渲染 +
   `test_r640` 三档行高覆盖）；能力线 9 文件 **63 passed**（2026-11-03 09:55）；
   `channel_contract --strict` **10 家 × 11 轴无缺口**（2026-11-03 10:13）；
-  `release_align_check --local` **25/25 PASS**（2026-11-03 22:00，clean 克隆 `7deb733`，
-  tracked 6425 / UI 670）；静态站 `code:db416c15fca7` 已按当前 webui 重烘并随
+  `release_align_check --local` **25/25 PASS**（2026-11-03 22:57，clean 克隆 `8a69a1a`，
+  tracked 6484 / UI 670）；静态站 `code:db416c15fca7` 已按当前 webui 重烘并随
   `0f782f9` 推送，线上 Pages 匿名请求实测同戳。
 - **多程开口程（2026-11-03 16:41 实测）**：profile 副本 + 临时库跑
   SHA→TYO 11-20 / OSA→SHA 11-26，页面「多程超低价」组合卡自报

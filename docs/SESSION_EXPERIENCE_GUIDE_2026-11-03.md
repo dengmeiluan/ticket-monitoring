@@ -135,7 +135,7 @@
   - `pip`/Playwright 缓存保留；`fetch-depth: 0` + 补拉 tag；Chromium + Noto CJK 安装保留。
 - `tools/ci_shard.py`：`--snapshot <junit>` 从全量 JUnit 生成按文件耗时快照；`--stats N` 统计并自检；`--print N K` 给 shell 选片。
 - `tests/ci_durations.json`：已按 clean gate JUnit 重算；当前快照覆盖 **863/868** 个测试文件，新文件按 20s 自动进组。LPT 权重 = 文件测试耗时 + **1.0s/文件导入开销**：只按纯耗时均分曾把第 2 片堆到 341 个文件，墙钟比别的片多 ~100s；计开销后四片 216–218 文件、权重 max/min **1.00**。
-- **最终绿（真实 GitHub，4+2 片）**：`41653462306`（`de44d464`）test 4 片 **284/358/240/282s**、UI 2 片 **234/185s**、`ci-ok` success；`tools/ci_shard.py` 的 +1s/文件权重把四片文件数拉平（216–218），UI 分段（0–24 / 25–49）把 UI 从 367s 降到 234s。现在测试片成为关键路径（max 358s）。此前 `41644097180`（`0f782f9`）4 片 + 单 UI 岗全绿为 **6m14s**。
+- **最终绿（真实 GitHub，4+2 片）**：`41657991817`（`8a69a1a`）test 4 片 **264/310/206/278s**、UI 2 片 **224/189s**、`ci-ok` success，整轮 **6m11s**；`tools/ci_shard.py` 的 +1s/文件权重把四片文件数拉平（216–218），UI 分段（0–24 / 25–49）把 UI 从 367s 降到 224s。当前关键路径是测试片（max 310s）。前一轮 `41653462306`（`de44d464`）4+2 片同样全绿（test 284/358/240/282s、UI 234/185s）。
 - 实测参考：旧 CI `test` 单 job `-n 4` 约 **11 分 31 秒**（2026-11-03 01:40:09→01:51:40）；UI job 约 **6 分 05 秒**。4 片真实 GitHub 首跑（`bc96947`，2026-11-03 13:11Z 起）：shard 1/3 绿（249s/283s）、shard 0/2 红（214s/233s），UI 381s——test lane 墙钟已从 11 分半降到 **约 5 分钟**；红的根因与切片无关，见下条。
 - **本地绿 / CI 红的环境差异（已实证）**：`crawlers/slider.py` 用可选 `import numpy`，本地全局环境有 numpy，CI 只装 `requirements.txt` 而当时未声明 numpy → `find_gap()` 恒返回空候选，r914/r916 四条同时红。修复=把 `numpy>=1.26` 写进 `requirements.txt`（CI、release-build、Docker 同一来源），并给缺依赖加一次性告警 + 负控（屏蔽 numpy 时仍红、装上才绿），不把测试改成 skip。
 - 分片串行排障口径：先看失败片日志的 `FAILED` 行，再判断是本片代码问题还是并行 WIP 的跨片问题；本次第二红（`android.vendor.apply` 无 UI 落点 + 加固 ok 被只读探测拖红）就是并行提交引入、与 numpy 无关。
@@ -217,6 +217,7 @@
 - `41642117895`（`03a46e6`）：numpy 修复后 shard 0/1/3 success，shard 2 failure；失败为并行提交的 `android.vendor.apply` 无配置页落点 + `test_harden_runs_steps_in_fixed_order` 的 ok 语义，与 numpy 无关。
 - 修复：requirements 声明 numpy + 缺依赖告警；配置页补 `glbVendorApply` 控件、保存时与文件已有 `android.vendor` 键合并；加固的只读 vendor 探测不再拖红整套 ok；补真渲染“点击写回 GLB”断言与静态合并断言。受影响 72 + 1 项本地绿后推送 `8c3e4b5`。
 - `41644097180`（`0f782f9`）：**test 4 片 + UI + ci-ok 全绿**，各片 242/225/341/244s、UI 367s，整轮 6m14s；numpy 与 vendor 两处修复均已进入该树。
+- `41657991817`（`8a69a1a`）：**4 测试片 + 2 UI 片 + ci-ok 全绿**（test 264/310/206/278s、UI 224/189s），整轮 6m11s；captcha 配置页落点与站点重烘 `db416c15fca7` 均在此树。
 
 **边界**：
 - 分片快照是历史耗时，测试结构大改后需重建；新增文件按 20s 兜底。
