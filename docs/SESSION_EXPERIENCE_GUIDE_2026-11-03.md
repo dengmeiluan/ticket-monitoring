@@ -281,6 +281,10 @@
   前台 App/会话统计；状态栏显示 `900×1600` 与前台包名。
 - **共享弹窗修复**：遮罩/Esc 走 `lgCloseModal()` 时按 `data-kind=app`
   路由到 `appLoginClose()`，不再只藏窗继续轮询。
+- **App 图标质感**：App 渠道叠 `.bic-app`（squircle/顶高光/底收影），
+  浏览器方标仍 `.bic-ota`；智行旧图底部「酒店真低价」促销条已去除，保留
+  官方「智行」字标重组成 256×256 蓝底方标；PiP/浮窗标题带 22px 图标。
+  像素门禁 `test_app_zhixing_icon_has_no_promo_banner` 防止促销条回潮。
 
 验证：Playwright 真渲染覆盖 1512/390 尺寸、专注进出、浮窗拖拽/恢复、
 浏览器登录弹窗仍 520px、内联输入、tap/swipe、零 pageerror；现有

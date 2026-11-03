@@ -75,7 +75,9 @@
   `GET /api/app-login/info` 返回分辨率/前台 App/会话统计。共享 `lgCloseModal`
   现在按 `data-kind=app` 路由到 `appLoginClose`，遮罩/Esc 不会只藏窗继续轮询。
   真渲染门禁：1512/390 尺寸、浮窗拖拽/恢复、专注进出、浏览器弹窗仍 520px、
-  输入/tap/swipe、零 pageerror；UI **670/670**。
+  输入/tap/swipe、零 pageerror；UI **670/670**。App 图标独立 `.bic-app`
+  squircle（顶高光/底收影），智行字标已去原图促销横幅，PiP 标题带 22px 官方图标；
+  像素门禁 `test_app_zhixing_icon_has_no_promo_banner`。
 - **唯一声明源**：`core/channels.py`。新增渠道/维度先跑 `python -m core.channel_contract --strict`
   与 `test_r903/r904/r905`；声明字典禁止重复键，hint 承诺的按钮必须真实渲染。
 - **发布状态**：Release `v1.0` → `ab04c22`（v1.5.307，10 渠道正文/四资产 digest 4/4/CI/Pages 同源）；ghcr `sha-ab04c22` digest `9b72acb1a6b9…`，`latest` = `sha-934e108` digest `c8fe5de9383c…`（latest 跟随更新 HEAD，非同 digest；要 Release 同源请 pin `sha-ab04c22`）；live 8765 已切 `_release_ab04`；
