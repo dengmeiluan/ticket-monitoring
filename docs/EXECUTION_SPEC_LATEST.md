@@ -3060,6 +3060,16 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · 门禁 r903/r822/docs/EOL **104 passed**，`release_align_check --local` **25/25**；静态演示站已重烘。
   · r920–r922 只改能力说明与文档，未改采集逻辑；r919 候选 zip 的说明字符串已落后，发版前必须按最终树重建，不能直接当发布资产。
 
+- r923c 途牛 H5「选目的地→点日期」复验（2026-11-03 22:04）：
+  · 临时 mobile profile + 已保存 cookie 打开 `m.tuniu.com/flight`；点
+    「目的地」打开城市选择器，输入「北京」并选 `.city-name`；
+  · 点 `.date-selector` 打开日期弹层，页面真实 XHR 为
+    `flight-api.tuniu.com/query/flight/v1/calendar`（type=1，SHA→BJS，
+    departureDate=2026-11-05，serverMonth=12），弹层逐日价
+    11-03 ¥1680 / 11-04 ¥420 / 11-05 ¥430 / 11-06 ¥699 / 11-07 ¥410…
+  · 与 `TuniuCrawler.calendar()` / `fetch_tuniu_calendar` **同一端点**；
+    PC 入口仍弹滑块（未绕过），H5 为当前可信日历交互。
+
 - r923b 同程 H5 日期控件交互复验（2026-11-03 22:00）：
   · 临时 mobile profile + 已保存 cookie 打开 `m.ly.com/ft/touch/index`，
     点 `.date-choose` 真开「选择日期」弹层；页面 XHR
