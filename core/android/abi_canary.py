@@ -320,9 +320,14 @@ def capabilities(dev) -> dict:
        ``system.vdi`` 的 ``type="Readonly"`` —— 系统盘以**只读**方式挂给
        虚拟机，这是最底层根因。
 
-    结论：**本实例上 ABI 伪装技术上不可行**，除非 MuMu 官方放开系统盘写入
-    或安装 Magisk。把这条固化成能力探测，免得以后每一次都重新试一遍、
-    也免得把"命令返回 0"误当成"改成功了"。
+    这些结论只说明一件事：**全局改 `ro.*` 这条路堵着**。但 ABI 伪装不需要
+    走它——MuMu 有官方的 per-app ABI 表
+    （``/system/etc/mumu-configs/abi-select-android12.config``），
+    按包名决定用哪套 ABI 启动，已实测跑通，入口在
+    ``core/android/vendor.py::set_app_abi``。
+
+    所以本函数现在的定位是：**给"想全局改 ro.*"的人做能力探测**，
+    免得每次重新试一遍、也免得把"命令返回 0"误当成"改成功了"。
     """
     from .fingerprint import _magisk
 
@@ -416,7 +421,7 @@ def preflight(dev, packages=None) -> dict:
             "secondary": (s.group(1) if s else ""),
         }
 
-    # 第一道闸：这台机器到底能不能改 ro.*（2026-11-03 的 MuMu 三条路全堵）
+    # 第一道闸：这台机器能不能**全局**改 ro.*（2026-11-03 的 MuMu 三条路全堵）
     # 放在包探测之后：报告要能一次把「机器什么样」+「包什么样」都摆出来，
     # 操作员才知道是「机器不支持」还是「包的 so 不匹配」。
     if not (rep.get("capabilities") or {}).get("can_write_ro"):
@@ -425,10 +430,12 @@ def preflight(dev, packages=None) -> dict:
         # 采集进行中会阻塞几十秒甚至更久（实测把一批单测拖到 42 分钟）。
         # 宿主能力由 CLI（scripts/abi_preflight.py）单独查、单独展示。
         rep["why"] = (
-            "这台实例改不了 ro.*：%s。ABI 伪装要求系统盘可写或装 Magisk。"
-            "MuMu 用户可关掉「系统盘只读」再重启实例：\n"
-            "  MuMuManager.exe setting -v <实例> -k system_disk_readonly -val false\n"
-            "  MuMuManager.exe control -v <实例> restart"
+            "这台实例改不了**全局** ro.*：%s。\n"
+            "但 ABI 伪装不必走这条路——用 MuMu 官方 per-app 表即可（已实测跑通）：\n"
+            "  vendor.read_abi_select(dev) / vendor.set_app_abi(dev)  # 写 5 个票务包\n"
+            "  前置：MuMuManager.exe setting -v <实例> -k system_disk_readonly -val false\n"
+            "        MuMuManager.exe control -v <实例> restart\n"
+            "（若确实要全局改 ro.*，则需装 Magisk 提供 resetprop。）"
             % (rep["capabilities"].get("note") or "无写入通道"))
         return rep
 

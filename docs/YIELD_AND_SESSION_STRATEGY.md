@@ -355,12 +355,15 @@ vendor.revert_app_abi(dev)         # 从备份还原
 | `setprop ro.*` | 返回 0 但**值不变** | 静默失败（最坑） |
 | `mount -o remount,rw /` | `'/dev/block/sda6' is read-only` | 块设备只读，`touch` 失败 |
 
-**结论：在这台实例上 ABI 伪装技术上不可行** —— 三条写入通道全堵。
-（顺带纠正一个此前的担忧：因为目标包本来就是 arm64，改 `ro.product.cpu.abi`
-**不会**改变 so 选择，历史那次 `Runtime.load0` ANR 的前提在此配置下不成立。）
+**当时的临时结论是"三条写入通道全堵、不可行"** —— 后来证明这个结论**只对
+`ro.*` 全局改写成立**，而 ABI 伪装根本不需要走那条路：MuMu 有官方的
+**per-app ABI 表**（见下一节，已实测跑通）。
+（顺带纠正一个此前的担忧：因为目标包本来就是 arm64，改 ABI 选择
+**不会**让它们去加载不存在的 so，历史那次 `Runtime.load0` ANR 的前提在此
+配置下不成立。）
 
-要推进只剩一条路：**给 MuMu 装 Magisk**（提供 `resetprop` 内存态写入）。
-装完再跑：
+> 下面这段"装 Magisk"的路径**保留作参考**——它的价值是让 `ro.*` 全局可写
+> （比如还想改 `ro.build.tags` 之类）。但**ABI 伪装不需要它**。
 
 ```powershell
 python scripts/abi_preflight.py            # 应变成 risk=low

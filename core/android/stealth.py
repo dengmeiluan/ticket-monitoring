@@ -73,10 +73,12 @@ ROOT_PROPS = {
 EMU_PROP_PAT = ("mumu", "netease", "nemu", "vbox", "goldfish", "qemu",
                 "bluestacks", "ldplayer", "noxtn")
 
-# 改不动的残留（如实报告，不要假装清掉了）
+# 本层不处理的残留（如实报告，不要假装清掉了）
 UNFIXABLE = (
     ("play_integrity", "Play Integrity / SafetyNet 需要真机 TEE，任何模拟器都过不了"),
-    ("abi", "ABI 要先过 abi_canary 实测才能写（写错会让加固 so 崩），本层不碰"),
+    # ABI 已经能改了，但**不归本层**：走 MuMu 官方 per-app 表
+    # （core/android/vendor.py::set_app_abi），改完重启实例生效。
+    ("abi", "ABI 走 MuMu 官方 abi-select 表（vendor.set_app_abi），本层不碰"),
     ("sensors", "传感器数量/类型来自 HAL，props 改不了"),
     ("kernel", "内核版本字符串来自真实内核"),
 )
