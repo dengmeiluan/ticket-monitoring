@@ -74,6 +74,30 @@ def test_above_threshold_resets_so_next_crossing_alerts(tmp_path):
     assert len(n.sent) == 2
 
 
+OPEN = [{"from": "SHA", "to": "TYO", "date": "2026-11-20"},
+        {"from": "OSA", "to": "SHA", "date": "2026-11-26"}]
+OPEN_LEGS = [{"flight_no": "9C8515", "from": "SHA", "to": "TYO",
+              "date": "2026-11-20", "dep": "21:10", "arr": "01:05"},
+             {"flight_no": "MM079", "from": "OSA", "to": "SHA",
+              "date": "2026-11-26", "dep": "22:25", "arr": "00:20"}]
+
+
+def test_open_jaw_alert_title_breaks_chain(tmp_path):
+    """开口程提醒标题也不能画成 SHA→TYO→SHA（第二段从 OSA 出发）。"""
+    st = PriceStorage(str(tmp_path / "prices.db"))
+    st.save_itinerary("ctrip", segments_key(OPEN), OPEN, 2184.0, OPEN_LEGS)
+    u = {"name": "u", "platforms": ["ctrip"], "routes": [{
+        "from": "SHA", "to": "SHA",
+        "dates": ["2026-11-20", "2026-11-26"],
+        "alert_threshold": 2500, "segments": OPEN}]}
+    n = Notifier()
+    assert webui._multicity_alert_round(
+        u, n, st, logging.getLogger("mc")) == 1
+    title, desp = n.sent[0]
+    assert "SHA→TYO / OSA→SHA" in title and "2184" in title
+    assert "9C8515" in desp and "MM079" in desp
+
+
 def test_expired_first_segment_never_alerts(tmp_path):
     old = [{"from": "SHA", "to": "TYO", "date": "2020-01-01"},
            {"from": "TYO", "to": "OSA", "date": "2020-01-03"}]

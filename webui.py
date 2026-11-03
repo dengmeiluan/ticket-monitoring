@@ -30697,7 +30697,7 @@ def _multicity_alert_round(user, notifier, storage, logger, base_url="",
         if last is not None and last > 0 and price > last - drop_min:
             continue
         pname = Alerter.plat_cn(str(row.get("platform") or "")) or "渠道"
-        chain = segs[0]["from"] + "".join("→" + s["to"] for s in segs)
+        chain = _mc_chain_label(segs)
         extra = row.get("extra") or {}
         leg_lines = []
         for i, leg in enumerate(extra.get("legs") or []):
