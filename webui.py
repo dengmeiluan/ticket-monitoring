@@ -22948,6 +22948,7 @@ const GLB_RANGES=[
     校验只拦「越界」，不拦「会被别的键夹取」——后者由 glbClamp 负责说明。 */
  {id:'glbJt',min:0,max:10080,label:'随机扰动须为 0-10080 分钟'},
  {id:'glbHumR',min:1,max:6,label:'拟人化轮数须为 1-6 轮'},
+ {id:'glbWait',min:0,max:120,label:'会话锁等待须为 0-120 秒'},
  {id:'glbFast',min:5,max:1440,label:'快 TTL 须为 5-1440 分钟'},
  {id:'glbSlow',min:5,max:1440,label:'慢 TTL 须为 5-1440 分钟'},
  {id:'glbNear',min:0,max:1,dec:1,label:'邻近比例须为 0-1'},
