@@ -33,10 +33,11 @@
   可溯源/过期首段不提醒/整单历史 sparkline/CSV 导出/2 段矩阵升 y）；live 8765 于
   **2026-11-03 08:58** 切到 `_release_ab04`（live 树 `ab04c22`，webui sha12
   `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r956 尚未入该树。
-- **门禁**：tracked collect **6385**（2026-11-03 21:17 核对，较 `bc96947` 多 15 项）。
-  最后一次 clean 全量在 HEAD `bc96947`：tracked 6370，
+- **门禁**：tracked collect **6394**（2026-11-03 21:25 核对，较 `bc96947` 多 24 项）。
+  最后一次本地 clean 全量在 HEAD `bc96947`：tracked 6370，
   **6326 passed / 44 skipped / 0 failed**（workers 8，409.47s；源码哈希 pin 通过，
-  语法检查 ok）；`bc96947` 之后新增的 15 项尚无整树全量门禁，发布前必须重跑。CI 已把全量 pytest 拆到 4 台 runner：
+  语法检查 ok）；`bc96947` 之后新增的 24 项尚无本地整树全量门禁，发布前必须重跑
+  （远端 CI 4 片仍按最新 HEAD 跑全量）。CI 已把全量 pytest 拆到 4 台 runner：
   `tools/ci_shard.py` 按 `tests/ci_durations.json` 历史耗时贪心均分，跑测前
   `--stats 4` 自检并集=全部 `tests/test_*.py`（新增文件按 20s 自动进组）+ workflow
   片数/选片/loadfile/ci-ok/取消旧跑一致性；`test/uitest` 各加 45 分钟超时，
@@ -81,7 +82,7 @@
   像素门禁 `test_app_zhixing_icon_has_no_promo_banner`。
 - **唯一声明源**：`core/channels.py`。新增渠道/维度先跑 `python -m core.channel_contract --strict`
   与 `test_r903/r904/r905`；声明字典禁止重复键，hint 承诺的按钮必须真实渲染。
-- **发布状态**：Release `v1.0` → `e65cee1`（2026-11-03 09:54 由 `ab04c22` 重指，多 4 个提交；v1.5.307，10 渠道正文/四资产 digest 4/4；CI/release-build/Pages 在 `e65cee1` 均 success）；ghcr `sha-e65cee1` = `latest` digest `5fb025bb3488…`（同 digest）；`sha-ab04c22` 仍可拉取（digest `9b72acb1a6b9…`）但已不对应 Release；公开站点戳 `code:4179e3223c14` 由更新后的 main 部署（release 树 webui 为 `6c85a00f14c1`）；live 8765 仍是 `_release_ab04`（`ab04c22` 树）；
+- **发布状态**：Release `v1.0` → `e65cee1`（2026-11-03 09:54 由 `ab04c22` 重指，多 4 个提交；v1.5.307，10 渠道正文/四资产 digest 4/4；CI/release-build/Pages 在 `e65cee1` 均 success）；ghcr `sha-e65cee1` = `latest` digest `5fb025bb3488…`（同 digest）；`sha-ab04c22` 仍可拉取（digest `9b72acb1a6b9…`）但已不对应 Release；公开站点戳 `code:5045a4437de8` 由更新后的 main 部署（release 树 webui 为 `6c85a00f14c1`）；live 8765 仍是 `_release_ab04`（`ab04c22` 树）；
   工作树未提交/未发布，推送、tag、Release、Pages、live 切换均需明确授权。
   live 切换的可执行步骤与回滚见 `docs/LIVE_PROMOTION_RUNBOOK.md`。
 - **本文结构**：§1–§12 是执行口径；§12 之后是历次门禁与时序台账，**不是当前状态**；
