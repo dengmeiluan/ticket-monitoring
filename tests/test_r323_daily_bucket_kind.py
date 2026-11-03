@@ -40,6 +40,20 @@ def _fp(price, elements, fetched, frm="URC", to="SHA",
         fetched_at=fetched)
 
 
+def test_sub_band_price_never_enters_daily_bucket(tmp_path):
+    """¥20 优惠卡不得成为日桶 lo/close（2026-11-03 生产实证）。"""
+    db = os.path.join(str(tmp_path), "t.db")
+    st = PriceStorage(db)
+    st.save_many([
+        _fp(20.0, [_elem(20.0, "", "")], "2026-10-10 08:00:00"),
+        _fp(500.0, [_elem(500.0, "MU1")], "2026-10-10 09:00:00"),
+    ])
+    st.refresh_daily("URC", "SHA", "2026-11-01", day="2026-10-10")
+    d = st.daily_series("URC", "SHA", "2026-11-01", days=30, kind="d")
+    assert len(d) == 1, d
+    assert d[0]["lo"] >= 100.0, d
+
+
 def test_mixed_row_elements_split_buckets(tmp_path):
     """混装行按元素归桶：d 收直元素价、t 收中转元素价，行价列不参与。"""
     db = os.path.join(str(tmp_path), "t.db")

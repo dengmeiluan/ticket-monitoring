@@ -81,6 +81,7 @@ def _sent_hit_text(plat: str, k: str, hit: int, n: int) -> str:
 
 
 def build_routes(routes_cfg: list) -> list:
+    from core.multicity import MultiCityError, normalize_segments
     routes = []
     for r in routes_cfg or []:
         if r.get("enabled") is False:
@@ -93,12 +94,24 @@ def build_routes(routes_cfg: list) -> list:
         # 的双源劈叉
         _tr = 0 if r.get("direct_only") else float(
             r.get("alert_transfer", 0) or 0)
+        # 多程形状：segments 存在时由它派生首/末段与日期；不合法直接
+        # 报配置错误（启动期可见），不允许退化成单 O-D 静默扫描。
+        _segs = []
+        if r.get("segments"):
+            try:
+                _segs = normalize_segments(r["segments"])
+            except MultiCityError as _e:
+                raise ValueError("航线 segments 不合法：%s" % _e)
+        _from = _segs[0]["from"] if _segs else r["from"]
+        _to = _segs[-1]["to"] if _segs else r["to"]
+        _dates = list(dict.fromkeys(
+            [s["date"] for s in _segs])) if _segs else list(r.get("dates", []))
         routes.append(Route(
-            from_code=r["from"],
-            from_name=r.get("from_name", r["from"]),
-            to_code=r["to"],
-            to_name=r.get("to_name", r["to"]),
-            dates=list(r.get("dates", [])),
+            from_code=_from,
+            from_name=r.get("from_name", _from),
+            to_code=_to,
+            to_name=r.get("to_name", _to),
+            dates=_dates,
             alert_threshold=float(r.get("alert_threshold", 0) or 0),
             alert_direct=float(r.get("alert_direct", 0) or 0),
             alert_transfer=_tr,
@@ -137,8 +150,27 @@ def build_routes(routes_cfg: list) -> list:
             no_lcc=bool(r.get("no_lcc", False)),
             min_baggage=int(r.get("min_baggage", 0) or 0),
             widebody_only=bool(r.get("widebody_only", False)),
+            segments=_segs,
         ))
     return routes
+
+
+def route_query_registry(users):
+    """单 O-D 查询注册表；多程航线单列跳过，绝不按段扫成单程。
+
+    返回 ({(from,to,date): {用户索引}}, [被跳过的多程航线描述])。
+    """
+    registry, skipped = {}, []
+    for ui, u in enumerate(users or []):
+        for r in u.get("routes") or []:
+            if getattr(r, "segments", None):
+                skipped.append("%s→%s(%d 段)"
+                               % (r.from_code, r.to_code, len(r.segments)))
+                continue
+            for d in r.dates:
+                registry.setdefault(
+                    (r.from_code, r.to_code, d), set()).add(ui)
+    return registry, skipped
 
 
 def build_users(cfg: dict) -> list:
@@ -2396,11 +2428,10 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
                     len(users),
                     len({(r.from_code, r.to_code) for u in users for r in u["routes"]}))
         # 航线×日期 去重注册表：{(from,to,date): [订阅该组合的用户索引]}
-        registry = {}
-        for ui, u in enumerate(users):
-            for r in u["routes"]:
-                for d in r.dates:
-                    registry.setdefault((r.from_code, r.to_code, d), set()).add(ui)
+        registry, _mc_skipped = route_query_registry(users)
+        if _mc_skipped:
+            logger.info("[多程] 采集端未接，本轮跳过 %d 条多程航线：%s",
+                        len(_mc_skipped), ", ".join(_mc_skipped))
 
         # 先按出发日、再按航线排序：临期日期优先采到，避免"越近的越晚
         # 才采"，也让预算不足时先保住最可能下单的日期。
@@ -2424,7 +2455,7 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
         # （部分断供哨输入，c330 F1 起按域分流：intl 结构性零供给面
         # 不与 dom 合并成假比率，哨内逐域独立评估）
 
-        def _stagger_wait(name):
+        def _stagger_wait(name, channels=None):
             """5 区 · 起跑错峰：同轮每家只偏移一次，且不持任何锁。"""
             if pac is None or not pac.cfg.get("stagger_seconds"):
                 return
@@ -2432,7 +2463,7 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
                 if name in _stagger_todo:
                     return
                 _stagger_todo.add(name)
-            d = stagger_offset(name, pac.cfg["stagger_seconds"])
+            d = stagger_offset(name, pac.cfg["stagger_seconds"], channels)
             if d > 0:
                 logger.info("[节流] %s 起跑偏移 %.1fs（同轮渠道不挤同一秒）",
                             name, d)
@@ -2491,7 +2522,7 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
                         pass
                 return ok
 
-        def _timed_fetch(c, fc_, tc_, d_, th_min=None, gen=None):
+        def _timed_fetch(c, fc_, tc_, d_, th_min=None, gen=None, chans=None):
             # 单渠道计时入脉冲（成败=是否有数据），控制台可观察性数据源
             t0 = time.time()
             prices = []
@@ -2537,7 +2568,7 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
                             _ch.get("reason") or "?", fc_, tc_, d_)
                         pac.note_paced(c.name, "breaker")
                         return [], "paced"
-                    _stagger_wait(c.name)
+                    _stagger_wait(c.name, chans)
                     _warm_once(c)
                     if _gen is not None and rt.get("_round_gen") != _gen:
                         pac.note_paced(c.name, "stale_round")
@@ -2799,7 +2830,9 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
                                 continue
                             if v > 0:
                                 th_min = v if th_min is None else min(th_min, v)
-            for c in get_crawlers(plats):
+            _crawlers = get_crawlers(plats)
+            _chans = [c.name for c in _crawlers]
+            for c in _crawlers:
                 try:
                     c.threshold_hints[(fc, tc, d)] = {"min": th_min}
                 except AttributeError:
@@ -2816,8 +2849,8 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
             ex = concurrent.futures.ThreadPoolExecutor(max_workers=_mw)
             try:
                 futs = {ex.submit(_timed_fetch, c, fc, tc, d, th_min,
-                                  rt.get("_round_gen")): c.name
-                        for c in get_crawlers(plats)}
+                                  rt.get("_round_gen"), _chans): c.name
+                        for c in _crawlers}
                 results, timed_out = _collect_route_futures(
                     futs, timeout_s=_ROUTE_FUT_TIMEOUT, logger=logger)
                 for _nm, _res in results:

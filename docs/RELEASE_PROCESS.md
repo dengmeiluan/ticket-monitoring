@@ -124,16 +124,17 @@ Do not push, retag, publish or rewrite shared history without explicit user auth
 > 「CI 红 / Pages 旧戳 / ghcr 5cff7f5」是 2026-10-31 预跑时的历史问题，
 > 本发布轮已全部关闭；不要把那段当现状。
 
-| 项 | 实测（2026-11-02T08:07Z 前后） |
+| 项 | 实测（2026-11-03 09:20） |
 |---|---|
-| Release | tag 恒定 `v1.0` → `0d4b058`；名称「机票监控台 · 初版（滚动更新）」；正文 `当前版本 v1.5.307 · 源码 0d4b058` |
-| 资产完整性 | 4 个平台 zip + `SHA256SUMS.txt`，updated 2026-11-02T08:07Z；本地 SHA256SUMS 与 Release API `digest` **4/4 相等**（win64/linux-x64/macos-arm64/macos-x64） |
-| CI / release-build / Pages | 三个工作流均在 `0d4b058` 上 `completed success`（2026-11-02T07:23Z）；Pages `build_type=legacy`（`/docs`），status `built` |
-| 容器镜像 | 匿名 manifest **200**；`latest` 与 `sha-0d4b058` **同一 digest** `sha256:90bdf31e…`；created 2026-11-02T07:24Z；仅 `linux/amd64` |
+| Release | tag 恒定 `v1.0` → `ab04c22`；名称「机票监控台 · 初版（滚动更新）」；正文 `当前版本 v1.5.307 · 源码 ab04c22` |
+| 资产完整性 | 4 个平台 zip + `SHA256SUMS.txt`；Release API `digest` 与正文 SHA **4/4 相等**（win64/linux-x64/macos-arm64/macos-x64） |
+| CI / release-build / Pages | 三个工作流在 `ab04c22` 上 success；Pages 部署成功 |
+| 容器镜像 | 匿名 manifest **200**；`sha-ab04c22` digest `sha256:9b72acb1…`；`latest` = `sha-934e108` digest `sha256:c8fe5de9…`（HEAD 更新，**非同 digest**；要 Release 同源请 pin `sha-ab04c22`） |
 | Issue / PR | 0 open / 0 open（GitHub API `open_issues_count=0`） |
 
-**结论**：发布树的 tag、Release 正文、四资产、CI、Pages、ghcr 已同源。
-当前工作树（10 渠道 + 国际往返/日历/多程解析等）尚未提交/发布；live 8765 仍是 7 渠道旧副本。
+**结论**：Release 的 tag、正文、四资产、CI、Pages 已同源；镜像 `latest` 跟随 HEAD，
+不再与 Release 源同 digest，对外说明必须区分 `latest` 与 `sha-ab04c22`。
+当前工作树另有 r933–r935（多程数据层/配置隔离/实际渠道错峰）未提交；Release `v1.0` → `ab04c22` 已发布，live 8765 已切到 `_release_ab04`（10 渠道，PID 47952）。
 
 ### 6.4 本地打包环境必须隔离（2026-11-03 实测）
 

@@ -105,6 +105,10 @@ def classify_round(plats, login=None, cookie=None,
             elif any(k.lower() in low for k in _CAPTCHA):
                 c = _card(p, "captcha", "需要人工验证",
                           "打开渠道可见窗口完成验证", rp)
+            elif "渠道软拒" in note:
+                c = _card(p, "empty", "渠道软拒/已退避",
+                          "下轮自动重试；不要据此换日期或重登", rp,
+                          evidence=note)
             elif (s == "empty"
                   or any(k.lower() in low for k in _EMPTY)):
                 c = _card(p, "empty", "无符合条件的航班",

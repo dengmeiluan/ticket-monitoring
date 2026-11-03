@@ -58,6 +58,10 @@ _AUTH_MARKS = ("未登录硬拒", "需登录", "请登录", "登录失效", "会
 _GATE_MARKS = ("会话门拒", "非法链接", "请求环境拒绝")
 _EXC_MARK = "请求异常"
 _RETRY_MARKS = ("命中风控", "疑似限流", "后第")
+# 1999 软拒/软空：不是「无票」，也不是登录墙——认证 Cookie 仍在场、
+# 已按限流退避。健康卡必须说「软拒/已退避、不要重登」，不能写成
+# 「无符合条件的航班」把人推去换日期/重登（2026-11-03 线上 qunar 国际）。
+_SOFT_MARKS = ("1999/8", "软拒", "软空")
 # 原站明确“没有符合条件的航班”是空结果，不是抓取失败；1999 既可能
 # 是登录墙也可能是无票，只有带这些消息词才归 empty。
 _EMPTY_MARKS = ("没有查询到符合条件的航班", "未查询到符合条件的航班",
@@ -293,6 +297,10 @@ def parse_health(log_text, now=None, hours=24):
                 ev["generic_fail"] += 1
             if not ev["note"]:
                 ev["note"] = "App 导航失败（未完成查询）"
+        elif any(k in msg for k in _SOFT_MARKS):
+            ev["empty"] += 1
+            if not ev["note"]:
+                ev["note"] = "渠道软拒（1999）已退避；不是无票"
         elif _APP_EMPTY.search(msg):
             ev["empty"] += 1
             if not ev["note"]:

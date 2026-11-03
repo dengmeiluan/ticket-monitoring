@@ -64,6 +64,7 @@ class Route:
     transfer_layover_max: int = 0  # 中转最长衔接分钟（0=不限；已知衔接超限即剔，未知放行）
     exclude_stop: bool = False     # 排除经停（f["stop"] 明确标注经停的班次不参达标/明细）
     exclude_share: bool = False    # 排除共享航班（渠道标注共享承运的班次不参达标/明细）
+    segments: list = field(default_factory=list)  # 多程 2–4 段；空=单 O-D
 
 
 # 价格带单源：取数链五处（爬虫接受带/曲线 _rounds/日报池/

@@ -201,7 +201,10 @@ def test_health_tab_reveals_newest_round(page):
     page.set_viewport_size({"width": 390, "height": 844})
     _boot(page)
     page.evaluate("switchView('mon');showMonTab('health')")
-    page.wait_for_timeout(900)
+    # 固定 900ms 在并发全量下会偶发早于健康卡渲染（实测 300ms 可出、
+    # 负载下会晚）；按条件等到 .hcells 再量滚动位置。
+    page.wait_for_selector("#hbody .hcells", timeout=15000)
+    page.wait_for_timeout(200)
     got = page.evaluate("""()=>[...document.querySelectorAll('#hbody .hcells')]
       .map(x=>({max:Math.round(x.scrollWidth-x.clientWidth),
                 sl:Math.round(x.scrollLeft)}))""")

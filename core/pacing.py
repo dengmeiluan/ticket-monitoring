@@ -302,14 +302,18 @@ def tier_of(age_min, near, fast_ttl, slow_ttl):
     return "skip"
 
 
-def stagger_offset(plat, base_seconds):
-    """渠道起跑偏移：按固定顺序均分，保证 5 家不挤在同一秒。
+def stagger_offset(plat, base_seconds, channels=None):
+    """渠道起跑偏移：按给定渠道顺序均分（默认浏览器渠道表）。
+
+    调用方应传本轮实际渠道集（含启用的 App）；不传时保留旧行为。
     固定（非随机）是刻意的——同一渠道每轮偏移一致，便于复现与对账；
     周期本身的随机性由调度层的 jitter 负责。"""
     base = float(base_seconds or 0)
     if base <= 0:
         return 0.0
-    order = list(PLATFORMS)
+    order = list(channels) if channels else list(PLATFORMS)
+    if not order:
+        order = list(PLATFORMS)
     step = base / len(order)
     if plat in order:
         return round(order.index(plat) * step, 1)

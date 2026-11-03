@@ -87,6 +87,24 @@ def test_cards_are_paired_by_row_not_document_order():
                    ("MU123", "21:35", "23:40", 378)], got
 
 
+def test_card_without_flight_identity_is_not_a_price_row():
+    """无航班号的卡片（优惠/占位）不得变成 ¥20 假票价。
+
+    2026-11-03 生产实测：app_qunar 多航线落库 `code=""、price=20/25`，
+    被孤低价守卫拦在推送层；根因是解析器把无身份卡也 append 成行。
+    """
+    xml = _xml(_card(363, "08:25", "12:00", "", 20))
+    assert parse_flight_rows(xml) == []
+
+
+def test_below_band_price_is_not_recorded_as_fare():
+    """有航班号但价格 <100 时保留身份、price=None，不落假票价。"""
+    xml = _xml(_card(363, "08:25", "12:00", "MU123", 20))
+    rows = parse_flight_rows(xml)
+    assert rows and rows[0]["flight_no"] == "MU123"
+    assert rows[0]["price"] is None, rows
+
+
 def test_missing_price_stays_none():
     """没有价格的卡片不得给 0 或猜价。"""
     xml = _xml(_n("20:30", 36, 363, 120, 413),

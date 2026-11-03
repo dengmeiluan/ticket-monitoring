@@ -67,6 +67,28 @@ def test_absent_round_is_unscanned_and_ok_requires_detail():
     assert cards["ctrip"]["kind"] == "calendar_only"
 
 
+def test_soft_refusal_is_not_no_flight_and_does_not_urge_relogin():
+    """1999/8 软拒：认证 Cookie 在场、已退避 → 「软拒/已退避」，不是无票。"""
+    log = "\n".join([
+        _line("2026-11-03 09:41:30", "===== 开始一轮扫描 ====="),
+        _line("2026-11-03 09:42:02",
+              "[qunar][intl] 2026-11-16 1999/8 连续 3 次，但认证 Cookie 仍在场"
+              "——按限流/软拒退避，不催重登"),
+        _line("2026-11-03 09:44:30",
+              "[qunar] 抓取完成，得到 0 条记录 · 国际"),
+        _line("2026-11-03 09:44:30", "===== 本轮扫描结束 ====="),
+    ])
+    out = parse_health(log, now="2026-11-03 10:00:00")
+    p = out["rounds"][0]["plats"]["qunar"]
+    assert p["s"] == "empty", p
+    assert "软拒" in p["note"], p
+    card = {c["plat"]: c for c in classify_round(
+        {"qunar": p})}["qunar"]
+    assert card["kind"] == "empty", card
+    assert "软拒" in card["label"], card
+    assert "不要" in card["action"] and "重登" in card["action"], card
+
+
 def test_login_and_1999_login_wall():
     cards = {c["plat"]: c for c in classify_round({
         "qunar": {"s": "fail", "ok": 0, "tot": 1,

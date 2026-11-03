@@ -40,12 +40,13 @@
 > r908 文档摘要/携程 App 往返口径、r909 320 档 pacing 行高、r910 同程国际
 > 往返 API 负结论；能力矩阵截图与静态站已按 10 渠道 + 携程 App 国内/国际
 > 往返重烘（当时站戳 `3a7ea543ba18`；当前站戳见下），`release_align_check --local` **25/25**；
-> 在线发布树 0d4b058（v1.5.307）复核为 tag/正文/资产/CI/Pages/ghcr 同源；
-> 工作树仍未提交，live 8765 仍旧 7 渠道副本。
+> Release/正文/四资产/tag 已于 ab04c22 同源；ghcr `sha-ab04c22` 单独存在，`latest` 已随 HEAD 走到 `sha-934e108`（非同 digest）；
+> Release `v1.0` → `ab04c22` 已发（10 渠道正文，资产 4/4）；live 8765 已于
+> 2026-11-03 08:58 切到 `_release_ab04`（PID 47952）。r933–r935 源码增量仍未提交。
 > **2026-11-03 03:30 补（同程 App 国际往返 + 最终树）**：同程 App 国际往返真机接通
 > （上海⇌东京 11-16/19，7 条去程、最低 9C8515 ¥2209 含税总价；返程 `+¥N` 为加价），
 > `round_trip=y`（仅国际）；`PATH_CN` 补 `app-roundtrip`（r658 门禁曾点红）。
-> 全量非 UI **6149 passed / 19 skipped / 0 failed**（07:41，workers 8，当前代码树；App 采集代码/测试指纹
+> 全量非 UI **6165 passed / 19 skipped / 0 failed**（09:55，workers 8，当前代码树；App 采集代码/测试指纹
 > 前后一致）；UI **670/670**（05:54 全量复跑，零 JS 错误）；能力矩阵截图
 > `docs/screenshots/console-dims.png` 已按 10 渠道 + RT 状态重烘，
 > 静态站同步；`release_align_check --local` **25/25**。

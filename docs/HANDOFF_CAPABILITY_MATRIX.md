@@ -34,15 +34,18 @@
 
 10 家渠道（5 浏览器 + 5 App）× 7 个维度的能力矩阵**已从「只活在源码里」变成「界面上一张表」**，
 并修掉了「单程价冒充往返价」「同一件事两张表结论相反」「同一键写两遍、后者静默覆盖前值」三类诚实性缺陷。
-**2026-11-03 07:41 工作树实测**：全量非 UI **6149 passed / 19 skipped / 0 failed**（workers 8，产品代码指纹前后一致；含 r926 同程 PC 国际往返、r927 途牛 H5 国际往返、r930 多程解析器、r931 矩阵窄档，以及 Release 正文 8 条门禁——采集面/往返范围逐行与矩阵同源）；
+**2026-11-03 09:55 工作树实测**：全量非 UI **6165 passed / 19 skipped / 0 failed**（workers 8，产品代码指纹前后一致；含 r926 同程 PC 国际往返、r927 途牛 H5 国际往返、r930 多程解析器、r931 矩阵窄档、r932 实际渠道错峰、r933 多程存储层、r934 多程配置/调度隔离、r938 Qunar 假票价守卫、r939 软拒诊断，以及 Release 正文 8 条门禁——采集面/往返范围逐行与矩阵同源）；
 能力线 9 文件 **63 passed**（含 r903/r905）、`python -m core.channel_contract --strict` **10 家 × 11 轴无缺口**、
-UI **670/670**（2026-11-03 07:25 全量复跑，零 JS 错误；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、同程 App round_trip=国际；r901 新增 390 档冻结首列 + 900 档无假提示真渲染；含 r905 行内自检按钮，另由 r905 真渲染 + r640 四档行高覆盖）、
-`release_align_check.py --local` **25/25 PASS**、站点戳 `code:b5ebddf01b2d` = 当前 `webui.py`。
-**2026-11-03 在线复核（发布树 0d4b058 / v1.5.307）**：tag `v1.0` → `0d4b058`；Release 正文
-v1.5.307 + 源码 0d4b058；四资产 updated 2026-11-02T08:07Z，SHA256SUMS 与 API digest **4/4 相等**；
-CI/release-build/Pages 均在 0d4b058 success；ghcr `latest` == `sha-0d4b058`（同 digest，匿名 manifest 200）；
-0 open issues / 0 open PRs。**在线已同源**。
-**未发布的部分**：工作树 10 渠道改动（含 r903–r926）尚未提交；live 8765 仍跑 7 渠道旧副本。
+UI **670/670**（2026-11-03 07:51 全量复跑，零 JS 错误；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、同程 App round_trip=国际；r901 新增 390 档冻结首列 + 900 档无假提示真渲染；含 r905 行内自检按钮，另由 r905 真渲染 + r640 四档行高覆盖）、
+`release_align_check.py --local` **25/25 PASS**、站点戳 `code:6c85a00f14c1` = 当前 `webui.py`。
+**2026-11-03 09:20 在线复核（Release ab04c22 / v1.5.307）**：tag `v1.0` → `ab04c22`；Release 正文
+v1.5.307 + 源码 ab04c22；四资产 digest 与正文 SHA **4/4 相等**；CI/release-build/Pages
+在 ab04c22 success；ghcr `sha-ab04c22` digest `9b72acb1a6b9…`，`latest` = `sha-934e108`
+digest `c8fe5de9383c…`（latest 跟随更新 HEAD，**非同 digest**；要 Release 同源请 pin
+`sha-ab04c22`）；0 open issues / 0 open PRs。Release 正文/资产/tag 已同源，镜像层面需按此口径表述。
+**发布状态**：Release `v1.0` → `ab04c22`（10 渠道正文，四资产 digest 4/4）；
+live 8765 已于 2026-11-03 08:58 切到 `_release_ab04`（PID 47952，webui sha12
+`6c85a00f14c1`，`/api/channel-dims` 10 家）。r933–r935 的源码增量尚未入该树。
 
 ### 历史记录（2026-11-02 01:52 预发布；数字非当前）
 **发布提交前**：README/EN 的跟踪计数要改成 **5885**、UI 自检 **670**（当前 5443/668 是
@@ -195,7 +198,7 @@ out = c.safe_fetch('SHA','BKK',['2026-11-01'], ret_date='2026-11-05')
 （n 只留给渠道真没有的能力/停服）。
 `DIM_TIP.multi_city` 写明「App 有入口，采集未接」。
 
-### 1.6 多程要接，先做数据模型（未实现；设计草案，防「加个解析器就上」）
+### 1.6 多程要接，先做数据模型（存储层已落地；采集/UI 未接）
 
 2026-11-03 真机补充：**渠道侧确实有多程结果面**——去哪儿 App 两段多程
 「选择航班」双栏（第一程/第二程，列项标「优惠前含税均价」+ 第二程加价），
@@ -227,7 +230,15 @@ out = c.safe_fetch('SHA','BKK',['2026-11-01'], ret_date='2026-11-05')
 只是中转第一段，此前误读为目的地）。同程 App 多程查询仍只出第一段。
 **唯一阻塞是本产品的单 O-D 模型/配置**，3+ 段流程未验；矩阵保持 `""`。
 解析器已落地 `crawlers/app_qunar_multi.py`（两程；基准价/页脚总价/+¥加价；
-真实夹具 + 6 tests），但**未接 fetch/存储/配置**，等模型落地再接。
+真实夹具 + 6 tests），但**未接 fetch/配置/UI**。
+**2026-11-03 08:30 数据层落地**：`core/multicity.py`（2–4 段归一、
+`segments_key`、MC extra，legs 禁止价格字段）+ `PriceStorage.itinerary_daily`
+（platform/route_id/segments_key/depart_date 主键 + total_price + legs_json）
++ `save_itinerary`/`itineraries`（legs 必须与 segments 逐段 from/to/date
+一致），11 tests。**2026-11-03 09:00 配置形状**：`Route.segments` 已接，
+`build_routes` 由 segments 派生首/末段与日期；`route_query_registry` 把多程
+航线单列跳过，**绝不进入单程调度**（日志留痕）。仍缺 `fetch_multi`、多程
+结果面、推送与配置 UI，矩阵保持 `""`。
 
 **2026-11-03 06:08 携程 PC 多程实测（第二条口径坐实）**：用受信 profile 在
 `flights.ctrip.com` 列表页切「多程(含缺口程)」，两段 SHA→TYO 11-20 /

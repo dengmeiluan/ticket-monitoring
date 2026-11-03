@@ -58,6 +58,22 @@ def test_stagger_offset_is_deterministic_and_spread():
     assert stagger_offset("qunar", 25) == vals[0]
 
 
+def test_stagger_offset_follows_actual_channel_set():
+    """App 渠道加入本轮时必须参与均分，而不是落哈希哨兵。
+
+    2026-11-03 实测：`stagger_offset` 固定按 5 家浏览器分步，App 走
+    crc32 兜底；配置页却写「按本轮实际渠道均分」——文案与实现不一致。
+    传 channels 后按本轮顺序均分，App 也拿到确定性偏移。
+    """
+    chans = ["ctrip", "app_ctrip", "qunar"]
+    assert stagger_offset("ctrip", 30, chans) == 0
+    assert stagger_offset("app_ctrip", 30, chans) == 10
+    assert stagger_offset("qunar", 30, chans) == 20
+    assert all(0 <= stagger_offset(p, 30, chans) < 30 for p in chans)
+    # 未在本轮集合里的渠道仍走哈希兜底，但不越界
+    assert 0 <= stagger_offset("app_qunar", 30, chans) < 30
+
+
 # ---------- 失败归类（2 区） ----------
 def test_classify_failure_separates_ip_captcha_login_infra():
     assert classify_failure(["blocked"], "") == "captcha"

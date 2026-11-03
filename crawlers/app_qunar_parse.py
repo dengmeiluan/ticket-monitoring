@@ -20,6 +20,8 @@ from __future__ import annotations
 import re
 from typing import List
 
+from core.models import PRICE_MIN
+
 _NODE_RE = re.compile(r"<node\b([^>]*?)/?>")
 _ATTR_RE = r'%s="([^"]*)"'
 _TIME_RE = re.compile(r"^(\d{1,2}):(\d{2})$")
@@ -146,6 +148,15 @@ def parse_flight_rows(xml: str) -> List[dict]:
         if best is not None:
             price = prices[best][0]
             used.add(best)
+        # 低于价格带下限的「价格」不是票价（实测优惠卡会把 ¥20/¥25 列在
+        # 同一纵向范围）。无航班身份且无有效票价才整行跳过；有航班号但
+        # 价格越界的行保留身份、price=None，绝不落 ¥20 假票价。
+        # 2026-11-03 生产日志与 flight_prices 实证。
+        _cheap = price is not None and price < PRICE_MIN
+        if _cheap:
+            price = None
+        if not code and _cheap:
+            continue
         # 中转标记必须带出来：卡片里有「全程12时45分 / 停9时45分」这种
         # 两段时长，说明不是直飞。不带 transCity，下游会把中转当直飞塞进
         # 直飞最优池，行头价也会被中转低价顶掉（真机：￥420 的中转把

@@ -29,14 +29,16 @@
 ### 1.0 当前状态快照（2026-11-03 00:17，先核验再干活）
 
 - **代码树**：HEAD `0d4b058`；工作树含 **10 渠道（5 浏览器 + 5 App）+ 国际往返/日历/多程解析等** 未提交改动；
-  live 8765 仍是 **7 渠道旧副本**（`_release_final_72d`），工作树 10 渠道尚未部署。
-- **门禁**：全量非 UI **6149 passed / 19 skipped / 0 failed**（2026-11-03 07:41，workers 8，产品代码指纹前后一致；含 r926/r927 国际往返、r929 正文源门禁（8 条，含采集面/往返范围逐行）、r930 多程解析器与 r931 矩阵窄档门禁）；
+  live 8765 已于 **2026-11-03 08:58** 切到 `_release_ab04`（Release `ab04c22`，
+  webui sha12 `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；
+  r933–r935（多程数据层/配置隔离/实际渠道错峰）尚未入该树。
+- **门禁**：全量非 UI **6165 passed / 19 skipped / 0 failed**（2026-11-03 09:55，workers 8，产品代码指纹前后一致；含 r926/r927 国际往返、r929 正文源门禁（8 条，含采集面/往返范围逐行）、r930 多程解析器、r931 矩阵窄档、r932 实际渠道错峰、r933 多程存储层与 r934 多程配置/调度隔离）；
   UI **670/670**（2026-11-03 05:54 全量复跑，零 JS 错误；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、同程 App round_trip=国际；r905 新增的行内自检按钮另由
   `test_r905` 真渲染 + `test_r640` 三档行高覆盖）；能力线 9 文件 **63 passed**；`channel_contract --strict`
   **10 家 × 11 轴无缺口**；`release_align_check --local` **25/25**；站点戳 `code:b7b27668ea4d`。
 - **唯一声明源**：`core/channels.py`。新增渠道/维度先跑 `python -m core.channel_contract --strict`
   与 `test_r903/r904/r905`；声明字典禁止重复键，hint 承诺的按钮必须真实渲染。
-- **发布状态**：在线发布树 `0d4b058`（v1.5.307）的 tag/正文/四资产/CI/Pages/ghcr 已同源；
+- **发布状态**：Release `v1.0` → `ab04c22`（v1.5.307，10 渠道正文/四资产 digest 4/4/CI/Pages 同源）；ghcr `sha-ab04c22` digest `9b72acb1a6b9…`，`latest` = `sha-934e108` digest `c8fe5de9383c…`（latest 跟随更新 HEAD，非同 digest；要 Release 同源请 pin `sha-ab04c22`）；live 8765 已切 `_release_ab04`；
   工作树未提交/未发布，推送、tag、Release、Pages、live 切换均需明确授权。
   live 切换的可执行步骤与回滚见 `docs/LIVE_PROMOTION_RUNBOOK.md`。
 - **本文结构**：§1–§12 是执行口径；§12 之后是历次门禁与时序台账，**不是当前状态**；
@@ -3030,7 +3032,7 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · **端到端复验（2026-11-03 04:24）**：同程 App `fetch("SHA","NRT",["2026-11-17"],ret_date="2026-11-22")` 真机 **9 条组合、最低 ¥2420**（GK036 02:20→06:20；返程 MM877 02:15 +¥0；`retLoaded=true`，20.9s）；行级 `tripType=RT`、`backDate`、`totalBasis=page_roundtrip_total` 齐全，path `往返 ok rows=9`。真机页脚措辞有两种（`已选 21:10 出发 春秋航空` / `已选 02:20- 06:20 捷星航空`），且返程栏有 ~54px 宽的紧凑时刻副本；解析器按宽度≥80px 排除副本，并放宽页脚锁定。返程栏异步渲染，等待上限 30s；等不到仍按去程行总价落账但标 `retLoaded=false`。
   · 新增第二个真实夹具 `tongcheng_roundtrip_live.xml`（现网页 9 去程/8 返程）与 `retLoaded=false` 离线用例；App 解析/采集 **32 passed**。
   · **国内往返负结论（2026-11-03 真机）**：国内档可填返程位，点日期打开的也是同一范围日历（页脚 去程 11-17/返程 11-22/往返总价 ￥785），确认后表单双日期成立；但查询落**单程去程列表**（「已选 09:15」、南航 ¥774 起、无返程栏/无往返总价）。拿不到渠道自算总价 → 不产出、不把单程列表价当往返；`DIMENSION_SCOPE` 保持「仅国际」，采集端不接国内往返。
-  · 最终复验：全量非 UI **6149 passed / 19 skipped / 0 failed**（07:41，当前代码树，含 r926/r927、Release 正文源 8 条门禁、多程解析器与 r931 矩阵窄档门禁）；UI **670/670**（07:25，零 JS 错误；r901 含矩阵窄档真渲染）。
+  · 最终复验：全量非 UI **6165 passed / 19 skipped / 0 failed**（09:55，当前代码树，含 r926/r927、Release 正文源 8 条门禁、多程解析器/存储层/配置隔离、r931 矩阵窄档与 r932 实际渠道错峰）；UI **670/670**（07:51，零 JS 错误）。
 
 - r928 同程 App 多程可行性负结论（2026-11-03）：
   · 真机「多程」档是两段表单（1 上海→北京 / 2 北京→上海，11-17/11-20，提示「2程以上须包含国际/中国港澳台城市」）。
@@ -3058,6 +3060,55 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · 真机 SHA→NRT 11-05/08：**35 条、最低 avgTotalPrice ¥3010**（VN533-VN310，页面「往返 含税」），真实 fetch 1 行 3.8s；只采渠道含税总价，不做两段单程相加。
   · 矩阵 `tuniu.round_trip` 仍 `y`，移除「仅国内」scope（国内 listFlight + 国际 H5 queryFlight 两端均有真机证据）；README/EN/INTL_DESIGN/HANDOFF 同步。
   · 新增夹具 `tests/fixtures/tuniu_intl_rt.json`（35 条真实 productList）与 `test_r927`：35 条、最低 3010、`price==avgTotalPrice`、标准键/告警归一、`fetch` 分流；定向 8 passed；全量非 UI **6127 passed / 19 skipped / 0 failed**（05:28，代码指纹一致）。
+
+- r940 公开演示站线上回核（2026-11-03 09:56）：
+  · 匿名请求 `https://dengmeiluan.github.io/ticket-monitoring/site/`：站点戳 **`1.5.307 code:6c85a00f14c1 2026-11-03`**（与 Release `ab04c22` / live webui 同源）；5.64 MB。
+  · 页面含 `app_ctrip` / `app_tongcheng`（10 渠道），`10 渠道`文案在；残留的 4 处「7 渠道」均在 CSS/JS 注释，不是可见旧文案；无旧缓存。
+
+- r939 1999 软拒诊断语义（2026-11-03 09:55）：
+  · 线上 qunar 国际 1999/8 软拒时，日志已写明「认证 Cookie 仍在场、按限流/软拒退避」，健康卡却落成「本轮无票」/「换日期或重登」，属可判断/可指导缺口。
+  · `core/health.py` 新增软拒标记：保留 note「渠道软拒（1999）已退避；不是无票」；`core/health_diag.py` 单列「渠道软拒/已退避」卡，动作「下轮自动重试；不要据此换日期或重登」（不再被 generic empty 吞掉）。
+  · 门禁：health 相关 **42 passed**（新增软拒正控 + 原登录墙/无票/环境故障不回归）；全量非 UI **6165 passed / 19 skipped / 0 failed**（09:55，workers 8，含 webui/channels/main/pacing/storage/multicity/models/app_qunar_parse/health/health_diag 指纹前后一致）。
+
+- r938 去哪儿 App ¥20 假票价根因修复（2026-11-03 09:42）：
+  · 生产证据：`flight_prices` 中 app_qunar 多条 `code=""、name=""、price=20/25`（SHA→NRT/HAK/SIN），日志被孤低价守卫拦截；根因是 `app_qunar_parse` 把无航班身份、价格落在优惠卡上的卡片也 append 成行。
+  · 修法：低于 `core.models.PRICE_MIN` 的「价格」不当票价；**无航班号且解析价低于价格带**（¥20/¥25 优惠卡）整行跳过；有航班号但价格越界的行保留身份、`price=None`。真实中转卡（无 code 但价 ≥100 或价未解析）不误杀。
+  · 门禁：`test_r664_qunar_parse.py` 新增无身份低价卡跳过 + 有身份越界价置 None 两条；定向 Qunar 解析/边界 **21 passed**；全量非 UI **6164 passed / 19 skipped / 0 failed**（09:42，workers 8，webui/channels/main/pacing/storage/multicity/models/app_qunar_parse 指纹前后一致）。
+  · 存量 4 行 ¥20 历史数据未删（共享生产库，未授权写）；本轮只阻止继续落库与推送假价。
+
+- r937 live 8765 切换复核（2026-11-03 09:20）：
+  · 实测 PID **47952**，cwd `D:\idea_project\_release_ab04`，启动 08:58:06；`webui.py` sha12 `6c85a00f14c1`；`/api/channel-dims` **10 家**；`enabled_platforms` 6、诊断卡 7；config 与主树 diff=0。
+  · Release `v1.0` → `ab04c22`，正文 10 渠道，四资产 digest 4/4（见 r936）。
+  · 线上 390 真渲染（只读）：矩阵 **10 列 / 10 行**、滚到最右首列 `left=28`=容器左缘（冻结生效）、滑动提示可见、10 个探针 chip、零 pageerror。
+  · live 树**不含** r933–r935（多程数据层/`Route.segments`/实际渠道错峰）；旧 `_release_final_72d` 保留作回滚。
+
+- r936 线上 Release 初版正文回核（2026-11-03 09:18）：
+  · GitHub latest：tag `v1.0`、名称「机票监控台 · 初版（滚动更新）」、updated 00:57Z；正文已是 10 家渠道。
+  · 用同一套正文门禁跑**线上正文**：`count/name/multi/surface/rt_row` 全 0 错、10 行矩阵、0 个 `{{…}}` 占位符；正文写 6169 tracked / 6149 passed / 670 UI，四资产 digest 与正文 SHA **4/4 相等**；源码 `ab04c22`。
+  · 说明：`ab04c22` 早于 r933–r935（多程数据层/配置隔离不在该 Release，产品叙事仍准确）；live 8765 进程是否仍跑旧 7 渠道代码与 Release 正文是两件事，不能互相冒充。
+
+- r935 发行包包含性 + 冻结态冒烟（2026-11-03）：
+  · 用 `TicketMonitor.spec` 在 `_scratch/pkgcheck`（临时 work/dist）复建 Windows 候选：`TicketMonitor.exe --version` = **1.5.307**、exit 0；`Analysis-00.toc` 与 PyInstaller archive 均含 **`core.multicity`**，新模块不会在冻结包缺失。
+  · `Dockerfile` 为 `COPY . .`，新模块同样入镜像；`requirements.txt` 未新增依赖。
+  · 冻结 exe 的 CLI 不暴露 `--demo/--port`（演示仅源码入口 `python webui.py --demo`），因此未启动服务，避免与 live 8765 抢端口；候选 zip 仍须按最终树重建并重算 SHA（Runbook 已标注 `3c472292` 早于 r931–r935）。
+
+- r934 多程配置形状 + 调度隔离（2026-11-03，未接采集/UI）：
+  · `Route` 新增 `segments`；`build_routes` 用 `core.multicity.normalize_segments` 校验并由 segments 派生首/末段与日期，非法形状启动期直接报错，不退化成单 O-D。
+  · 新增 `route_query_registry(users)`：多程航线单列 `skipped`，**绝不进入单程 registry**；扫描轮日志写明「采集端未接，本轮跳过 N 条多程航线」。
+  · 门禁：`tests/test_multicity_model.py` 12 passed（2026-11-03 09:00；含 segments 派生/非法拒绝/多程不进 registry/普通航线仍注册）。
+  · 矩阵 `multi_city` 仍 `""`，仍缺 `fetch_multi`、多程结果面、推送与配置 UI。
+
+- r933 多程数据模型第一层（2026-11-03，未接采集/UI）：
+  · 新增 `core/multicity.py`：2–4 段归一、`segments_key`、MC extra（`tripType="MC"`/`legs`/`totalBasis`）；legs 禁止任何价格字段，从形状上杜绝「两段单程相加冒充多程总价」。
+  · `PriceStorage` 新增 `itinerary_daily`（主键 platform+route_id+segments_key+depart_date；total_price + legs_json）与 `save_itinerary`/`itineraries`；拒绝非正总价、段价字段、depart_date 与首段不一致；**legs 必须与 segments 逐段 from/to/date 对上**（防把别的行程拼进同一总价）；单 O-D `flight_daily` 不混入多程。
+  · 新增 `tests/test_multicity_model.py` 11 条（归一/键/extra/存储 upsert/拒非法/不与 flight_daily 混写）；矩阵 `multi_city` 仍为 `""`，尚未接 `Route.segments`、fetch_multi、UI 与推送。
+  · 验证：定向 11 passed（含逐段一致性负控；修掉校验循环复用 `key` 变量覆盖返回键的缺陷）；全量非 UI **6161 passed / 19 skipped / 0 failed**（08:48，workers 8，webui/channels/main/pacing/storage/multicity 指纹前后一致）；UI **670/670**（07:51，webui 未变）；站点 `code:6c85a00f14c1`；align **25/25**（README 跟踪口径 **6169**，新测试文件尚未入库不计入）。
+
+- r932 起跑错峰按本轮实际渠道 + 健康页门禁条件等待（2026-11-03）：
+  · 真实现偏差：`stagger_offset` 固定按 5 家浏览器分步、App 走 crc32 哈希；配置页提示却写「按本轮实际渠道均分」。
+  · 修法：`stagger_offset(plat, base, channels=None)`；主循环把 `get_crawlers(plats)` 得到的本轮渠道名传入 `_timed_fetch → _stagger_wait`，App 也拿到确定性偏移；不在本轮集合内的渠道保留哈希兜底。
+  · 健康页 UI 测试把固定 900ms 改为 `wait_for_selector('#hbody .hcells', 15s)`：独立审计实测 300ms 即出 10 格，负载下会晚于 900ms；这是门禁等待问题，不是产品缺陷。
+  · 验证：定向 pacing + 两条旧红 **26 passed**；全量非 UI **6150 passed / 19 skipped / 0 failed**（08:15，workers 8，webui/channels/main/pacing 指纹前后一致）；UI **670/670**（07:51，零 JS 错误）；站点 `code:6c85a00f14c1`；`release_align_check --local` **25/25**（README 跟踪口径 **6169**）。
 
 - r931 能力矩阵窄档冻结首列 + 滑动提示（2026-11-03）：
   · 真渲染实测（390 视口，demo 当前树）：`.dimwrap` 内容宽 698 / 可视 324；滚到最右后维度首列 `left=-346`，读者只剩一排勾叉；屏上没有任何「可横滑」提示。
