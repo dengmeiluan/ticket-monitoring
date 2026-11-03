@@ -123,6 +123,10 @@ Do not push, retag, publish or rewrite shared history without explicit user auth
 > 只读核对，不包含当前工作树未发布的 10 渠道改动。旧 §6.1/§6.2 的
 > 「CI 红 / Pages 旧戳 / ghcr 5cff7f5」是 2026-10-31 预跑时的历史问题，
 > 本发布轮已全部关闭；不要把那段当现状。
+>
+> **2026-11-03 09:54 更新**：tag 已重指 `e65cee1`（多 4 个提交），
+> ghcr `latest` = `sha-e65cee1` digest `5fb025bb…`（与 Release 同 digest）；
+> 下表是 09:20 时点记录，`ab04c22` 现仅对应 live 树。
 
 | 项 | 实测（2026-11-03 09:20） |
 |---|---|
@@ -134,7 +138,7 @@ Do not push, retag, publish or rewrite shared history without explicit user auth
 
 **结论**：Release 的 tag、正文、四资产、CI、Pages 已同源；镜像 `latest` 跟随 HEAD，
 不再与 Release 源同 digest，对外说明必须区分 `latest` 与 `sha-ab04c22`。
-当前工作树另有 r933–r935（多程数据层/配置隔离/实际渠道错峰）未提交；Release `v1.0` → `ab04c22` 已发布，live 8765 已切到 `_release_ab04`（10 渠道，PID 47952）。
+当前工作树另有 r933–r935（多程数据层/配置隔离/实际渠道错峰）未提交；Release `v1.0` 当前 → `e65cee1`（首发 `ab04c22`），live 8765 已切到 `_release_ab04`（10 渠道，PID 47952）。
 
 ### 6.4 本地打包环境必须隔离（2026-11-03 实测）
 
