@@ -316,6 +316,33 @@ def test_matrix_freezes_dimension_column_on_narrow_scroll(server):
     assert out["lastLeft"] <= out["wrapRight"] and out["lastRight"] >= out["wrapLeft"], (
         "没有滚到最后一列：%r" % (out,))
 
+    # 反向：900 档表格放得下时不得出现“左右滑动”假提示。
+    with sync_playwright() as pw:
+        b = pw.chromium.launch(headless=True)
+        try:
+            pg = b.new_page(viewport={"width": 900, "height": 1100})
+            pg.goto("http://127.0.0.1:%d/#cfg" % server,
+                    wait_until="domcontentloaded", timeout=30000)
+            pg.wait_for_timeout(2200)
+            pg.evaluate("""()=>{const t=document.querySelector(
+                  '.cnav [data-tab=login],#cfgnav [data-tab=login]');
+                  if(t)t.click();}""")
+            pg.wait_for_timeout(2200)
+            wide = pg.evaluate("""()=>{
+              const w=document.getElementById('cfgDimMatrix');
+              const wrap=w&&w.querySelector('.dimwrap');
+              const hint=w&&w.querySelector('.dimscroll');
+              if(!wrap)return {err:'no wrap'};
+              return {overflow:wrap.scrollWidth-wrap.clientWidth,
+                      hintVisible:!!hint
+                        &&getComputedStyle(hint).display!=='none'};
+            }""")
+        finally:
+            b.close()
+    assert not wide.get("err"), wide
+    assert wide["overflow"] <= 2, "900 档不应横向溢出：%r" % (wide,)
+    assert not wide["hintVisible"], "没有溢出却显示「左右滑动」假提示：%r" % (wide,)
+
 
 def test_unsupported_cells_say_why_on_hover(server):
     """每个非 y 格子的悬停都要说清为什么（不是「渠道没这个产品」）。

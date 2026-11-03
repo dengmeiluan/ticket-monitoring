@@ -34,10 +34,10 @@
 
 10 家渠道（5 浏览器 + 5 App）× 7 个维度的能力矩阵**已从「只活在源码里」变成「界面上一张表」**，
 并修掉了「单程价冒充往返价」「同一件事两张表结论相反」「同一键写两遍、后者静默覆盖前值」三类诚实性缺陷。
-**2026-11-03 07:03 工作树实测**：全量非 UI **6147 passed / 19 skipped / 0 failed**（workers 8，产品代码指纹前后一致；含 r926 同程 PC 国际往返、r927 途牛 H5 国际往返、r930 多程解析器与 r931 矩阵窄档门禁）；
+**2026-11-03 07:41 工作树实测**：全量非 UI **6149 passed / 19 skipped / 0 failed**（workers 8，产品代码指纹前后一致；含 r926 同程 PC 国际往返、r927 途牛 H5 国际往返、r930 多程解析器、r931 矩阵窄档，以及 Release 正文 8 条门禁——采集面/往返范围逐行与矩阵同源）；
 能力线 9 文件 **63 passed**（含 r903/r905）、`python -m core.channel_contract --strict` **10 家 × 11 轴无缺口**、
-UI **670/670**（2026-11-03 07:08 全量复跑，零 JS 错误；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、同程 App round_trip=国际；r901 新增 390 档冻结首列真渲染；含 r905 行内自检按钮，另由 r905 真渲染 + r640 四档行高覆盖）、
-`release_align_check.py --local` **25/25 PASS**、站点戳 `code:11ff21f4da19` = 当前 `webui.py`。
+UI **670/670**（2026-11-03 07:25 全量复跑，零 JS 错误；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、同程 App round_trip=国际；r901 新增 390 档冻结首列 + 900 档无假提示真渲染；含 r905 行内自检按钮，另由 r905 真渲染 + r640 四档行高覆盖）、
+`release_align_check.py --local` **25/25 PASS**、站点戳 `code:b5ebddf01b2d` = 当前 `webui.py`。
 **2026-11-03 在线复核（发布树 0d4b058 / v1.5.307）**：tag `v1.0` → `0d4b058`；Release 正文
 v1.5.307 + 源码 0d4b058；四资产 updated 2026-11-02T08:07Z，SHA256SUMS 与 API digest **4/4 相等**；
 CI/release-build/Pages 均在 0d4b058 success；ghcr `latest` == `sha-0d4b058`（同 digest，匿名 manifest 200）；

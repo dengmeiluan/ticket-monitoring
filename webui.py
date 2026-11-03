@@ -2311,8 +2311,8 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
    首列背景必须不透明——上面的扁平规则刻意把 th 设为 transparent。 */
 .dimscroll{display:none;font-size:10.5px;color:var(--r-ink-3);
  text-align:right;margin:-2px 0 4px;letter-spacing:.2px}
+.dimscroll.on{display:block}
 @media (max-width:760px){
- .dimscroll{display:block}
  .dimtbl thead th:first-child,.dimtbl tbody tr>th:not([colspan]){
   position:sticky;left:0;z-index:2;background:var(--card)!important;
   box-shadow:1px 0 0 var(--r-hair)!important}
@@ -18095,7 +18095,17 @@ function renderDimMatrix(){
   +surfHead+rows+'</tbody></table></div>'
   +'<div class="dimlegend"><span>'+dimCell('y')+' 已验证出数</span><span>'+dimCell('n')
   +' 渠道无此能力/停服</span><span>'+dimCell('')+' 产品支持但采集端未实现或当前风控未出数</span></div>'+gapHtml;
+ dimScrollHint();
 }
+/* 提示只在真的溢出时出现：760 档表格恰好放得下，固定按媒体查询显示
+   会给出「左右滑动」的假提示。 */
+function dimScrollHint(){
+ const w=$('cfgDimMatrix');if(!w)return;
+ const wrap=w.querySelector('.dimwrap'),hint=w.querySelector('.dimscroll');
+ if(!wrap||!hint)return;
+ hint.classList.toggle('on',wrap.scrollWidth>wrap.clientWidth+2);
+}
+window.addEventListener('resize',()=>{try{dimScrollHint()}catch(_){}});
 async function loadChannelDims(){
  const box=$('cfgDimMatrix');
  try{
@@ -20923,7 +20933,7 @@ function buildForm(){if(!CFG)return;let h='',gh='';
   +glcell('快层 TTL','glbFast','GLB.fast_ttl_min=Math.max(5,Math.min(1440,parseInt(this.value)||15))',esc(GLB.fast_ttl_min==null?15:GLB.fast_ttl_min),'贴近心理价位的查询多久抓一次；越短越灵敏、请求越多',null,'分钟')
   +glcell('慢层 TTL','glbSlow','GLB.slow_ttl_min=Math.max(5,Math.min(1440,parseInt(this.value)||120))',esc(GLB.slow_ttl_min==null?120:GLB.slow_ttl_min),'远离阈值的查询降频到此间隔（自动钳到 ≥ 快层）',null,'分钟')
   +glcell('邻近比','glbNear','GLB.near_ratio=Math.max(0,Math.min(1,parseFloat(this.value)||0))',esc(GLB.near_ratio==null?0.15:GLB.near_ratio),'|现价−阈值|÷阈值 ≤ 此值即算「贴近」，进快层；0=完全相等才算',null,'0.15')
-  +glcell('起跑错峰','glbStg','GLB.stagger_seconds=Math.max(0,Math.min(120,parseInt(this.value)||0))',esc(GLB.stagger_seconds||0),'同轮各渠道起跑拉开的秒数（5 家均分），避免同一秒齐发',null,'秒')
+  +glcell('起跑错峰','glbStg','GLB.stagger_seconds=Math.max(0,Math.min(120,parseInt(this.value)||0))',esc(GLB.stagger_seconds||0),'同轮各渠道起跑拉开的秒数（按本轮实际渠道均分），避免同一秒齐发',null,'秒')
   +glcell('最小间隔','glbGap','GLB.min_gap_s=Math.max(0,Math.min(300,parseFloat(this.value)||0))',esc(GLB.min_gap_s||0),'同一渠道两次请求的最小间隔；0=不限（去哪儿内部另有 8s）',null,'秒')
   +glcell('每分钟上限','glbRpm','GLB.per_minute=Math.max(0,Math.min(600,parseInt(this.value)||0))',esc(GLB.per_minute||0),'同一渠道每分钟最多几次；0=不限（滑动窗口，不对齐整分钟）',null,'次')
   +glcell('熔断','glbBrk','GLB.breaker_enabled=this.checked',GLB.breaker_enabled!==false,'命中 429/风控/验证后停手冷却，而不是换姿势重试','check')
@@ -29325,7 +29335,7 @@ def _srx_health(frm, to, date, db=None):
 
 
 def _srx_links(frm, to, date):
-    """五渠道真实落地页链接：与爬虫取数路径同源；本态不供返回空串。"""
+    """各渠道真实落地页链接：与爬虫取数路径同源；本态不供返回空串。"""
     from core.alerter import Alerter as _A
     fc, fn = _probe_city_code(frm)
     tc, tn = _probe_city_code(to)

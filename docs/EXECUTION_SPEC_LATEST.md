@@ -30,7 +30,7 @@
 
 - **代码树**：HEAD `0d4b058`；工作树含 **10 渠道（5 浏览器 + 5 App）+ 国际往返/日历/多程解析等** 未提交改动；
   live 8765 仍是 **7 渠道旧副本**（`_release_final_72d`），工作树 10 渠道尚未部署。
-- **门禁**：全量非 UI **6147 passed / 19 skipped / 0 failed**（2026-11-03 07:03，workers 8，产品代码指纹前后一致；含 r926/r927 国际往返、r929 正文源门禁、r930 多程解析器与 r931 矩阵窄档门禁）；
+- **门禁**：全量非 UI **6149 passed / 19 skipped / 0 failed**（2026-11-03 07:41，workers 8，产品代码指纹前后一致；含 r926/r927 国际往返、r929 正文源门禁（8 条，含采集面/往返范围逐行）、r930 多程解析器与 r931 矩阵窄档门禁）；
   UI **670/670**（2026-11-03 05:54 全量复跑，零 JS 错误；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、同程 App round_trip=国际；r905 新增的行内自检按钮另由
   `test_r905` 真渲染 + `test_r640` 三档行高覆盖）；能力线 9 文件 **63 passed**；`channel_contract --strict`
   **10 家 × 11 轴无缺口**；`release_align_check --local` **25/25**；站点戳 `code:b7b27668ea4d`。
@@ -3030,7 +3030,7 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · **端到端复验（2026-11-03 04:24）**：同程 App `fetch("SHA","NRT",["2026-11-17"],ret_date="2026-11-22")` 真机 **9 条组合、最低 ¥2420**（GK036 02:20→06:20；返程 MM877 02:15 +¥0；`retLoaded=true`，20.9s）；行级 `tripType=RT`、`backDate`、`totalBasis=page_roundtrip_total` 齐全，path `往返 ok rows=9`。真机页脚措辞有两种（`已选 21:10 出发 春秋航空` / `已选 02:20- 06:20 捷星航空`），且返程栏有 ~54px 宽的紧凑时刻副本；解析器按宽度≥80px 排除副本，并放宽页脚锁定。返程栏异步渲染，等待上限 30s；等不到仍按去程行总价落账但标 `retLoaded=false`。
   · 新增第二个真实夹具 `tongcheng_roundtrip_live.xml`（现网页 9 去程/8 返程）与 `retLoaded=false` 离线用例；App 解析/采集 **32 passed**。
   · **国内往返负结论（2026-11-03 真机）**：国内档可填返程位，点日期打开的也是同一范围日历（页脚 去程 11-17/返程 11-22/往返总价 ￥785），确认后表单双日期成立；但查询落**单程去程列表**（「已选 09:15」、南航 ¥774 起、无返程栏/无往返总价）。拿不到渠道自算总价 → 不产出、不把单程列表价当往返；`DIMENSION_SCOPE` 保持「仅国际」，采集端不接国内往返。
-  · 最终复验：全量非 UI **6147 passed / 19 skipped / 0 failed**（07:03，当前代码树，含 r926/r927、Release 正文源门禁、多程解析器与 r931 矩阵窄档门禁）；UI **670/670**（07:08，零 JS 错误；r901 含矩阵窄档真渲染）。
+  · 最终复验：全量非 UI **6149 passed / 19 skipped / 0 failed**（07:41，当前代码树，含 r926/r927、Release 正文源 8 条门禁、多程解析器与 r931 矩阵窄档门禁）；UI **670/670**（07:25，零 JS 错误；r901 含矩阵窄档真渲染）。
 
 - r928 同程 App 多程可行性负结论（2026-11-03）：
   · 真机「多程」档是两段表单（1 上海→北京 / 2 北京→上海，11-17/11-20，提示「2程以上须包含国际/中国港澳台城市」）。
@@ -3061,8 +3061,8 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
 
 - r931 能力矩阵窄档冻结首列 + 滑动提示（2026-11-03）：
   · 真渲染实测（390 视口，demo 当前树）：`.dimwrap` 内容宽 698 / 可视 324；滚到最右后维度首列 `left=-346`，读者只剩一排勾叉；屏上没有任何「可横滑」提示。
-  · 修法：≤760px 时 `thead th:first-child` / `tbody tr>th:not([colspan])` `position:sticky;left:0`，首列定宽 112px、不透明白底 + 右发丝线；`tbody th em` 允许换行；矩阵上方新增「左右滑动查看全部渠道 →」提示（桌面隐藏）。1512 桌面布局不受影响。
-  · 门禁：`test_r901_capability_matrix_rendered.py` 新增 `test_matrix_freezes_dimension_column_on_narrow_scroll`——真实滚动后按 rect 断言首列仍在屏、提示可见、最后一列可达；去掉 sticky 时首列变负坐标即红。定向 r901+r822 **12 passed**（07:00）；全量非 UI **6147 passed / 19 skipped / 0 failed**（07:03，workers 8，webui/channels 指纹前后一致）；UI **670/670**（07:08，零 JS 错误）；站点重烘 `code:11ff21f4da19`；`release_align_check --local` **25/25**（README 跟踪口径 **5976**）。
+  · 修法：≤760px 时 `thead th:first-child` / `tbody tr>th:not([colspan])` `position:sticky;left:0`，首列定宽 112px、不透明白底 + 右发丝线；`tbody th em` 允许换行；矩阵上方新增「左右滑动查看全部渠道 →」提示。提示按 `scrollWidth>clientWidth+2` 显隐（760 档放得下时不出现假提示），resize 时重算。1512 桌面布局不受影响。
+  · 门禁：`test_r901_capability_matrix_rendered.py` 新增 `test_matrix_freezes_dimension_column_on_narrow_scroll`——真实滚动后按 rect 断言首列仍在屏、提示可见、最后一列可达；**反向断言 900 档无溢出时不得出现提示**；去掉 sticky 时首列变负坐标即红。定向 r901+r822 **12 passed**（07:18，含静态站）；全量非 UI **6147 passed / 19 skipped / 0 failed**（07:03，冻结首列版）；其后补 Release 正文逐行门禁 2 条，全量复跑 **6149 passed / 19 skipped / 0 failed**（07:41，workers 8，webui/channels 指纹前后一致）；UI **670/670**（07:25，零 JS 错误）；站点重烘 `code:b5ebddf01b2d`；`release_align_check --local` **25/25**（README 跟踪口径 **6168**）。
 
 - r930 去哪儿 App 两程多程解析器（2026-11-03，未接监控）：
   · 新增 `crawlers/app_qunar_multi.py`：`parse_multi_city`/`is_multi_city_page`。左列第一程价=**默认第二程(+¥0)组合的整单基准总价**（选 +¥150 后左列仍 ¥5069）；页脚 CountUpPrice +「两程含税总价」= **当前组合总价**（¥5219）；第二程 `+¥N` 只存 `surcharge`，不落 `price`；三程及以上未验返回 None，不猜。
@@ -3073,6 +3073,6 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
 - r929 Release 正文源与发版防漂移门禁（2026-11-03）：
   · 线上 v1.5.307 正文已确认是「初版（滚动更新）」结构，但仍写 7 家/7×7/7×11；当前 10 渠道 WIP 发布时不能直接沿用。
   · 新增 canonical 正文源 `docs/RELEASE_BODY.md`：10 家渠道（5 浏览器 + 5 App）× 7 维度 × 11 轴、补齐三个新 App、往返范围按 `DIMENSION_SCOPE`、多程如实写「有入口/采集未实现/矩阵 ""/单 O-D 模型待设计」；版本/SHA/测试数/资产全用 `{{…}}` 占位符，模板不残留旧 SHA/资产值。
-  · 新增 `tests/test_release_body_source.py` 门禁，且**每条都带负控**：改回「7 家渠道」、删渠道/范围短标签、把多程写成「已支持」、注入 `0d4b058`/去掉占位符——都会红；正样本 6 passed（2026-11-03 06:16 起；r931 轮补 `{{UI_TOTAL}}` 与全占位符必填负控）；用线上真实 7 家正文做负控，四组判据分别报出 **7/4/1/10** 条错误（渠道数/漏 3 个 App+同程范围/多程未写空值/占位符缺失），证明门禁对真实旧正文有效。`LIVE_PROMOTION_RUNBOOK §4.5` 已指向该正文源，发布后仍要求 API 回读 name/body/tag/assets 一致。
+  · 新增 `tests/test_release_body_source.py` 门禁，且**每条都带负控**：改回「7 家渠道」、删渠道/范围短标签、把多程写成「已支持」、注入 `0d4b058`/去掉占位符——都会红；正样本 8 passed（2026-11-03 06:16 起；r931 轮补 `{{UI_TOTAL}}`、全占位符必填、**采集面逐行**与**往返范围逐行**门禁及负控：停服/待验证原因删除、同程 App 仅国际改成全范围都会红）；用线上真实 7 家正文做负控，四组判据分别报出 **7/4/1/10** 条错误（渠道数/漏 3 个 App+同程范围/多程未写空值/占位符缺失），证明门禁对真实旧正文有效。`LIVE_PROMOTION_RUNBOOK §4.5` 已指向该正文源，发布后仍要求 API 回读 name/body/tag/assets 一致。
   · 候选包复核：`_scratch/ticket-monitoring-win64-candidate-root.zip` SHA256 = `3c472292…a8a8a4`（与 Runbook 一致），解压后 `TicketMonitor.exe --version` = **1.5.307**、exit 0；临时目录已清理。
   · 终树门禁：全量非 UI **6132 passed / 19 skipped / 0 failed**（06:11，产品代码指纹前后一致）；UI **670/670**（05:53）；docs/EOL **103 passed**；`release_align_check --local` **25/25**。
