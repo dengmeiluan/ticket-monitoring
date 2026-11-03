@@ -493,6 +493,36 @@ def _paths_payload(hours=24, demo=False):
         return {"ok": False, "err": str(e)[:160]}
 
 
+def _normalize_mc_users(users):
+    """保存配置前归一多程航线：2–4 段校验 + 首/末段与日期派生。
+
+    配置页与手改 yaml 共用这一道：非法段在这里拒绝（400），不留到
+    下一轮 build_routes 才炸；保存成功后 `/api/config` 回读的 from/to
+    与 segments 一致，界面标题不再依赖另一份单 O-D 字段。
+    """
+    from core.multicity import MultiCityError, normalize_segments
+    for u in users or []:
+        for r in (u.get("routes") or []):
+            if "segments" not in r:
+                continue
+            segs = r.get("segments")
+            if not segs:
+                r.pop("segments", None)
+                continue
+            try:
+                segs = normalize_segments(segs)
+            except MultiCityError as e:
+                raise ValueError("用户「%s」的多程行程不合法：%s"
+                                 % (u.get("name") or "", e))
+            r["segments"] = segs
+            r["from"] = segs[0]["from"]
+            r["to"] = segs[-1]["to"]
+            r["dates"] = list(dict.fromkeys(s["date"] for s in segs))
+            r["from_name"] = str(r.get("from_name") or r["from"])
+            r["to_name"] = str(r.get("to_name") or r["to"])
+    return users
+
+
 def _multicity_payload(route_id="", segments_key="", limit=200,
                        demo=None, db_path=""):
     """多程整单总价只读视图（route_id / segments_key / limit）。
@@ -1025,7 +1055,15 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  .monroute-foot .sp{margin-left:auto}
  .monroute-foot button{height:28px;padding:0 9px;border:1px solid var(--line2);border-radius:var(--r3);background:var(--card);color:var(--tx2);font-size:10px;cursor:pointer}
  .monroute-foot button:hover{border-color:var(--blue);color:var(--blue)}
- @media(max-width:900px){.monroute{grid-template-columns:1fr;grid-template-areas:"head" "main" "svg" "foot";gap:7px}}
+ /* 多程卡片复用航线卡骨架，右侧位放段/整单说明（没有走势，不画空图） */
+ .monroute.mcm{grid-template-columns:minmax(160px,.9fr) minmax(180px,1.2fr);
+  grid-template-areas:"head head" "main side" "foot foot"}
+ .mcm .mcside{grid-area:side;display:flex;flex-direction:column;gap:4px;
+  justify-content:center;font-size:10px;color:var(--mut);line-height:1.5;min-width:0}
+ .mcm .mcside b{font-family:var(--num);font-size:12px;color:var(--tx2)}
+ .mcm .mchit{color:var(--ok-txt);font-weight:700}
+ @media(max-width:900px){.monroute{grid-template-columns:1fr;grid-template-areas:"head" "main" "svg" "foot";gap:7px}
+  .monroute.mcm{grid-template-columns:1fr;grid-template-areas:"head" "main" "side" "foot"}}
  @media(max-width:760px){.monroute-list{padding:8px}}
  /* ===== r352 关注航班监控台（WATCH STUDIO）：航线清单 → 分析画布 → 航班名册 =====
     与航线走势同等级：真实采集点、目标跑道、渠道覆盖、可溯源；不补点、不平滑。 */
@@ -1525,6 +1563,25 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  .rthead .rfltbadge{flex:none}
  .rthead .chev{margin-left:auto;color:var(--mut);font-size:11px;transition:transform .18s}
  .rthead[aria-expanded="false"] .chev{transform:rotate(-90deg)}
+ /* 多程行程卡（rmc）：段行是唯一的行程编辑器；标题链与大卡头同字阶 */
+ .rmc .mcchain{letter-spacing:0}
+ .mcsegs{display:flex;flex-direction:column;gap:6px;width:100%;min-width:0}
+ .mcseg{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+ .mcseg .mcno{flex:none;width:42px;font-size:11px;color:var(--mut);
+   font-family:var(--num)}
+ .mcseg input[type=text]{width:64px;text-align:center;text-transform:uppercase;
+   font-family:var(--num);letter-spacing:.5px}
+ .mcseg input[type=date]{width:150px;padding:0 8px}
+ .mcseg .ropbtn{height:28px}
+ .mcadd{margin-top:8px}
+ .maddr{margin-left:8px}
+ @media(max-width:540px){
+  .rmc .mcrow{flex-direction:column;align-items:stretch;gap:4px}
+  .rmc .mcrow .slab{min-width:0;overflow:visible}
+  .rmc .mcrow .sctl{max-width:none;width:100%}
+  .mcseg .mcno{width:34px}
+  .mcseg input[type=text]{width:58px}
+  .mcseg input[type=date]{width:132px}}
  .srow .sctl{flex:none;display:flex;align-items:center;gap:8px;max-width:72%;flex-wrap:wrap}
  .srow .sctl[style*="flex:1"]{flex:1;max-width:none}
  .srow .sctl input{max-width:100%}
@@ -10276,7 +10333,8 @@ html[data-theme="dark"] #opscard .opsbtns>button:first-child{color:#0b1220!impor
 <div class="ucard" id="monRouteCard" style="display:none"><div class="uhead">
  <span style="display:flex;align-items:center;gap:9px;flex-wrap:wrap"><span class="seclab inline"><span class="no">01</span><span class="zh">关注航线</span><span class="en">ROUTES</span></span><span class="muted" id="monRouteMeta"></span></span>
  <span class="muted"><button class="btn2" type="button" onclick="switchView('cfg');showCfgPanel('users')">配置关注航线</button></span></div>
- <div class="monroute-list" id="monRouteList"></div></div>
+ <div class="monroute-list" id="monRouteList"></div>
+ <div class="monroute-list" id="monMCList"></div></div>
 
 <div class="ucard" id="monWatchCard" style="display:none"><div class="uhead">
  <span style="display:flex;align-items:center;gap:9px;flex-wrap:wrap"><span class="seclab inline"><span class="no">02</span><span class="zh">关注航班</span><span class="en">WATCH</span></span><span class="muted" id="monWatchMeta"></span></span>
@@ -12664,12 +12722,40 @@ function togChart(i){if(!S||!S.users.length)return;
    +'<div class="monroute-svg">'+(spark||'<div class="empty">近 7 天没有该航线的真实采集点；完成扫描后再看。</div>')+'</div>'
    +'<div class="monroute-foot"><span>'+dot(0)+dot(1)+'</span><span class="sp"></span><button type="button" data-mroute="'+i+'">查看关注航线走势</button></div></article>';
  }
+ function monMCCard(m,i){
+  const l=m.latest,p=(l&&Number(l.price)>0)?Number(l.price):null;
+  const hit=p!=null&&Number(m.threshold)>0&&p<=Number(m.threshold);
+  const legs=((l&&l.legs)||[]).map(x=>String(x.flight_no||'')+(
+   x.dep?(' '+x.dep+(x.arr?'-'+x.arr:'')):'')).filter(Boolean).slice(0,3).join(' · ');
+  let why='';
+  if(!m.supported)why='该用户未勾选携程——多程仅携程 PC 可采';
+  else if(m.expired)why='首段已过期，已跳过采集';
+  else if(!l)why='尚无多程整单行——等待下一轮采集';
+  const side=why?('<span>'+he(why)+'</span>')
+   :('<b>'+he(m.segments.length+' 段')+'</b><span>'+he(legs||'渠道未回传班级明细')+'</span>');
+  return '<article class="monroute mcm"><div class="monroute-h"><b>'+he(m.label||m.from+'→'+m.to)+'</b>'
+   +'<span>'+he((m.dates||[]).slice(0,3).join(' / '))+'</span></div>'
+   +'<div class="monroute-main"><span>最近整单总价'+(hit?' <b class="mchit">· 已达标</b>':'')+'</span>'
+   +'<b>'+(p!=null?'¥'+he(p):'—')+'</b>'
+   +'<span class="th">'+(Number(m.threshold)>0?('整单线 ≤ ¥'+he(m.threshold)):'未设整单线')
+   +(l&&l.platform?(' · '+he(l.platform)):'')+'</span></div>'
+   +'<div class="mcside">'+side+'</div>'
+   +'<div class="monroute-foot"><span>'+(l&&l.fetched_at?('最近采于 '+he(l.fetched_at)):'整单总价只取渠道页面，不由段价相加')
+   +'</span><span class="sp"></span><button type="button" data-mc="'+i+'" onclick="switchView(\'cfg\');showCfgPanel(\'users\')">配置多程行程</button></div></article>';
+ }
  function renderMonRoutes(){
-  const u=(S&&S.users&&S.users[U])||null,routes=(u&&u.routesArr)||[],card=$('monRouteCard'),box=$('monRouteList'),meta=$('monRouteMeta');
+  const u=(S&&S.users&&S.users[U])||null,routes=(u&&u.routesArr)||[],
+        mc=(u&&u.mcRoutes)||[],card=$('monRouteCard'),box=$('monRouteList'),
+        mbox=$('monMCList'),meta=$('monRouteMeta');
   if(!card||!box)return;
-  card.style.display=routes.length?'':'none';
-  if(meta)meta.textContent=routes.length?(routes.length+' 条关注航线 · 阈值/日期/渠道在配置中心维护'):'';
+  card.style.display=(routes.length||mc.length)?'':'none';
+  if(meta){const ps=[];if(routes.length)ps.push(routes.length+' 条关注航线');
+   if(mc.length)ps.push(mc.length+' 条多程行程');
+   meta.textContent=ps.length?(ps.join(' · ')+' · 阈值/日期/渠道在配置中心维护'):'';}
+  box.style.display=routes.length?'':'none';
   box.innerHTML=routes.map(monRouteCard).join('');
+  if(mbox){mbox.style.display=mc.length?'':'none';
+   mbox.innerHTML=mc.length?('<div class="subsec" style="grid-column:1/-1">多程行程 · 整单总价（'+mc.length+'）</div>'+mc.map(monMCCard).join('')):'';}
  }
  function monRouteOpen(i){
   const u=(S&&S.users&&S.users[U])||null;if(!u||!u.routesArr||!u.routesArr[i])return;
@@ -19195,9 +19281,40 @@ function _fmtSize(n){n=Number(n)||0;
 function _todayISO(){const d=new Date();
  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'
   +String(d.getDate()).padStart(2,'0');}
+function _isMC(r){return !!(r&&Array.isArray(r.segments)&&r.segments.length);}
+function _mcSegs(r){return (r&&Array.isArray(r.segments))?r.segments:[];}
+function _mcEnds(r){const s=_mcSegs(r);return {
+ from:s.length?String(s[0].from||'').toUpperCase():'',
+ to:s.length?String(s[s.length-1].to||'').toUpperCase():''};}
+function _rEnds(r){const e=_isMC(r)?_mcEnds(r):{from:r.from,to:r.to};
+ return {from:String(e.from||'').toUpperCase(),
+         to:String(e.to||'').toUpperCase()};}
+function _routeDates(r){if(!_isMC(r))return (r.dates||[]);
+ return [...new Set(_mcSegs(r).map(s=>String(s.date||'')).filter(Boolean))];}
+function _mcCodeName(c){c=String(c||'').toUpperCase();
+ if(!/^[A-Z]{3}$/.test(c))return c;
+ const n=Object.keys(CITY).find(k=>CITY[k]===c);
+ return n||((INTL&&INTL.map&&INTL.map[c])||c);}
+function _mcChain(r){const s=_mcSegs(r);if(!s.length)return '';
+ let out=String(s[0].from||'');
+ s.forEach(x=>{out+='→'+String(x.to||'');});
+ return out;}
+function _mcNames(r){const s=_mcSegs(r);if(!s.length)return '';
+ return _mcCodeName(s[0].from)+s.map(x=>'→'+_mcCodeName(x.to)).join('');}
+function _mcIssues(r){const out=[],s=_mcSegs(r);
+ if(s.length<2||s.length>4)out.push('多程需 2–4 段');
+ s.forEach((x,k)=>{const tag='第'+(k+1)+'段';
+  if(!/^[A-Z]{3}$/.test(String(x.from||'')))out.push(tag+'出发码');
+  if(!/^[A-Z]{3}$/.test(String(x.to||'')))out.push(tag+'到达码');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(x.date||'')))out.push(tag+'日期');});
+ if(Number(r.alert_threshold)<=0)out.push('未设整单心理价');
+ return out;}
 function _routeIssues(r){/* 启用航线的配置完整度（停用草稿不计入，避免
-   复制后未改完的草稿把概览「待完善」长期点亮） */
- if(!r||r.enabled===false)return [];
+   复制后未改完的草稿把概览「待完善」长期点亮）；多程草稿例外——
+   它的段行必须填完才能保存，提示要在草稿态就可见。 */
+ if(!r)return [];
+ if(_isMC(r))return _mcIssues(r);
+ if(r.enabled===false)return [];
  const out=[];
  if(!r.from||!r.to)out.push('城市未配齐');
  const ds=(r.dates||[]).slice().sort();
@@ -19216,7 +19333,7 @@ function _cfgStats(){const st={users:0,routes:0,on:0,off:0,dates:0,
  (CFG||[]).forEach(u=>{st.users++;
   (u.routes||[]).forEach(r=>{st.routes++;
    if(r.enabled===false)st.off++;else st.on++;
-   (r.dates||[]).forEach(d=>{if(d){st.dates++;ds.push(d);}});
+   _routeDates(r).forEach(d=>{if(d){st.dates++;ds.push(d);}});
    if(r.enabled!==false&&_routeIssues(r).length){st.issue++;
     st.issueRoutes.push(r);}});});
  ds.sort();st.dateFirst=ds[0]||'';st.dateLast=ds[ds.length-1]||'';
@@ -20814,6 +20931,7 @@ function buildForm(){if(!CFG)return;let h='',gh='';
         _dis=(u.routes||[]).length-_en;
   h+=glab('C','关注航线','','<span id="csum-'+i+'">'+_en+' 条监控中'+(_dis?' · '+_dis+' 条已停用':'')+'</span>');
   (u.routes||[]).forEach((r,j)=>{
+   if(_isMC(r)){h+=mcCardHTML(i,j,r);return;}
    const _ri=_routeIssues(r),_fn=_rfCount(r);
    h+=`<div class="rline${r.enabled===false?' off':''}${_ri.length?' needswork':''}" data-rk="${i}:${j}">
     <div class="rhead" role="button" onclick="foldRoute(this)"><span class="rtcode">${esc(r.from||'')}${_rtOn(r)?'⇄':'→'}${esc(r.to||'')}</span>
@@ -20869,7 +20987,8 @@ function buildForm(){if(!CFG)return;let h='',gh='';
       return `<span class="chip schip${on?' on':''}" title="${lo?lo+'–'+hi:'不限'}" onclick="quickArr(${i},${j},this,'${lo}','${hi}')">${n}</span>`;}).join('')
     +`<input type="time" value="${esc(r.arr_time_min||'')}" onchange="setRoute(${i},${j},'arr_time_min',this.value);customArrWin(this)"><span class="sunit">→</span><input type="time" value="${esc(r.arr_time_max||'')}" onchange="setRoute(${i},${j},'arr_time_max',this.value);customArrWin(this)"></div></div>
    </div>`;});
-   h+=`<button class="btn2 addrbtn" onclick="addRoute(${i})">${ic('plus')} 添加关注航线</button>`;
+   h+=`<button class="btn2 addrbtn" onclick="addRoute(${i})">${ic('plus')} 添加关注航线</button>`
+    +`<button class="btn2 addrbtn maddr" onclick="addMCRoute(${i})">${ic('plus')} 添加多程行程</button>`;
   /* —— D 关注航班（用户卡内直接展开既有清单与表单，不弹层不跳走）—— */
   h+=glab('D','关注航班','','<span id="uwsum-'+i+'">按用户独立</span>');
   h+=`<div class="rline" style="background:var(--card);padding:0 2px 4px">
@@ -21660,6 +21779,13 @@ function _canon(cur,clean){
 function _rsum(r){/* 日期集摘要收拢（30 天快选曾把 30 个日期全列
    进卡头→挤压标题竖排断字）：≤3 全列；>3 首日+末日+计数（区间
    语义「10/19 起 30 天」按连续段折叠留给高级视图，卡头只保辨识） */
+ if(_isMC(r)){const s=_mcSegs(r),ds=_routeDates(r);
+  let out=esc(s.length+' 段');
+  if(ds.length)out+=' · '+esc(ds[0])
+   +(ds.length>1?' 至 '+esc(ds[ds.length-1]):'');
+  if(Number(r.alert_threshold)>0)
+   out+=' · 整单≤￥'+esc(r.alert_threshold);
+  return out;}
  const ds=r.dates||[];
  const dsum=ds.length<=3?ds.join('、')
   :(ds.length>3?ds[0]+' 起 '+ds.length+' 天（至 '+ds[ds.length-1]+'）':'');
@@ -21691,7 +21817,8 @@ function cfgScopeApply(){/* 过滤 .rline 卡片：scope=dom/intl + status=on/of
   const rk=rl.dataset.rk.split(':');
   const r=(CFG[rk[0]]||{}).routes?CFG[rk[0]].routes[rk[1]]:null;
   if(!r)return;_total++;
-  const intl=isIntlCode(r.from)||isIntlCode(r.to);
+  const _e=_rEnds(r);
+  const intl=isIntlCode(_e.from)||isIntlCode(_e.to);
   const scopeOn=CFGS==='all'||(CFGS==='intl'?intl:!intl);
   const issues=_routeIssues(r);
   const stOn=CFGST==='all'||(CFGST==='on'?r.enabled!==false
@@ -21752,13 +21879,17 @@ function syncRouteHead(i,j){
  const r=CFG[i].routes[j];
  const rl=document.querySelector('.rline[data-rk="'+i+':'+j+'"]');
  if(!rl)return;
- const rc=rl.querySelector('.rtcode');if(rc)rc.textContent=(r.from||'')+(_rtOn(r)?'⇄':'→')+(r.to||'');
- const ri=rl.querySelector('.rintl');if(ri)ri.style.display=((isIntlCode(r.from)||isIntlCode(r.to))?'':'none');
+ const _mc=_isMC(r),_e=_rEnds(r);
+ const rc=rl.querySelector('.rtcode');if(rc)rc.textContent=_mc
+  ?(_mcChain(r)||'多程')
+  :((r.from||'')+(_rtOn(r)?'⇄':'→')+(r.to||''));
+ const ri=rl.querySelector('.rintl');if(ri)ri.style.display=((isIntlCode(_e.from)||isIntlCode(_e.to))?'':'none');
  const rr=rl.querySelector('.rrt');if(rr){const _n=_rdsLen(r);
-  rr.style.display=(_rtOn(r)?'':'none');
+  rr.style.display=(!_mc&&_rtOn(r)?'':'none');
   rr.textContent='🔁 往返票'+(_n>1?'×'+_n:'');}
- const nm=rl.querySelector('.rhead b');if(nm)nm.textContent=(r.from_name||'')
-  +(_rtOn(r)?' ⇄ ':' → ')+(r.to_name||'');   /* 往返票双向形态（用户建议：上海 ⇄ 海口比单向箭头更达意） */
+ const nm=rl.querySelector('.rhead b');if(nm)nm.textContent=_mc
+  ?(_mcNames(r)||'多程行程')
+  :((r.from_name||'')+(_rtOn(r)?' ⇄ ':' → ')+(r.to_name||''));   /* 往返票双向形态（用户建议：上海 ⇄ 海口比单向箭头更达意） */
  const sm=rl.querySelector('.rhead .muted');if(sm)sm.innerHTML=_rsum(r);
  syncFilterHead(i,j);}
 /* 用户卡头+分区头摘要随行刷新单源（r324 穷举审计 C1-C6，与
@@ -22272,6 +22403,69 @@ function addRoute(i){CFG[i].routes.push({from:'SHA',from_name:'上海',to:'HAK',
 function flashEl(el){if(!el)return;
  el.scrollIntoView({block:'start',behavior:'smooth'});
  el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1500);}
+/* 多程行程（2–4 段）：独立卡片，不套单 O-D 的筛选/往返语义。
+   整单总价只认渠道页面自报；段行只放身份与日期，没有任何段价。 */
+function mcCardHTML(i,j,r){
+ const u=CFG[i]||{},s=_mcSegs(r),_iss=_routeIssues(r);
+ const _e=_rEnds(r),_hasCtrip=(u.platforms||[]).includes('ctrip');
+ return `<div class="rline rmc${r.enabled===false?' off':''}${_iss.length?' needswork':''}" data-rk="${i}:${j}">
+  <div class="rhead" role="button" onclick="foldRoute(this)"><span class="rtcode mcchain">${esc(_mcChain(r)||'多程')}</span>
+   <b>${esc(_mcNames(r)||'填写 2–4 段行程')}</b>
+   <span class="rintl" style="display:${(isIntlCode(_e.from)||isIntlCode(_e.to))?'':'none'}" title="国际航线：按城市码自动判定（任一端在大陆码集外即国际）">国际</span>
+   <span class="rbadge">多程</span>${r.enabled===false?'<span class="rbadge">已停用</span>':''}
+   ${_iss.length?`<span class="rneed" title="${esc(_iss.join('、'))}">待完善 · ${esc(_iss[0])}</span>`:''}
+   <span class="muted">${_rsum(r)}</span><span class="chev open">▾</span>
+   <span class="rop" onclick="event.stopPropagation()">
+    <input type="checkbox" class="switch" title="启用/停用该行程：停用保留全部配置，调度跳过，随时可恢复" ${r.enabled===false?'':'checked'} onchange="setRouteEnabled(${i},${j},this.checked)">
+    <span class="ractions">
+     <button class="ropbtn" title="复制该多程行程全部配置（默认停用）" onclick="copyRoute(${i},${j},this)">${ic('copy')} 复制</button>
+     <button class="danger" onclick="delRoute(${i},${j},this)">${ic('trash')} 删除</button>
+    </span></span></div>
+  <div class="srow mcrow"><div class="slab"><b>多程行程（2–4 段）</b><div class="shint">逐段填三字码与日期；整单总价由渠道页面给出，<b>绝不把各段单程价相加</b>；当前仅携程 PC 采集</div></div>
+   <div class="sctl" style="display:block;max-width:none;flex:1;min-width:0"><div class="mcsegs">${s.map((x,k)=>
+    `<div class="mcseg" data-mk="${k}"><span class="mcno">段 ${k+1}</span>
+      <input type="text" maxlength="3" data-mf="from" value="${esc(x.from||'')}" aria-label="第${k+1}段出发三字码" placeholder="出发" onchange="mcSegSet(${i},${j},${k},'from',this.value)">
+      <span class="sunit">→</span>
+      <input type="text" maxlength="3" data-mf="to" value="${esc(x.to||'')}" aria-label="第${k+1}段到达三字码" placeholder="到达" onchange="mcSegSet(${i},${j},${k},'to',this.value)">
+      <input type="date" data-mf="date" value="${esc(x.date||'')}" aria-label="第${k+1}段日期" onchange="mcSegSet(${i},${j},${k},'date',this.value)">
+      ${s.length>2?`<button class="ropbtn" title="删除第 ${k+1} 段" onclick="mcDelSeg(${i},${j},${k})">删除段</button>`:''}
+    </div>`).join('')}</div>
+    <button class="btn2 mcadd" ${s.length>=4?'disabled':''} onclick="mcAddSeg(${i},${j})">${ic('plus')} 加一段（最多 4 段）</button>
+   </div></div>
+  <div class="srow"><div class="slab"><b>整单心理价</b><div class="shint">低于即触发强提醒；只按渠道整单总价判定（不按段价折算）· 0=只采集不提醒</div></div>
+   <div class="sctl"><span class="sunit" style="font-weight:700">￥整单</span><input type="number" min="0" step="50" class="keyin" value="${esc(r.alert_threshold||0)}" onchange="setRoute(${i},${j},'alert_threshold',this.value)"></div></div>
+  ${_hasCtrip?'':'<div class="shint" style="color:var(--warn);margin:6px 0 0">该用户的监控渠道未勾选携程——多程仅携程 PC 可采，勾选后才会出数</div>'}
+ </div>`;}
+function addMCRoute(i){const d=defDate();
+ CFG[i].routes.push({from:'',from_name:'',to:'',to_name:'',dates:[],
+  alert_threshold:0,segments:[{from:'',to:'',date:d},{from:'',to:'',date:d}]});
+ FOLD.route[i+':'+(CFG[i].routes.length-1)]=false;
+ buildForm();
+ flashEl(document.querySelector('#cfgform .rline[data-rk="'+i+':'+(CFG[i].routes.length-1)+'"]'));
+ toast('已添加多程行程草稿——填好段码/日期与整单心理价后保存','ok');}
+function mcSegSet(i,j,k,f,v){
+ const r=CFG[i].routes[j],s=_mcSegs(r);if(!s[k])return;
+ if(f==='from'||f==='to')v=String(v||'').trim().toUpperCase()
+  .replace(/[^A-Z]/g,'').slice(0,3);
+ s[k][f]=v;
+ if(f==='from'||f==='to'){const el=document.querySelector(
+  '#cfgform .rline[data-rk="'+i+':'+j+'"] .mcseg[data-mk="'+k+'"] input[data-mf="'+f+'"]');
+  if(el&&el.value!==v)el.value=v;}
+ const e=_mcEnds(r);r.from=e.from;r.to=e.to;
+ r.from_name=_mcCodeName(r.from);r.to_name=_mcCodeName(r.to);
+ r.dates=_routeDates(r);
+ syncRouteHead(i,j);}
+function mcAddSeg(i,j){const r=CFG[i].routes[j],s=_mcSegs(r);
+ if(!r||s.length>=4)return;
+ const last=s[s.length-1]||{};
+ s.push({from:last.to||'',to:'',date:last.date||defDate()});
+ buildForm();flashEl(document.querySelector('#cfgform .rline[data-rk="'+i+':'+j+'"]'));}
+function mcDelSeg(i,j,k){const r=CFG[i].routes[j],s=_mcSegs(r);
+ if(!r||s.length<=2)return;
+ s.splice(k,1);const e=_mcEnds(r);r.from=e.from;r.to=e.to;
+ r.from_name=_mcCodeName(r.from);r.to_name=_mcCodeName(r.to);
+ r.dates=_routeDates(r);buildForm();
+ flashEl(document.querySelector('#cfgform .rline[data-rk="'+i+':'+j+'"]'));}
 function delRoute(i,j,b){const r=(CFG[i].routes||[])[j]||{};
  armConfirm(b||_evtT(),()=>{CFG[i].routes.splice(j,1);_DATEVAL={};
   /* 索引前移：清掉本用户旧航线折叠槽，防展开态贴到后位航线 */
@@ -22727,6 +22921,30 @@ async function saveCfg(){
    if(intl&&!INTL_LOADED&&/^[A-Z]{3}$/.test(code||''))return t;
    return /^[A-Z]{3}$/.test(t)?t:null;};
   for(const r of (u.routes||[])){
+   if(_isMC(r)){/* 多程：段即真值，单 O-D 字段保存前由段派生；
+      段码/日期不合法时在这里拦下，别把坏形状写进配置 */
+    const s=_mcSegs(r);
+    if(s.length<2||s.length>4){cfgErr('❌ 多程行程需 2–4 段');return;}
+    for(let k=0;k<s.length;k++){const x=s[k],tag='第'+(k+1)+'段';
+     x.from=String(x.from||'').trim().toUpperCase();
+     x.to=String(x.to||'').trim().toUpperCase();
+     if(!/^[A-Z]{3}$/.test(x.from)){
+      cfgErr('❌ '+tag+'出发三字码不合法：'+x.from);return;}
+     if(!/^[A-Z]{3}$/.test(x.to)){
+      cfgErr('❌ '+tag+'到达三字码不合法：'+x.to);return;}
+     if(!/^\d{4}-\d{2}-\d{2}$/.test(String(x.date||''))){
+      cfgErr('❌ '+tag+'日期格式应为 YYYY-MM-DD');return;}}
+    const _me=_mcEnds(r);r.from=_me.from;r.to=_me.to;
+    r.from_name=_mcCodeName(r.from);r.to_name=_mcCodeName(r.to);
+    r.dates=_routeDates(r);
+    const mk=s.map(x=>x.from+'-'+x.to+'@'+x.date).join('|');
+    if(seenKey['MC:'+mk]){cfgErr('❌ 重复多程行程：'+mk);return;}
+    seenKey['MC:'+mk]=1;
+    const at=Number(r.alert_threshold);
+    if(r.alert_threshold!==''&&r.alert_threshold!=null
+     &&(isNaN(at)||at<0||at>99999)){
+     cfgErr('❌ 多程整单心理价须为 0-99999 的数字');return;}
+    continue;}
    const _fn=_cnorm(r.from_name,r.from,1),_tn=_cnorm(r.to_name,r.to,1);
    if(!_fn){cfgErr('❌ '+(String(r.from_name||'').trim()
     ?'不支持的城市：'+String(r.from_name).trim():'航线缺出发城市'));return;}
@@ -27991,6 +28209,13 @@ def _view_url(rr: dict, date: str, plat: str) -> str:
         return ""
 
 
+def _mc_segments_of(r):
+    """多程段（dict 配置或运行时 Route）；空=单 O-D。"""
+    segs = (r.get("segments") if isinstance(r, dict)
+            else getattr(r, "segments", None))
+    return list(segs or [])
+
+
 def _route_view(r) -> dict:
     """归一化航线：兼容 dict 配置（from/to）与运行时 Route 对象（from_code/to_code）。"""
     if isinstance(r, dict):
@@ -30440,8 +30665,10 @@ def _user_state(u):
         if isinstance(r, dict):
             return r.get("enabled") is not False
         return getattr(r, "enabled", True) is not False
-    routes = [_route_view(r) for r in (u.get("routes") or [])
-              if _enabled(r)]
+    raw_routes = [r for r in (u.get("routes") or []) if _enabled(r)]
+    mc_raw = [r for r in raw_routes if _mc_segments_of(r)]
+    routes = [_route_view(r) for r in raw_routes
+              if not _mc_segments_of(r)]
     # 出发时段约束（与告警链路同一套窗口；按 航线+日期 粒度，
     # 同航线不同日期可有不同窗口，如返程 10-4 仅晚间 / 10-5 全天）
     win = {}
@@ -31207,9 +31434,62 @@ def _user_state(u):
                 pass
         return None
 
+    # 多程行程：与单 O-D 分开供货（routesArr 是逐日单程走势，多程行
+    # 来自 itinerary_daily 的整单总价）。latest 为 None 时前端按
+    # supported/expired 说出「为什么还没数」，不拿空值画价格。
+    mc_routes = []
+    _today0 = datetime.now().strftime("%Y-%m-%d")
+    _plats0 = set((u.get("platforms") if isinstance(u, dict)
+                   else getattr(u, "platforms", None))
+                  or _State.cfg.get("platforms") or ())
+    from core.multicity import segments_key as _segments_key
+    for _mr in mc_raw:
+        _segs0 = _mc_segments_of(_mr)
+        try:
+            _key0 = _segments_key(_segs0)
+        except Exception:
+            continue
+        if isinstance(_mr, dict):
+            _fn0 = _mr.get("from_name") or _segs0[0]["from"]
+            _tn0 = _mr.get("to_name") or _segs0[-1]["to"]
+            _thr0 = float(_mr.get("alert_threshold", 0) or 0)
+        else:
+            _fn0 = getattr(_mr, "from_name", "") or _segs0[0]["from"]
+            _tn0 = getattr(_mr, "to_name", "") or _segs0[-1]["to"]
+            _thr0 = float(getattr(_mr, "alert_threshold", 0) or 0)
+        _latest0 = None
+        try:
+            _mp0 = _multicity_payload(segments_key=_key0, limit=1,
+                                      demo=bool(DEMO["on"]), db_path=db)
+            if _mp0.get("items"):
+                _row0 = _mp0["items"][0]
+                _latest0 = {
+                    "price": float(_row0.get("total_price") or 0),
+                    "platform": str(_row0.get("platform") or ""),
+                    "fetched_at": str(_row0.get("fetched_at") or ""),
+                    "depart_date": str(_row0.get("depart_date") or ""),
+                    "legs": ((_row0.get("extra") or {}).get("legs") or []),
+                }
+        except Exception:
+            _latest0 = None
+        mc_routes.append({
+            "key": _key0,
+            "label": _segs0[0]["from"] + "".join(
+                "→" + s["to"] for s in _segs0),
+            "from": _segs0[0]["from"], "to": _segs0[-1]["to"],
+            "from_name": _fn0, "to_name": _tn0,
+            "segments": _segs0,
+            "dates": [s["date"] for s in _segs0],
+            "threshold": _thr0,
+            "supported": "ctrip" in _plats0,
+            "expired": _segs0[0]["date"] < _today0,
+            "latest": _latest0,
+        })
+
     return {
         "name": u.get("name", ""),
         "routesTxt": _routes_txt(routes),
+        "mcRoutes": mc_routes,
         "th": {"direct": th_d, "transfer": th_t},
         "best": {
             "direct": bd_brief,
@@ -33846,7 +34126,14 @@ class _Handler(BaseHTTPRequestHandler):
                     import yaml as _y
                     with open(st.config_path, encoding="utf-8") as _yf:
                         cfg = _y.safe_load(_yf) or {}
-                    cfg["users"] = body.get("users") or []
+                    try:
+                        cfg["users"] = _normalize_mc_users(
+                            body.get("users") or [])
+                    except ValueError as _mce:
+                        # 多程形状是数据契约：坏段在这里拒绝，别等下一轮
+                        # build_routes 才让整轮扫描起不来。
+                        self._json({"ok": False, "err": str(_mce)}, 400)
+                        return
                     glb = body.get("globals") or {}
                     if glb.get("interval_minutes"):
                         cfg.setdefault("schedule", {})["interval_minutes"] = \

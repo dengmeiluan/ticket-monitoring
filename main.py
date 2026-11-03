@@ -3080,11 +3080,13 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
             _specials_round()
         except Exception as e:
             logger.warning("[特价] 本轮异常: %s", e)
-        PULSE.end()
+        # 多程整单采集算在本轮内：耗时/异常都计入脉冲，不能跑在
+        # PULSE.end() 之后变成看不见的尾巴。
         try:
             collect_multicity(users, get_crawlers(plats), storage, logger)
         except Exception as e:
             logger.warning("[多程] 轮尾采集异常: %s", e)
+        PULSE.end()
         _mark_scan(_dtm.now().strftime("%Y-%m-%d %H:%M:%S"))
         # 渠道整轮零记录哨（本轮全部查询聚合行数；风控断供「零记录」
         # 形态对行历史池/no_det 双盲，独立观测面）
