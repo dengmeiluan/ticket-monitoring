@@ -153,33 +153,85 @@ tunari        40    38   0.83       45   1.0x  healthy
 
 ---
 
-## 3.6 滑块：先分级，再决定要不要动手
+## 3.6 验证：先分级，再决定要不要动手
 
-滑块不是一类东西，是两类：
+边界按**「题目是否机器可判」**划，不是按"能不能硬算"：
 
 | 类别 | 判定输入 | 能不能自动化 | 本仓库的做法 |
 |---|---|---|---|
-| **简单滑块** | **几何**：背景图里固定形状的缺口，把方块送到位即可 | 可以稳定复现 | 找缺口 → 拟人轨迹 → 校验；默认仍关，显式打开才试 |
-| **强人机**（极验 v4/天御/baxia/reCAPTCHA/点选/人脸） | **你的行为分布**：加速度、抖动频谱、停顿分布 | 越算越像机器 | 一律不动手，交人工 |
+| **简易算数** `3+7=?` | 题面是**结构化文本**，答案唯一可验算 | 能，且最可靠 | 纯文本解析（**不依赖 OCR**） |
+| **简易文字** `请输入图中字符` | 单行印刷体，无扭曲、无轨迹采集 | 能 | 系统 OCR + cv2 预处理 |
+| **几何滑块** | 判定落在**几何**上（缺口位置） | 能 | 边缘成对找缺口 + 拟人轨迹 |
+| **点选** `按顺序点击图中文字` | 要理解**图像语义** | 不做 | 识别成 `click` 即停手 |
+| **强人机**（极验 v4/天御/baxia/reCAPTCHA/人脸） | **你的行为分布**本身 | 越算越像机器 | 识别成 `strong` 即停手 |
 
-`crawlers/slider.py` 的分级是**字符串证据**判的，不是"看起来像"：
+判型函数 `captcha.classify_kind()` 全用字符串证据，不做"看起来像"的猜测；
+同时命中多类时按**安全侧**排序：`click` → `strong` → `arithmetic` → `text` → `slider`。
 
-- 命中 `极验/geetest v4/智能验证/tcaptcha/天御/baxia/whaleguard/reCAPTCHA/hCaptcha/点选/人脸` 任一 → `strong`；
-- 命中 `拖动滑块/滑动验证/slide-verify/nc_1_n1/…` → `simple`；
-- 两者都命中 → **按 strong 处理**（安全侧）；
-- 都没有 → `unknown`（同样不尝试）。
+### 3.6.1 算数题：不用 OCR，纯文本解析
 
-开启方式（默认 `off`，不打开就完全不动手）：
+这是"简易通用验证"里回报最高的一类——题面就在 DOM / UI 文本里，不需要看图：
+
+```python
+captcha.solve_arithmetic("3 + 7 = ?")     # 10
+captcha.solve_arithmetic("计算：12*4=")     # 48
+captcha.solve_arithmetic("三加七")          # 10   （中文数字/运算符）
+```
+
+两个刻意的处理（都是踩过的）：
+
+1. **只看 `=` 左边**：OCR 常把题面的 `?` 认成 `0`，`3+7=?` 读成 `3+7=0`；
+   若从整串找二元式就会把 `7=0` 甚至 `=0` 当算式 → 截断到第一个 `=` 之前；
+2. **三元式不猜**：`1+2+3` 返回 `None`。简易验证码没有三元题，猜错比不答更糟。
+
+求值**自己算四则，不用 `eval`**，所以不存在代码注入。
+
+### 3.6.2 文字题：系统 OCR + cv2 预处理（零新依赖）
+
+依赖策略：**不引入新依赖**。环境里已有 OpenCV 4.12 + numpy + PIL，加上项目
+自带的 `core.android.ocr`（Windows.Media.Ocr）——"cv2 预处理 + 系统 OCR"
+就是验证码识别最经典且零成本的一档。
+
+```python
+captcha.read_text(png)              # 原图与预处理图各读一次，取更长的
+captcha.clean_answer("验证码：X7K9")  # 'X7K9'
+```
+
+**为什么必须"双读取更长"**（实测数据）：
+
+| 图片 | 只读原图 | 只读预处理 | 取更长 |
+|---|---|---|---|
+| `AB12`（44px 粗体） | ✅ `AB12` | ❌ 空（二值化抹掉了细笔画） | ✅ |
+| `X7K9` | ✅ | ✅ | ✅ |
+| `3 + 7 = ?`（小字号） | ⚠️ 部分 | ✅ 读全 | ✅ |
+
+所以预处理只做**低损伤**的两步：放大（INTER_CUBIC，保住笔画过渡）+ Otsu
+二值化，**不做中值滤波**（滤波会把细笔画抹掉）。
+
+**不装** `pytesseract` / `easyocr` / `ddddocr`：前者要额外装 Tesseract 二进制，
+后两个要拖 onnxruntime/torch 级依赖，而它们对"无扭曲的简易题"并不比
+"系统 OCR + 预处理"强多少。真要上模型时接缝已留好（`captcha.read_text`）。
+
+### 3.6.3 开关与共账
 
 ```yaml
 crawler:
   slider:
-    auto: off            # off | simple | auto
-    daily_cap: 3         # 每渠道每天上限
-    max_fails: 2         # 连续失败 2 次 → 拉黑 7 天
-    device_distance: 260 # App 侧默认拖动距离
-    single_shot: false   # false=顺次试前 3 个候选偏移
+    auto: simple        # 滑块（"off" 则整条自动化都不挂）
+    daily_cap: 3
+    max_fails: 2
+  captcha:
+    arithmetic: true    # 算数题
+    text: true          # 文字题（OCR）
+    ocr_scale: 3.0      # OCR 前放大倍数
 ```
+
+**预算与拉黑与滑块共用同一本账**（`slider_ledger.json`）。不同类别各记一套
+会让"失败 2 次拉黑"互相抵消——比如滑块失败 2 次本该停手，算数又从头计数，
+结果是永不停手。
+
+生效方式与滑块一致：`BaseCrawler.__init__` → `challenge.ensure_slider_handler()`
+→ 挂 `captcha.SolverHandler`（超集，覆盖三类；挂不上才退回 `SliderHandler`）。
 
 要在采集里真正生效，处理器必须**被注册**——现在这一步是自动的：
 `BaseCrawler.__init__` 会调 `challenge.ensure_slider_handler()`，按

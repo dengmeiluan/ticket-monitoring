@@ -200,6 +200,17 @@ crawler:
     max_fails: 2         # 连续失败几次拉黑（拉黑 7 天）
     device_distance: 260 # App 侧默认拖动距离（px，缺省按此）
     single_shot: false   # true=只试首选偏移；false=顺次试前 3 个候选
+  # ── 简易通用验证码（算数 / 文字 OCR）──────────────────────────
+  # 边界按「题目是否机器可判」划：
+  #   * 算数题（3+7=?）→ 纯文本解析，不依赖 OCR，最可靠；
+  #   * 单行印刷体验证码 → 系统 OCR + cv2 预处理（原图/预处理取更长）；
+  #   * 强人机（极验 v4/天御/baxia/reCAPTCHA/点选/人脸）→ **一律不做**。
+  # 预算与拉黑与 slider **共用一本账**（不同类别各记一套会互相抵消）。
+  # 依赖：OpenCV 已在环境里；OCR 走项目自带的 core.android.ocr（零新依赖）。
+  captcha:
+    arithmetic: true     # 算数题
+    text: true           # 文字题（OCR）
+    ocr_scale: 3.0       # OCR 前放大倍数（小字号靠它读出来）
   # ── 时区/语言与出口 IP 的地理对齐（可选）────────────────────────
   # 挂着异地/境外出口而页面报 Asia/Shanghai + zh-CN，「IP 在 A 地、时区在
   # B 地」是最便宜的一条矛盾判定。默认不写=保持 zh-CN/Asia/Shanghai 不变。

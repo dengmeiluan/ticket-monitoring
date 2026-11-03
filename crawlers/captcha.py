@@ -95,14 +95,15 @@ def classify_kind(html: str = "", text: str = "") -> Kind:
     if not blob.strip():
         return Kind("unknown", 0.0, ["空页面"])
 
+    # 点选题先判：它和强人机一样**不做**，但单独报出来对操作员更有信息量
+    # （"这类题要理解图像语义" vs "这类题吃行为分布"是两种不同的停手理由）。
+    click = [m for m in _CLICK_HINT if m.lower() in blob]
+    if click:
+        return Kind("click", 0.85, ["点选题：%s（不做）" % click[0]])
+
     strong = [m for m in _STRONG if m.lower() in blob]
     if strong:
         return Kind("strong", 0.95, ["强人机标记：%s" % "、".join(strong[:3])])
-
-    click = [m for m in _CLICK_HINT if m.lower() in blob]
-    if click:
-        # 点选题要理解图像语义，不做；交给人工
-        return Kind("click", 0.85, ["点选题：%s（不做）" % click[0]])
 
     # 算数：先看有没有可解析的算式，这比关键词更硬
     expr = solve_arithmetic(blob)
@@ -306,6 +307,17 @@ def _cfg(config: dict) -> dict:
     return config.get("slider") if isinstance(config.get("slider"), dict) else {}
 
 
+def _on(v, default=False) -> bool:
+    """布尔开关解析：容忍字符串假值（``"false"`` 在 YAML 里是字符串）。"""
+    if v is None:
+        return default
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, str):
+        return v.strip().lower() not in ("0", "false", "no", "off", "")
+    return bool(v)
+
+
 _INPUT_SELECTORS = (
     "input[name*=code]", "input[id*=code]", "input[name*=captcha]",
     "input[id*=captcha]", "input[placeholder*=验证]", "input[type=text]",
@@ -383,6 +395,14 @@ def attempt(page, plat: str, config: dict = None, *, kind=None,
     if not k.solvable:
         rep["detail"] = "不可解（%s）：%s" % (k.name, "、".join(k.reasons)[:80])
         return rep
+    # 类别开关：配了就该生效（`captcha.arithmetic` / `captcha.text`）
+    sec = _cfg(config)
+    if k.name == "arithmetic" and not _on(sec.get("arithmetic"), True):
+        rep["detail"] = "算数题开关已关（captcha.arithmetic=false）"
+        return rep
+    if k.name == "text" and not _on(sec.get("text"), True):
+        rep["detail"] = "文字题开关已关（captcha.text=false）"
+        return rep
 
     box = _first(page, _INPUT_SELECTORS)
     if box is None:
@@ -400,7 +420,8 @@ def attempt(page, plat: str, config: dict = None, *, kind=None,
         except Exception:
             pass
         bbox = _img_bbox(page)
-        raw = read_text(shot, bbox or None)
+        raw = read_text(shot, bbox or None,
+                        scale=float(_cfg(config).get("ocr_scale") or 3.0))
         answer = clean_answer(raw)
         rep["detail"] = "OCR=%r → %r" % (raw[:20], answer)
     elif k.name == "slider":
