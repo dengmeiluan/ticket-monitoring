@@ -208,9 +208,28 @@ captcha.clean_answer("验证码：X7K9")  # 'X7K9'
 所以预处理只做**低损伤**的两步：放大（INTER_CUBIC，保住笔画过渡）+ Otsu
 二值化，**不做中值滤波**（滤波会把细笔画抹掉）。
 
-**不装** `pytesseract` / `easyocr` / `ddddocr`：前者要额外装 Tesseract 二进制，
-后两个要拖 onnxruntime/torch 级依赖，而它们对"无扭曲的简易题"并不比
-"系统 OCR + 预处理"强多少。真要上模型时接缝已留好（`captcha.read_text`）。
+**不装** `pytesseract` / `easyocr` / `ddddocr` 作为**硬依赖**：前者要额外装
+Tesseract 二进制，后两个要拖 onnxruntime/torch 级依赖，会让打包体积涨几十 MB。
+
+但**可选后端已经接好**（你说"Python 应该有很多现成的解码开源框架吧，可以试试"）：
+
+```python
+captcha.backend_name()      # 'ddddocr' / 'windows-ocr' / 'none'
+captcha._read_with_ddddocr  # 装了 ddddocr 才用，没装返回空串
+captcha.slide_match(png)    # ddddocr 的滑轨模型，给 find_gap 做可选增强
+```
+
+`read_text` 的选择逻辑：**谁读出的字符多就用谁**。ddddocr 对付字符验证码
+通常明显强于系统 OCR；系统 OCR 对"无扭曲印刷体"更稳。两者互补。
+
+装法（可选，不装也完全能用）：
+
+```powershell
+python -m pip install ddddocr     # 会带 onnxruntime，约 50–80MB
+```
+
+没装时 `backend_name()` 是 `windows-ocr`，行为与现在完全一致——
+**这层是纯增量，零风险**。
 
 ### 3.6.3 开关与共账
 
