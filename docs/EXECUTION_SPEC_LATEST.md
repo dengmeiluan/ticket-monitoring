@@ -33,23 +33,26 @@
   可溯源/过期首段不提醒/整单历史 sparkline/CSV 导出/2 段矩阵升 y）；live 8765 于
   **2026-11-03 08:58** 切到 `_release_ab04`（Release `ab04c22`，webui sha12
   `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r956 尚未入该树。
-- **门禁**：tracked collect **6278**。2026-11-03 16:25 CI 同款 4 片并发实测
-  **6230 passed / 44 skipped / 0 failed**（0/1/3 片在 `62888c4`、第 2 片在
-  `47731c9`；两提交只差 r793 的测试守卫，产品代码相同；四片合计 6274；此后
-  新增开工况就绪轮询与开口程链头断点测试 4 项，共 6278，定向已验，全量待
-  重跑；各片源码哈希前后一致）。CI 已把全量 pytest 拆到 4 台 runner：`tools/ci_shard.py`
-  按 `tests/ci_durations.json` 历史耗时贪心均分，跑测前 `--stats 4` 自检
-  并集=全部 `tests/test_*.py`（新增文件按 20s 自动进组，不漏跑）；`test/uitest`
-  各加 45 分钟超时，`ci-ok` 聚合两泳道。分片暴露的两处环境竞态已改成注入/
-  skip（r290 配置注入、r793 空账本守卫），不再记产品红。此前 14:46 workers 8 的
-  **6236 passed / 19 skipped / 0 failed**（含未跟踪并行 WIP，共 6255）为旧口径。
+- **门禁**：tracked collect **6278**。2026-11-03 17:16 clean HEAD `d5d9071`
+  全量非 UI **6234 passed / 44 skipped / 0 failed**（workers 8，412.05s，共 6278；
+  源码哈希 pin 通过，语法检查 ok）。CI 已把全量 pytest 拆到 4 台 runner：
+  `tools/ci_shard.py` 按 `tests/ci_durations.json` 历史耗时贪心均分，跑测前
+  `--stats 4` 自检并集=全部 `tests/test_*.py`（新增文件按 20s 自动进组）+ workflow
+  片数/选片/loadfile/ci-ok/取消旧跑一致性；`test/uitest` 各加 45 分钟超时，
+  `ci-ok` 聚合两泳道。2026-11-03 16:25 CI 同款 4 片并发在 `62888c4`/`47731c9`
+  上 **6230 passed /
+  44 skipped / 0 failed**（四片合计 6274；此后新增 4 项由本次全量覆盖；各片
+  源码哈希一致）。分片暴露的两处环境竞态已改成注入/skip（r290 配置注入、
+  r793 空账本守卫），不再记产品红。此前 14:46 的 **6236 passed / 19 skipped /
+  0 failed**（含未跟踪并行 WIP，共 6255）为旧口径。
   此前 7 红全部闭合：6 项单飞全绿（r319 proxy / r660 负控 / r845×2 /
   r999×2，xdist 竞争）；r601 配置可达性已补 9 个页面控件 + 保存写回 + 钳制
   （见 r958），r601 **4 passed**、配置往返 **12 passed**、真渲染 9 控件零 pageerror
   （14:20）。矩阵升 y 由 **138 定向 passed** 覆盖（13:33）；r952 已修掉此前的
   4 个 xdist 假红。定向：多程 5 文件 **31 passed**（11:18）；合并后历史/导出
   **17 passed**（12:46）；Release 正文 **8 passed**（10:36）；日桶 **16 passed**（10:10）。
-  UI **670/670**（2026-11-03 15:15 全量复跑，零 JS 错误；含矩阵 ctrip 多程 ✓
+  UI **670/670**（2026-11-03 16:50 全量复跑，零 JS 错误；页面 JS 为最终态，此后仅服务端
+  label/提醒改动由全量 pytest 覆盖；含矩阵 ctrip 多程 ✓
   仅 2 段与 r958 的 9 个配置控件；另含 r946 来源链接与
   r947 过期门；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、
   同程 App round_trip=国际；r905 新增的行内自检按钮另由 `test_r905` 真渲染 +
