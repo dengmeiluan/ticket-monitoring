@@ -493,6 +493,64 @@ def _paths_payload(hours=24, demo=False):
         return {"ok": False, "err": str(e)[:160]}
 
 
+def _multicity_payload(route_id="", segments_key="", limit=200,
+                       demo=None, db_path=""):
+    """多程整单总价只读视图（route_id / segments_key / limit）。
+
+    只认 `itinerary_daily` 里由渠道页面自报的整单价；GET 不得建库建表，
+    所以真库用 mode=ro 打开，老库没有表时按「从未采集多程」返回空，
+    由界面区分「没有样本」和「读失败」。
+    """
+    try:
+        limit = max(1, min(500, int(limit or 200)))
+    except (TypeError, ValueError):
+        limit = 200
+    if demo is None:
+        demo = bool(DEMO["on"])
+    head = {"ok": True, "demo": bool(demo), "route_id": str(route_id or ""),
+            "segments_key": str(segments_key or ""), "limit": limit}
+    if demo:
+        head.update(items=[], count=0, note="演示数据不含多程整单样本")
+        return head
+    db = db_path or _anchored(((_State.cfg or {}).get("output") or {}).get(
+        "db_path"), "data/prices.db")
+    if not db or not os.path.isfile(db):
+        head.update(items=[], count=0, note="库尚未创建")
+        return head
+    sql = ("SELECT platform,route_id,segments_key,depart_date,total_price,"
+           "legs_json,fetched_at FROM itinerary_daily")
+    where, args = [], []
+    if route_id:
+        where.append("route_id=?")
+        args.append(str(route_id))
+    if segments_key:
+        where.append("segments_key=?")
+        args.append(str(segments_key))
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY depart_date DESC, fetched_at DESC LIMIT ?"
+    args.append(limit)
+    conn = sqlite3.connect("file:%s?mode=ro" % str(db).replace("\\", "/"),
+                           uri=True)
+    try:
+        conn.row_factory = sqlite3.Row
+        rows = [dict(r) for r in conn.execute(sql, args).fetchall()]
+    except sqlite3.OperationalError as e:
+        if "no such table" not in str(e):
+            raise
+        head.update(items=[], count=0, note="库中尚无多程表（从未采集）")
+        return head
+    finally:
+        conn.close()
+    for r in rows:
+        try:
+            r["extra"] = json.loads(r.pop("legs_json") or "{}")
+        except ValueError:
+            r["extra"] = {}
+    head.update(items=rows, count=len(rows))
+    return head
+
+
 def _exit_check(timeout=8.0):
     """出口自检（6 区）：按当前代理取一次公网 IP。
 
@@ -32948,6 +33006,19 @@ class _Handler(BaseHTTPRequestHandler):
             try:
                 from core.channels import channel_dims_payload
                 self._json(channel_dims_payload())
+            except Exception as e:
+                self._json({"ok": False, "err": str(e)}, 500)
+        elif self.path.split("?")[0] == "/api/multicity":
+            # 多程整单总价只读面：只读 itinerary_daily，库/表缺失返回
+            # 空态而不是 500，界面才能把「没样本」和「读失败」分开。
+            try:
+                from urllib.parse import parse_qs as _pqs
+                from urllib.parse import urlparse as _up3
+                _q = _pqs(_up3(self.path).query)
+                self._json(_multicity_payload(
+                    route_id=(_q.get("route_id") or [""])[0],
+                    segments_key=(_q.get("segments_key") or [""])[0],
+                    limit=(_q.get("limit") or ["200"])[0]))
             except Exception as e:
                 self._json({"ok": False, "err": str(e)}, 500)
         elif self.path == "/api/pulse":

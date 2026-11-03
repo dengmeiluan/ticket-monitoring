@@ -173,6 +173,60 @@ def route_query_registry(users):
     return registry, skipped
 
 
+def collect_multicity(users, crawlers, storage, logger, today=""):
+    """多程轮尾采集：同一行程本轮只查一次，只落页面整单总价。
+
+    仅 Ctrip PC 有采集入口；其他渠道/未启用时明确跳过。行程按
+    segments_key 去重（多用户订阅同一行程不重复打渠道），首段已过期
+    的行不查（渠道会滚回其他日期，落库会把价挂到过期桶）。
+    返回落库行数；异常自吞，不阻断主扫描。
+    """
+    from core.multicity import segments_key
+    routes = {}
+    for u in users or []:
+        for r in u.get("routes") or []:
+            segs = getattr(r, "segments", None)
+            if not segs:
+                continue
+            try:
+                key = segments_key(segs)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("[多程] 行程形状不合法，跳过：%s", e)
+                continue
+            routes.setdefault(key, (r, segs))
+    if not routes:
+        return 0
+    crawler = next((c for c in crawlers or [] if c.name == "ctrip"), None)
+    if crawler is None:
+        logger.info("[多程] 本轮未启用携程，跳过 %d 条行程", len(routes))
+        return 0
+    import datetime as _dt
+    today = today or _dt.date.today().isoformat()
+    saved = 0
+    for key, (_route, segs) in routes.items():
+        if segs[0]["date"] < today:
+            logger.info("[多程] 首段已过期，跳过 %s", key)
+            continue
+        try:
+            rows = crawler.fetch_multi(segs) or []
+        except Exception as e:  # noqa: BLE001
+            logger.warning("[多程] %s 采集异常：%s", key, e)
+            continue
+        for row in rows:
+            try:
+                extra = json.loads(getattr(row, "extra", "") or "{}")
+                storage.save_itinerary(
+                    row.platform, key, segs, row.price,
+                    extra.get("legs") or [],
+                    depart_date=row.depart_date)
+                saved += 1
+            except Exception as e:  # noqa: BLE001
+                logger.warning("[多程] %s 落库失败：%s", key, e)
+    if saved:
+        logger.info("[多程] 本轮落库 %d 条整单总价", saved)
+    return saved
+
+
 def build_users(cfg: dict) -> list:
     """归一化用户列表；兼容旧单用户格式（无 users 键则整体作为一个用户）。"""
     if "users" in cfg:
@@ -3027,6 +3081,10 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
         except Exception as e:
             logger.warning("[特价] 本轮异常: %s", e)
         PULSE.end()
+        try:
+            collect_multicity(users, get_crawlers(plats), storage, logger)
+        except Exception as e:
+            logger.warning("[多程] 轮尾采集异常: %s", e)
         _mark_scan(_dtm.now().strftime("%Y-%m-%d %H:%M:%S"))
         # 渠道整轮零记录哨（本轮全部查询聚合行数；风控断供「零记录」
         # 形态对行历史池/no_det 双盲，独立观测面）
