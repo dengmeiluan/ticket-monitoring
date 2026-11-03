@@ -534,8 +534,32 @@ def _normalize_mc_users(users):
     return users
 
 
+def _multicity_history(db_path, segments_key, limit=96):
+    """多程整单历史点（只读）：[[ISO 时刻, 总价], ...] 升序。
+
+    表不存在/库未建均返回空；不补点、不拿 latest 伪造历史。
+    """
+    if not db_path or not os.path.isfile(db_path):
+        return []
+    try:
+        conn = sqlite3.connect("file:%s?mode=ro" % str(db_path).replace(
+            "\\", "/"), uri=True)
+        try:
+            rows = conn.execute(
+                "SELECT fetched_at,total_price FROM itinerary_history "
+                "WHERE segments_key=? ORDER BY fetched_at DESC LIMIT ?",
+                (str(segments_key), max(1, min(500, int(limit))))
+            ).fetchall()
+        finally:
+            conn.close()
+    except sqlite3.OperationalError:
+        return []
+    return [[str(r[0]).replace(" ", "T"), float(r[1])]
+            for r in reversed(rows)]
+
+
 def _multicity_payload(route_id="", segments_key="", limit=200,
-                       demo=None, db_path=""):
+                       demo=None, db_path="", with_history=False):
     """多程整单总价只读视图（route_id / segments_key / limit）。
 
     只认 `itinerary_daily` 里由渠道页面自报的整单价；GET 不得建库建表，
@@ -588,6 +612,9 @@ def _multicity_payload(route_id="", segments_key="", limit=200,
             r["extra"] = json.loads(r.pop("legs_json") or "{}")
         except ValueError:
             r["extra"] = {}
+        if with_history:
+            r["history"] = _multicity_history(
+                db, r.get("segments_key") or "")
     head.update(items=rows, count=len(rows))
     return head
 
@@ -1067,11 +1094,14 @@ const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)')
  .monroute-foot button{height:28px;padding:0 9px;border:1px solid var(--line2);border-radius:var(--r3);background:var(--card);color:var(--tx2);font-size:10px;cursor:pointer}
  .monroute-foot button:hover{border-color:var(--blue);color:var(--blue)}
  /* 多程卡片复用航线卡骨架，右侧位放段/整单说明（没有走势，不画空图） */
- .monroute.mcm{grid-template-columns:minmax(160px,.9fr) minmax(180px,1.2fr);
+ .monroute.mcm{grid-column:1/-1;
+  grid-template-columns:minmax(160px,.9fr) minmax(180px,1.2fr);
   grid-template-areas:"head head" "main side" "foot foot"}
  .mcm .mcside{grid-area:side;display:flex;flex-direction:column;gap:4px;
   justify-content:center;font-size:10px;color:var(--mut);line-height:1.5;min-width:0}
  .mcm .mcside b{font-family:var(--num);font-size:12px;color:var(--tx2)}
+ .mcm .mcspark{width:100%;min-width:0;margin-bottom:2px}
+ .mcm .mcspark svg{display:block;width:100%;height:56px;overflow:visible}
  .mcm .mchit{color:var(--ok-txt);font-weight:700}
  @media(max-width:900px){.monroute{grid-template-columns:1fr;grid-template-areas:"head" "main" "svg" "foot";gap:7px}
   .monroute.mcm{grid-template-columns:1fr;grid-template-areas:"head" "main" "side" "foot"}}
@@ -12749,13 +12779,19 @@ function togChart(i){if(!S||!S.users.length)return;
   else if(!l)why='尚无多程整单行——等待下一轮采集';
   const side=why?('<span>'+he(why)+'</span>')
    :('<b>'+he(m.segments.length+' 段')+'</b><span>'+he(legs||'渠道未回传班级明细')+'</span>');
+  const hist=(m.history||[]).filter(x=>x&&x[1]!=null&&Number.isFinite(Number(x[1])));
+  const spark=(l&&hist.length>=2)?trendSparkSvg(
+   [{pts:hist,color:'var(--blue)',label:'整单',area:false}],
+   {targets:Number(m.threshold)>0?[{v:Number(m.threshold),color:'var(--red)',label:'心理价'}]:[],
+    h:56,daily:false,legend:false,
+    aria:(m.label||'多程')+' 整单总价历史'}):'';
   return '<article class="monroute mcm"><div class="monroute-h"><b>'+he(m.label||m.from+'→'+m.to)+'</b>'
    +'<span>'+he((m.dates||[]).slice(0,3).join(' / '))+'</span></div>'
    +'<div class="monroute-main"><span>最近整单总价'+(hit?' <b class="mchit">· 已达标</b>':'')+'</span>'
    +'<b>'+(p!=null?'¥'+he(p):'—')+'</b>'
    +'<span class="th">'+(Number(m.threshold)>0?('整单线 ≤ ¥'+he(m.threshold)):'未设整单线')
    +(l&&l.platform?(' · '+he(l.platform)):'')+'</span></div>'
-   +'<div class="mcside">'+side+'</div>'
+   +'<div class="mcside">'+(spark?('<div class="mcspark">'+spark+'</div>'):'')+side+'</div>'
    +'<div class="monroute-foot"><span>'+(l&&l.fetched_at?('最近采于 '+he(l.fetched_at)):'整单总价只取渠道页面，不由段价相加')
    +'</span><span class="sp"></span><button type="button" data-mc="'+i+'" onclick="switchView(\'cfg\');showCfgPanel(\'users\')">配置多程行程</button></div></article>';
  }
@@ -31628,6 +31664,7 @@ def _user_state(u):
             "supported": "ctrip" in _plats0,
             "expired": _segs0[0]["date"] < _today0,
             "latest": _latest0,
+            "history": _multicity_history(db, _key0),
         })
 
     _routes_txt_all = _routes_txt(routes)
@@ -33447,7 +33484,9 @@ class _Handler(BaseHTTPRequestHandler):
                 self._json(_multicity_payload(
                     route_id=(_q.get("route_id") or [""])[0],
                     segments_key=(_q.get("segments_key") or [""])[0],
-                    limit=(_q.get("limit") or ["200"])[0]))
+                    limit=(_q.get("limit") or ["200"])[0],
+                    with_history=(_q.get("history") or [""])[0]
+                    in ("1", "true", "yes")))
             except Exception as e:
                 self._json({"ok": False, "err": str(e)}, 500)
         elif self.path == "/api/pulse":

@@ -49,6 +49,11 @@ def test_payload_reads_page_total_and_legs(tmp_path):
     assert item["extra"]["tripType"] == "MC"
     assert len(item["extra"]["legs"]) == 2
     assert "legs_json" not in item
+    assert "history" not in item, "默认不放大历史载荷"
+    with_hist = webui._multicity_payload(
+        segments_key=segments_key(SEGS_A), demo=False, db_path=db,
+        with_history=True)
+    assert len(with_hist["items"][0]["history"]) == 1
 
 
 def test_payload_filters_and_clamps_limit(tmp_path):
@@ -119,6 +124,10 @@ def test_endpoint_serves_filtered_payload(live_server):
     assert out["items"][0]["total_price"] == 1298.0
     none = _get(live_server + "/api/multicity?route_id=no-such-route")
     assert none["ok"] is True and none["items"] == []
+    hist = _get(live_server + "/api/multicity?segments_key=" + key
+                + "&history=1")
+    assert len(hist["items"][0]["history"]) == 1
+    assert hist["items"][0]["history"][0][1] == 1298.0
 
 
 def test_user_state_exposes_mc_latest_without_fake_od(tmp_path):
