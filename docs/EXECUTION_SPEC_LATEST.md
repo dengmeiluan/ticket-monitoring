@@ -3078,6 +3078,10 @@ PCHART.placeTipAxis(host, tip, cx, topY)            // DOM 浮窗：取 placeAxi
   · 采集端 `fetch_tongcheng_calendar`（`queryCalendarLowestPrice`）同批
     返回 **180 行且价格逐日完全一致**；两条端点并存，生产仍走窗历，
     页面新端点留作漂移备选。
+  · 国际同样复验：切「国际」→上海/曼谷，点日期控件，页面
+    `mihawkapi/calendar/lowestPrice` 返回 11-04 ¥1102 / 11-05 ¥1156 /
+    11-06 ¥1169 / 11-07 ¥883 / 11-08 ¥715…；采集端 90 天窗历逐日
+    完全一致（11-04 1102 … 11-10 670）。
   · 结论：H5 端面与采集日历同源，矩阵 `calendar=y`；不是“页面能用但
     采集端没验证”。悬停已补这条证据。
 
