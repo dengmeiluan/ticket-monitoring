@@ -186,7 +186,8 @@ def collect_multicity(users, crawlers, storage, logger, today=""):
     for u in users or []:
         _has_ctrip = "ctrip" in (u.get("platforms") or [])
         for r in u.get("routes") or []:
-            segs = getattr(r, "segments", None)
+            segs = (r.get("segments") if isinstance(r, dict)
+                    else getattr(r, "segments", None))
             if not segs:
                 continue
             try:
@@ -3094,7 +3095,8 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
         try:
             _mc_want = any(
                 "ctrip" in (u.get("platforms") or [])
-                and any(getattr(r, "segments", None)
+                and any((r.get("segments") if isinstance(r, dict)
+                         else getattr(r, "segments", None))
                         for r in (u.get("routes") or []))
                 for u in users)
             collect_multicity(
