@@ -12,6 +12,7 @@
 """
 import argparse
 import json
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -19,6 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = ROOT / "tests"
 DURATIONS = TESTS / "ci_durations.json"
+CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 DEFAULT_SECONDS = 20.0
 
 
@@ -96,6 +98,36 @@ def plan(groups_n, seconds=None):
     return groups, loads
 
 
+def check_workflow(groups_n, path=None):
+    """CI workflow 的片数/选片命令/聚合检查必须与本次分片一致。
+
+    matrix 只有 3 组却传 --print 4 时，第 4 片永远不会被调度，而且
+    任何单看 --stats 的检查都发现不了——这是静默漏跑。返回空串=一致。
+    """
+    path = Path(path) if path else CI_WORKFLOW
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        return "读不到 CI workflow：%s" % exc
+    m = re.search(r"matrix:\s*\n\s*group:\s*\[([^\]]*)\]", text)
+    if not m:
+        return "CI workflow 没有 group matrix"
+    groups = [int(x) for x in re.findall(r"\d+", m.group(1))]
+    if groups != list(range(groups_n)):
+        return "CI matrix group=%s 与本次 %d 片不一致" % (groups, groups_n)
+    if "tools/ci_shard.py --print %d" % groups_n not in text:
+        return "CI 未按 %d 片选文件" % groups_n
+    if "--dist loadfile" not in text:
+        return "CI 丢了 --dist loadfile"
+    if not re.search(r"ci-ok:\s*\n(?:.*\n)*?\s*needs:\s*\[test,\s*uitest\]",
+                     text):
+        return "CI 缺 ci-ok 聚合（needs test+uitest）"
+    if not re.search(r"concurrency:\s*\n(?:.*\n)*?"
+                     r"\s*cancel-in-progress:\s*true", text):
+        return "CI 缺 concurrency cancel-in-progress"
+    return ""
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--snapshot", metavar="JUNIT",
@@ -131,6 +163,12 @@ def main(argv=None):
             return 2
         known = sum(1 for p in discover() if p.name in seconds)
         print("耗时快照覆盖 %d/%d 个测试文件" % (known, len(discover())))
+        err = check_workflow(args.stats)
+        if err:
+            print("CI 分片契约不一致：%s" % err, file=sys.stderr)
+            return 2
+        print("CI workflow 与 %d 片矩阵一致（选片/loadfile/ci-ok/取消旧跑）"
+              % args.stats)
         return 0
 
     if args.print:
