@@ -80,8 +80,14 @@ def snapshot(junit_path, out_path=None):
     return payload
 
 
+# xdist --dist loadfile 的固定成本：每个文件都要重新导入一次测试模块。
+# 只按纯测试耗时均分会把大量短文件堆到同一片（实测第 2 片 341 个文件，
+# 比其他片多一倍，墙钟被导入开销拖长 ~100s）。把它计进权重再 LPT。
+FILE_OVERHEAD_S = 1.0
+
+
 def plan(groups_n, seconds=None):
-    """LPT 贪心：耗时长的先放，进当前总耗时最小的组。"""
+    """LPT 贪心：耗时（含每文件导入开销）长的先放，进当前总权重最小的组。"""
     seconds = load_seconds() if seconds is None else seconds
     files = discover()
     groups = [[] for _ in range(groups_n)]
@@ -92,7 +98,7 @@ def plan(groups_n, seconds=None):
     for p in ordered:
         k = min(range(groups_n), key=lambda i: (loads[i], i))
         groups[k].append(p)
-        loads[k] += seconds.get(p.name, DEFAULT_SECONDS)
+        loads[k] += seconds.get(p.name, DEFAULT_SECONDS) + FILE_OVERHEAD_S
     for g in groups:
         g.sort(key=lambda p: p.name)
     return groups, loads
@@ -157,9 +163,10 @@ def main(argv=None):
                           for p in discover()} - set(covered))
         dup = len(covered) - len(set(covered))
         for i, files in enumerate(groups):
-            print("group %d  %4d files  %8.1fs" % (i, len(files), loads[i]))
+            print("group %d  %4d files  %8.1fs（权重，含 1.0s/文件）"
+                  % (i, len(files), loads[i]))
         lo, hi = min(loads), max(loads)
-        print("total %.1fs  max/min %.2f  dup %d  missing %d"
+        print("total %.1fs（权重）  max/min %.2f  dup %d  missing %d"
               % (sum(loads), (hi / lo) if lo else 0.0, dup, len(missing)))
         if missing or dup:
             print("分片覆盖缺口：%s" % (missing or dup), file=sys.stderr)
