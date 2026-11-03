@@ -119,6 +119,9 @@ def check_workflow(groups_n, path=None):
         return "CI 未按 %d 片选文件" % groups_n
     if "--dist loadfile" not in text:
         return "CI 丢了 --dist loadfile"
+    if not re.search(r"^  uitest:\s*$", text, re.M) or \
+            "python docs/uitest.py" not in text:
+        return "CI 缺独立 UI 自检岗（uitest + docs/uitest.py）"
     if not re.search(r"ci-ok:\s*\n(?:.*\n)*?\s*needs:\s*\[test,\s*uitest\]",
                      text):
         return "CI 缺 ci-ok 聚合（needs test+uitest）"
