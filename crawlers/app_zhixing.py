@@ -103,7 +103,7 @@ class AppZhixingCrawler(AppCrawler):
         # 异常逃逸不在这里写：调用方统一走 `AppBaseCrawler.safe_fetch()`，
         # 它已 try/except 并记 `app-error`（含本段抛出的一切）。此处再包一层
         # 只是重复防御，且会抢在 safe_fetch 的去重判断之前多记一条。
-        with rt.device_lock():
+        with rt.device_lock(owner=self.name):
             self.prepare_device(dev)
             if ret_date:
                 return self._fetch_round_trip_locked(
@@ -1060,7 +1060,7 @@ class AppZhixingCrawler(AppCrawler):
                            detail="device unavailable")
             return []
         anchor = (anchor_ymd or _dt.date.today().isoformat())[:10]
-        with rt.device_lock():
+        with rt.device_lock(owner=self.name):
             self.prepare_device(dev)
             started = time.time()
             # 回到机票首页（特价入口只在首页）

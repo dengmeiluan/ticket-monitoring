@@ -518,7 +518,7 @@ class AppQunarCrawler(AppCrawler):
                            detail="device unavailable")
             return []
 
-        with rt.device_lock():
+        with rt.device_lock(owner=self.name):
             # 每轮只允许一次「杀进程重建首页」（见 `_hard_reset_home`）
             self._home_hard_reset = False
             # 统一前置（登录态恢复 → 清权限框 → 清 ANR），与其它 App 渠道同源
@@ -1510,7 +1510,7 @@ class AppQunarCrawler(AppCrawler):
             self.path_note("android-device", "unsupported",
                            detail="device unavailable")
             return []
-        with rt.device_lock():
+        with rt.device_lock(owner=self.name):
             self.prepare_device(dev)
             return self._low_fare_locked(dev, from_city, to_city, days)
 

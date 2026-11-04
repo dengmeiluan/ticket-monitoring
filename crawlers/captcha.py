@@ -103,12 +103,31 @@ class Kind:
 _DDDDOCR = {}
 _DDDDOCR_TRIED = [False]
 
+# 允许把可选依赖装到项目内的 `_vendor/`（`pip install --target`），
+# 不需要管理员、也不污染系统 site-packages。装在这里时自动加进 sys.path。
+_VENDOR_DIRS = ("_vendor",)
+
+
+def _ensure_vendor_path() -> None:
+    """把项目内 ``_vendor/`` 加进 ``sys.path``（存在才加，幂等）。"""
+    try:
+        import os
+        import sys
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        for name in _VENDOR_DIRS:
+            p = os.path.join(root, name)
+            if os.path.isdir(p) and p not in sys.path:
+                sys.path.append(p)
+    except Exception:
+        pass
+
 
 def _ddddocr():
     """惰性初始化 ddddocr；不可用返回 None。**失败只探一次**。"""
     if _DDDDOCR_TRIED[0]:
         return _DDDDOCR.get("cls")
     _DDDDOCR_TRIED[0] = True
+    _ensure_vendor_path()
     try:
         import ddddocr  # type: ignore
         _DDDDOCR["cls"] = ddddocr.DdddOcr(show_ad=False)

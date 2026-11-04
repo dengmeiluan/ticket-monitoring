@@ -22,6 +22,9 @@ from .device import AdbDevice
 from .mumu import MuMuManager
 
 _DEVICE_LOCK = threading.Lock()
+# 设备锁持有者观测（2026-11-04）：谁持着锁、从什么时候开始。
+# 事故背景见 ``device_lock()`` 的 docstring——没有它，卡死 10 小时也查不出是谁。
+_LOCK_STATE = {"owner": "", "since": 0.0}
 _RUNTIME_CACHE = {}
 _CACHE_LOCK = threading.Lock()
 
@@ -214,15 +217,47 @@ class AndroidRuntime:
 
     # ---------- 设备独占 ----------
     @contextmanager
-    def device_lock(self, timeout: float = 600.0):
-        """独占 adb 设备；拿不到锁抛 TimeoutError（调用方转成 busy 状态）。"""
+    def device_lock(self, timeout: float = 600.0, owner: str = ""):
+        """独占 adb 设备；拿不到锁抛 TimeoutError（调用方转成 busy 状态）。
+
+        ``owner`` 是"谁在用它"的标签（渠道名），用于**持有者观测**：
+        2026-11-04 事故——某轮 `app_qunar` 的 worker 在路由级超时后仍在跑，
+        永久占着这把锁；后面每轮每个 App 渠道都要白等 600s 才发现拿不到锁，
+        单轮耗时远超 30 分钟间隔，apscheduler 于是**连续 10 小时全部 skipped**，
+        而日志里只有「路由级超时」和「skipped」，看不出是谁占着锁。
+
+        现在把「谁持锁、持了多久」记进模块级状态，超时/释放时都留痕，
+        下次同类事故能一眼定位。
+        """
+        import time as _t
+        t0 = _t.time()
         acquired = _DEVICE_LOCK.acquire(timeout=timeout)
         if not acquired:
+            holder = dict(_LOCK_STATE)
+            self.log("warning",
+                     "设备锁等待 %ds 超时；当前持有者=%s（已持有 %.0fs）",
+                     int(timeout), holder.get("owner") or "?",
+                     _t.time() - float(holder.get("since") or _t.time()))
             raise TimeoutError("android device busy")
+        waited = _t.time() - t0
+        if waited >= 5:
+            self.log("info", "设备锁等待 %.0fs 后取得（上一持有者=%s）",
+                     waited, _LOCK_STATE.get("owner") or "?")
+        _LOCK_STATE.update({"owner": str(owner or "?"), "since": _t.time()})
         try:
             yield
         finally:
+            held = _t.time() - float(_LOCK_STATE.get("since") or _t.time())
+            if held >= 120:
+                # 单次持有超过 2 分钟就留痕：正常一轮 App 采集通常在 60s 内
+                self.log("warning", "设备锁被 %s 持有 %.0fs（偏长，留意是否卡住）",
+                         _LOCK_STATE.get("owner") or "?", held)
+            _LOCK_STATE.update({"owner": "", "since": 0.0})
             _DEVICE_LOCK.release()
+
+    def lock_state(self) -> dict:
+        """当前设备锁持有者（给健康面板/排障用）。"""
+        return dict(_LOCK_STATE)
 
     def log(self, level: str, msg: str, *args):
         if self.logger is None:

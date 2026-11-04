@@ -224,6 +224,9 @@ __marimo__/
 config.yaml
 user_data/
 user_data_free/
+# 可选依赖装到项目内时用的目录（pip install --target _vendor …）：
+# crawlers/captcha.py 会自动把它加进 sys.path，不需要管理员权限。
+_vendor/
 data/
 debug/
 debug_free/

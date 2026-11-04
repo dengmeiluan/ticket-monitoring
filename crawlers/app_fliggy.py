@@ -408,7 +408,7 @@ class AppFliggyCrawler(AppCrawler):
             self.path_note("android-device", "unsupported",
                            detail="device unavailable")
             return []
-        with rt.device_lock():
+        with rt.device_lock(owner=self.name):
             self.prepare_device(dev)
             if self._ensure_form(dev) is None:
                 return []
