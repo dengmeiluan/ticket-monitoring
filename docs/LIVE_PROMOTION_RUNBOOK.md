@@ -17,7 +17,7 @@
 | live 配置 | `_release_ab04/config.yaml` 与主树 `config.yaml` **diff=0** |
 | 数据/日志/登录态 | live 树的 `data`、`logs`、`user_data` 都是**主树的符号链接**（同一份文件） |
 | live 当前能力 | **10 渠道代码**（live 树 `ab04c22`，webui sha12 `6c85a00f14c1`）；`/api/channel-dims` 10 家；`enabled_platforms` 6（配置未变） |
-| 主树候选 | 10 渠道 + App/浏览器国际往返；tracked collect **6500**（2026-11-03 23:09）；全量 **6465 passed / 19 skipped / 0 failed**（`8a69a1a`，602.73s，6484 口径）；r924/r925 补 16 项定向 76/7 passed；UI **670/670**；候选包 SHA256 `0c4cc2aa4da3966a0628044ae3bf84ffe4b8144d0ed35ab8c468c75c8064bab4`（源码 `318a70d`；**117,001,794 bytes / 1027 entries**；含 cv2/numpy 与 App 锁 WIP；冻结仍按最终树重算） |
+| 主树候选 | 10 渠道 + App/浏览器国际往返；tracked collect **6593**（2026-11-04）；干净克隆 `1f6eb0d` 全量 **6548 passed / 45 skipped / 0 failed**（6593 口径），主树 6560 口径 **6541/19/0**；UI **670/670**；四平台 `release-build` 在 `1f6eb0d` 已全绿，最终树重建后回填资产 SHA256 |
 
 因为数据/日志/登录态共享，切换**不需要迁移数据库、日志或登录快照**；旧 live 树保留作回滚。
 

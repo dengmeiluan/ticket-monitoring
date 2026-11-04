@@ -26,44 +26,21 @@
 
 ## 1. 项目事实与当前状态（开工必核验）
 
-### 1.0 当前状态快照（2026-11-03 12:02，先核验再干活）
+### 1.0 当前状态快照（2026-11-04 11:10，先核验再干活）
 
-- **代码树**：HEAD `c116273` 已含 r933–r956（多程数据层/配置形状/实际渠道错峰/
-  日桶下限守卫/携程多程采集/轮尾采集/只读 API/配置卡/概览整单卡/提醒接线/来源页
-  可溯源/过期首段不提醒/整单历史 sparkline/CSV 导出/2 段矩阵升 y）；live 8765 于
-  **2026-11-03 08:58** 切到 `_release_ab04`（live 树 `ab04c22`，webui sha12
-  `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r956 尚未入该树。
-- **门禁**：tracked collect **6500**（2026-11-03 23:16 核对，含 r920 +2 / r921 +10 / r922 +14 / r923 +12 / r924 +56 / r925 +7 / UI shard +5）。
-  本地 clean 全量在 HEAD `8a69a1a`：**6465 passed / 19 skipped / 0 failed**
-  （workers 8，602.73s，6484 口径）；r924/r925 补 16 项定向 **76/7 passed**。
-  CI **4 测试片 + 2 UI 片**在 `8a69a1a` **全绿**（test 264/310/206/278s、
-  UI 224/189s、`ci-ok` success，整轮 6m11s）；分片权重已含 1.0s/文件导入开销。
-  CI 已把全量 pytest 拆到 4 台 runner：
-  `tools/ci_shard.py` 按 `tests/ci_durations.json` 历史耗时贪心均分，跑测前
-  `--stats 4` 自检并集=全部 `tests/test_*.py`（新增文件按 20s 自动进组）+ workflow
-  片数/选片/loadfile/ci-ok/取消旧跑一致性；`test/uitest` 各加 45 分钟超时，
-  `ci-ok` 聚合两泳道。2026-11-03 16:25 CI 同款 4 片并发在 `62888c4`/`47731c9`
-  上 **6230 passed /
-  44 skipped / 0 failed**（四片合计 6274；此后新增 4 项由本次全量覆盖；各片
-  源码哈希一致）。分片暴露的两处环境竞态已改成注入/skip（r290 配置注入、
-  r793 空账本守卫），不再记产品红。此前 14:46 的 **6236 passed / 19 skipped /
-  0 failed**（含未跟踪并行 WIP，共 6255）为旧口径。
-  此前 7 红全部闭合：6 项单飞全绿（r319 proxy / r660 负控 / r845×2 /
-  r999×2，xdist 竞争）；r601 配置可达性已补 9 个页面控件 + 保存写回 + 钳制
-  （见 r958），r601 **4 passed**、配置往返 **12 passed**、真渲染 9 控件零 pageerror
-  （14:20）。矩阵升 y 由 **138 定向 passed** 覆盖（13:33）；r952 已修掉此前的
-  4 个 xdist 假红。定向：多程 5 文件 **31 passed**（11:18）；合并后历史/导出
-  **17 passed**（12:46）；Release 正文 **8 passed**（10:36）；日桶 **16 passed**（10:10）。
-  UI **670/670**（2026-11-03 16:50 全量复跑，零 JS 错误；页面 JS 为最终态，此后仅服务端
-  label/提醒改动由全量 pytest 覆盖；含矩阵 ctrip 多程 ✓
-  仅 2 段与 r958 的 9 个配置控件；另含 r946 来源链接与
-  r947 过期门；矩阵含携程 App round_trip=国内/国际、同程 App intl=日历/明细、
-  同程 App round_trip=国际；r905 新增的行内自检按钮另由 `test_r905` 真渲染 +
-  `test_r640` 三档行高覆盖）；能力线 9 文件 **63 passed**（2026-11-03 09:55）；
-  `channel_contract --strict` **10 家 × 11 轴无缺口**（2026-11-03 10:13）；
-  `release_align_check --local` **25/25 PASS**（2026-11-03 22:57，clean 克隆 `8a69a1a`，
-  tracked 6484 / UI 670）；静态站 `code:db416c15fca7` 已按当前 webui 重烘并随
-  `0f782f9` 推送，线上 Pages 匿名请求实测同戳。
+- **代码树**：HEAD `9f22461`（本批 r925–r932 + r959 已入库）：设备锁 owner/预算观测上
+  健康页、`fetch_budget_s` 配置控件、qunar 城市档位自愈、`paced` 主动让位语义、
+  App 等页面帧预算、价格解析统一到 `core.price`（¥ 前缀/遮罩价）、空库缺
+  `fetch_paths` 表按「账本不在」跳过。
+- **门禁**（2026-11-04 当时快照，非现状）：tracked collect **6593**；干净克隆 `1f6eb0d` 全量 **6548 passed /
+  45 skipped / 0 failed**（workers 8，432.55s，6593 口径；45 skip 为无生产账本/
+  真机样本），UI **670/670**（6 片，433.7s）；主树 6560 口径（2026-11-04 当时）全量
+  **6541 passed / 19 skipped / 0 failed**（521.94s）。CI 4 测试片 + 2 UI 片在
+  `9f22461` 上重跑（`r805aa` 空库缺表已按 skip 收口）；`channel_contract --strict`
+  10 家 × 11 轴无缺口；静态站戳 `code:e383ed520a7d` = 当前 `webui.py`，已随本批重烘。
+- **发布**：四平台包由 `release-build` 从最终 SHA 重建；Release 正文用
+  `docs/RELEASE_BODY.md` 初版式模板填充（含多程仅 2 段、paced 语义、设备锁观测）；
+  tag `v1.0` 在资产/正文核验后最后重指。
 - **多程开口程（2026-11-03 16:41 实测）**：profile 副本 + 临时库跑
   SHA→TYO 11-20 / OSA→SHA 11-26，页面「多程超低价」组合卡自报
   **「多程含税价 ¥2184」**（legs 9C8515 + MM079），`tripType=MC`、
