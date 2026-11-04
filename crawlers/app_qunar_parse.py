@@ -27,7 +27,12 @@ _ATTR_RE = r'%s="([^"]*)"'
 _TIME_RE = re.compile(r"^(\d{1,2}):(\d{2})$")
 # 不要在字母前用 `\b`：页面文案是「南航CZ8889」「东航MU123」，
 # 中文与字母之间**没有**词边界，`\b[A-Z]{2}\d{3,4}\b` 会一个都匹配不到。
-_FLIGHT_RE = re.compile(r"([A-Z0-9]{2}\d{3,4})(?![0-9])")
+#
+# 但**纯数字串永远不是航班号**：`11022`（`¥11022` 的价）会被
+# `[A-Z0-9]{2}\d{3,4}` 匹配成"11 + 022"（2026-11-04 现场踩到：
+# 入库 flight_no='11022'、price=11022，看着像航班其实是个价格）。
+# 所以前缀要求**至少一个字母**——`3U8889` / `9C7293` 这类真实航司码仍在。
+_FLIGHT_RE = re.compile(r"([A-Z0-9]{1,2}[A-Z][A-Z0-9]?\d{3,4})(?![0-9])")
 _CURRENCY = ("¥", "￥")
 
 
@@ -50,6 +55,54 @@ def _nodes(xml: str):
 
 def _cy(n):
     return (n[2] + n[4]) // 2
+
+
+# 中转航线的航班号**不在 text 里**（2026-11-04 现场）：
+#
+#     |  | flight_search_rn|QunarFlightInterList|FlightsRound_OD617|PVG-KUL
+#        |2026-11-16/OD528|KUL-DMK|2026-11-16 |  | 0,481,
+#
+# text 为空、航班号全在 `content-desc`。而 `_nodes()` 只收有文字的节点，
+# 于是中转行整条没有身份 → 入库 `flight_no=''`。
+# 这条正则按「FlightsRound_<码>|起降|日期/ <码>|起降|日期」把每一段抠出来。
+_FLIGHT_ROUND_RE = re.compile(
+    r"FlightsRound_([A-Z0-9]{2}\d{3,4})\|")
+_SEG_CODE_RE = re.compile(r"/([A-Z0-9]{2}\d{3,4})\|")
+
+
+def _desc_flight_marks(xml: str):
+    """从 ``content-desc`` 里取中转航班号：``[(code_text, cy)]``。
+
+    直飞时 ``FlightsRound_ZH9516|SHA-BKK|...`` 只有一段；
+    中转时 ``FlightsRound_OD617|PVG-KUL|.../OD528|KUL-DMK|...`` 有第二段。
+    两段用 ``+`` 连起来（``OD617+OD528``）——可读且不歧义，
+    下单程号会让"这到底是哪个航班"含糊。
+    """
+    out = []
+    for m in _NODE_RE.finditer(xml or ""):
+        s = m.group(1)
+        d = re.search(_ATTR_RE % "content-desc", s)
+        if not d:
+            continue
+        desc = d.group(1) or ""
+        if "FlightsRound_" not in desc:
+            continue
+        b = re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', s)
+        if not b:
+            continue
+        codes = _FLIGHT_ROUND_RE.findall(desc) + _SEG_CODE_RE.findall(desc)
+        # 去重但保留顺序（第一段在 findall 里已经先出现）
+        seen, uniq = set(), []
+        for c in codes:
+            if c in seen:
+                continue
+            seen.add(c)
+            uniq.append(c)
+        if not uniq:
+            continue
+        cy = (int(b.group(2)) + int(b.group(4))) // 2
+        out.append(("+".join(uniq), cy))
+    return out
 
 
 def _is_time(t):
@@ -131,6 +184,8 @@ def parse_flight_rows(xml: str) -> List[dict]:
     _screen_w = max((n[3] for n in nodes), default=900)
     _right = _screen_w // 2
     anchors = sorted((t for t in times if t[1] < 200), key=lambda n: n[2])
+    # 中转行航班号的来源（见 `_desc_flight_marks` 的现场说明）
+    desc_marks = _desc_flight_marks(xml)
     rows = []
     used = set()
     for i, t in enumerate(anchors):
@@ -152,6 +207,14 @@ def parse_flight_rows(xml: str) -> List[dict]:
                  if card_top <= o[2] < card_bottom and _FLIGHT_RE.search(o[0])]
         if cands:
             code = _FLIGHT_RE.search(min(cands, key=lambda o: o[2])[0]).group(1)
+        if not code:
+            # 中转行的航班号只在 content-desc 里（text 为空被 `_nodes` 过滤），
+            # 取卡片纵向范围内最靠上的那条。不补这步，入库 flight_no 为空，
+            # 下游就看不出"这天最低价是哪一班"（2026-11-04 实测）。
+            _dcand = [x for x in desc_marks
+                      if card_top - 10 <= x[1] < card_bottom]
+            if _dcand:
+                code = min(_dcand, key=lambda x: x[1])[0]
         # 价格：右侧半屏、落在卡片纵向范围内最靠上的那个（优惠标签已剔除）
         price, best = None, None
         for k, (val, x1, cy) in enumerate(prices):
