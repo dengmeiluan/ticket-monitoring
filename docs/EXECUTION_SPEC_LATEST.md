@@ -33,9 +33,9 @@
   可溯源/过期首段不提醒/整单历史 sparkline/CSV 导出/2 段矩阵升 y）；live 8765 于
   **2026-11-03 08:58** 切到 `_release_ab04`（live 树 `ab04c22`，webui sha12
   `6c85a00f14c1`，PID 47952；`/api/channel-dims` 10 家）；r933–r956 尚未入该树。
-- **门禁**：tracked collect **6493**（2026-11-03 23:09 核对，含 r920 +2 / r921 +10 / r922 +14 / r923 +12 / r924 +56 / UI shard +5）。
+- **门禁**：tracked collect **6500**（2026-11-03 23:16 核对，含 r920 +2 / r921 +10 / r922 +14 / r923 +12 / r924 +56 / r925 +7 / UI shard +5）。
   本地 clean 全量在 HEAD `8a69a1a`：**6465 passed / 19 skipped / 0 failed**
-  （workers 8，602.73s，6484 口径）；r924 补 9 项后定向 **76 passed**。
+  （workers 8，602.73s，6484 口径）；r924/r925 补 16 项定向 **76/7 passed**。
   CI **4 测试片 + 2 UI 片**在 `8a69a1a` **全绿**（test 264/310/206/278s、
   UI 224/189s、`ci-ok` success，整轮 6m11s）；分片权重已含 1.0s/文件导入开销。
   CI 已把全量 pytest 拆到 4 台 runner：

@@ -161,8 +161,12 @@ Do not push, retag, publish or rewrite shared history without explicit user auth
   SHA256 `3c472292102f8a0d45b06bfaef962a350d513359e3d7bba2666891b8a208a8a4`
   （含同程 App 国际往返与 `PATH_CN["app-roundtrip"]`；r919 旧包 `35a9c2c9…` 已作废）。
   仅存 `_scratch/ticket-monitoring-win64-candidate-root.zip`，未进 `dist_package`、未上传。
-- 当前树候选（2026-11-03 14:47，含 r956 矩阵 + r958 配置控件的最终树）：PyInstaller
-  6.22.2 构建成功，`--version=1.5.307`，TOC 含 `core.multicity` /
-  `crawlers.ctrip_multicity` / `webui`；zip **61,805,134 bytes / 864 entries**，SHA256
-  `1fc4276e7cd4901393219b1bd927ea26eea1ae3eb53ad3908ccb8f56e59ac31e`，
-  tests/config/user_data/data 条目 0；未上传。冻结后重算，不复用。
+- 当前树候选（2026-11-03 23:15，源码 `0b47ec6`；HEAD `ebda556` 已有 App 锁 WIP 未入包）：
+  PyInstaller 6.22.2 构建成功，`--version=1.5.307`，TOC 含 `core.multicity` /
+  `crawlers.ctrip_multicity` / `webui` / `crawlers.captcha` / `crawlers.slider` /
+  `core.policy` / `core.android.vendor` / `core.android.hardening`；zip
+  **117,001,080 bytes / 1027 entries**，SHA256
+  `67babb53118f4b146a3a1c00994de9edd00abbdbd00b3747d5a94d7f5f4ae4e1`；
+  `_internal` 含 cv2/numpy（干净 venv 已装 numpy 2.4.6 / opencv 5.0.0），
+  tests/config/user_data/data 条目 0（`_internal/cv2/data/` 是 OpenCV 合法数据目录）；
+  未上传。冻结后重算，不复用；旧 `1fc4276e`（缺 numpy/cv2）作废。

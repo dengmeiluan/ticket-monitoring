@@ -17,7 +17,7 @@
 | live 配置 | `_release_ab04/config.yaml` 与主树 `config.yaml` **diff=0** |
 | 数据/日志/登录态 | live 树的 `data`、`logs`、`user_data` 都是**主树的符号链接**（同一份文件） |
 | live 当前能力 | **10 渠道代码**（live 树 `ab04c22`，webui sha12 `6c85a00f14c1`）；`/api/channel-dims` 10 家；`enabled_platforms` 6（配置未变） |
-| 主树候选 | 10 渠道 + App/浏览器国际往返；tracked collect **6214**（2026-11-03 12:46）；全量非 UI **6236 passed / 19 skipped / 0 failed**（14:46，workers 8，683.41s，共 6255，含未跟踪并行 WIP 测试；tracked 6214）；UI **670/670**（15:15）；候选包 SHA256 `1fc4276e7cd4901393219b1bd927ea26eea1ae3eb53ad3908ccb8f56e59ac31e`（**2026-11-03 14:47 按含 r956 矩阵 + r958 配置控件的最终树构建；61,805,134 bytes / 864 entries；冻结仍按最终树重算**） |
+| 主树候选 | 10 渠道 + App/浏览器国际往返；tracked collect **6500**（2026-11-03 23:09）；全量 **6465 passed / 19 skipped / 0 failed**（`8a69a1a`，602.73s，6484 口径）；r924/r925 补 16 项定向 76/7 passed；UI **670/670**；候选包 SHA256 `67babb53118f4b146a3a1c00994de9edd00abbdbd00b3747d5a94d7f5f4ae4e1`（源码 `0b47ec6`；**117,001,080 bytes / 1027 entries**；含 cv2/numpy；HEAD `ebda556` 已有 App 锁 WIP 未入包；冻结仍按最终树重算） |
 
 因为数据/日志/登录态共享，切换**不需要迁移数据库、日志或登录快照**；旧 live 树保留作回滚。
 
@@ -26,8 +26,9 @@
 > 轮尾采集/只读 API/配置卡/概览整单卡/来源页/过期首段不提醒/整单历史 sparkline/
 > CSV 导出/矩阵 ✓ 仅 2 段）；live `_release_ab04` 仍停在 `ab04c22`，下一次发版必须
 > 按最终树重建四平台包；当前候选
-> `1fc4276e7cd4901393219b1bd927ea26eea1ae3eb53ad3908ccb8f56e59ac31e`
-> （61,805,134 bytes / 864 entries）只是当前快照，冻结后若树再变必须重算。
+> `67babb53118f4b146a3a1c00994de9edd00abbdbd00b3747d5a94d7f5f4ae4e1`
+> （117,001,080 bytes / 1027 entries，源码 `0b47ec6`，含 cv2/numpy）只是当前快照；
+> HEAD `ebda556` 已有 App 锁 WIP 未入包，冻结后若树再变必须重算。
 > **计数陷阱**：README/EN 的 tracked 计数必须按干净 HEAD 实收同步；当前 tracked
 > **6212**（旧 6168 已过期）。`release_align_check --local` 必须 **25/25**；当前实测
 > **25/25 PASS**（14:50），静态站已按当前树重烘（站点戳 `code:eac4fcd5bcf9`）。
