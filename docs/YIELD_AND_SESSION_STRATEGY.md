@@ -650,6 +650,64 @@ got = self.date_guard(date, self._one_date, dev, fc, tc, date)
 
 ---
 
+## 6.3 一次真实事故复盘：调度自锁停摆 10 小时（2026-11-04）
+
+这是到目前为止**最大的单次产量损失**，而且与风控无关——值得整节写下来。
+
+真实日志：
+
+```
+23:30:16  [app_qunar] 开始抓取 SHA->BKK
+23:45:07  [并发] qunar 路由级超时(900s)，按断供记健康时间线
+23:45:07  [并发] app_qunar 路由级超时(900s)
+00:00:07  apscheduler … skipped: maximum number of running instances reached (1)
+…         此后每 30 分钟都 skipped，连续 10 小时一条数都没采到
+```
+
+机制（两层叠加）：
+
+1. `_collect_route_futures()` 超时只是「**不再等** future」，`ThreadPoolExecutor`
+   的 worker **不可取消**——它仍在跑，并继续占着模块级 `_DEVICE_LOCK`；
+2. 之后每轮每个 App 渠道都要白等 `device_lock(timeout=600)` 才放弃，
+   6 个渠道 × 600s 远超 30 分钟间隔 → apscheduler 的 `max_instances=1` 永久积压。
+
+**最要命的是查不动**：日志里只有「路由级超时」和「skipped」，
+**看不出是谁占着锁**。所以这次修复的重点不是"防死锁"（超时本来就有），
+而是**让占用可观测**：
+
+```python
+with rt.device_lock(owner=self.name):    # 9 处 App 渠道全部带 owner
+    ...
+rt.lock_state()        # {'owner': 'app_qunar', 'since': ...}
+```
+
+现在等不到锁时会直接打：
+
+```
+[android] 设备锁等待 600s 超时；当前持有者=app_qunar（已持有 3000s）
+```
+
+单次持有超过 2 分钟也会留痕（正常 App 一轮采集在 60s 内）：
+
+```
+[android] 设备锁被 app_qunar 持有 187s（偏长，留意是否卡住）
+```
+
+**排查顺序**（下次同样现象直接照这个走）：
+
+1. `grep "设备锁" logs/monitor.log` → 看是谁占着、多久；
+2. 该渠道在跑什么 → 上一轮的「开始抓取 …」那行；
+3. `adb shell dumpsys activity activities | grep topResumed` → App 是不是卡在某个页面；
+4. 手工 `am force-stop <pkg>` 释放，或直接重启实例。
+
+> 顺带一条不该忘的：**`blocked` 在 `pacing` 里一律归 `captcha`（冷却 300s）**。
+> 这是刻意设计（结构化状态优先），所以采集器**绝不能**把"页面没打开"
+> 记成 `blocked`——智行那 22 次「命中captcha」里绝大多数是导航失败被记成了
+> 拦截。现在 `pacing.classify_evidence()` 会把判定证据（`status=blocked` /
+> `note~=安全验证`）记进快照，下次能直接看出是哪条证据判的。
+
+---
+
 ## 7. 别做的事（只看会真吃亏的）
 
 1. 重试风暴——唯一能把「限你」升级成「封你」的动作。
