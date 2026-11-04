@@ -11,6 +11,7 @@ fliggy 都在锁内调用。锁外的启动与锁内的采集并发，谁最后�
 """
 import logging
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -87,6 +88,7 @@ def test_zhixing_source_keeps_prepare_inside_lock():
     start = src.index("    def fetch(self, from_city")
     end = src.index("    # ---------- 往返 ----------", start)
     body = src[start:end]
-    assert "with rt.device_lock():" in body
+    # 允许带参数（`device_lock(owner=self.name)`，2026-11-04 起）；不变量不变
+    assert re.search(r"with\s+rt\.device_lock\([^)]*\)\s*:", body)
     # 锁外不得再出现 prepare_device（缩进 8 空格的顶层调用）
     assert "\n        self.prepare_device(dev)" not in body

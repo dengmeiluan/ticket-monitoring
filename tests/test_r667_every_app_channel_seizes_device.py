@@ -32,11 +32,13 @@ def _app_channels():
 def test_every_app_channel_holds_the_device_lock(plat):
     src = io.open(os.path.join(ROOT, "crawlers", plat + ".py"),
                   encoding="utf-8", newline="").read()
-    assert "device_lock()" in src, (
+    # 允许带参数（`device_lock(owner=self.name)`，2026-11-04 起用于定位
+    # 「谁占着锁」）；不变量仍然是"必须拿独占锁"。
+    assert "device_lock(" in src, (
         "%s 的采集没有拿设备独占锁：两个 App 渠道共用一台模拟器时会互相"
         "打断（channel_slot 是按渠道分锁的，挡不住）" % plat)
     # 必须真的把取数段包进锁里，而不是拿到锁对象就丢
-    assert re.search(r"with\s+rt\.device_lock\(\)\s*:", src), (
+    assert re.search(r"with\s+rt\.device_lock\([^)]*\)\s*:", src), (
         "%s 只是提到了 device_lock，但没有把它当上下文管理器包住采集段"
         % plat)
 
