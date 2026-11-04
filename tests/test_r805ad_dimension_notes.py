@@ -44,6 +44,19 @@ def test_dimension_notes_explain_calendar_only_intl():
             "%s 的 intl 说明没点出「只有日历价」：%r" % (plat, note))
 
 
+def test_tuniu_intl_note_names_the_h5_path_and_pc_block():
+    """途牛国际 y 的实情是「H5/API 出数、PC 被滑块拦」——必须在悬停里说清。
+
+    只写 y 会让读者以为 PC 也能查；写 n 又与事实不符（H5 真出过数）。
+    """
+    from core.channels import DIMENSION_NOTES
+    note = DIMENSION_NOTES.get(("tuniu", "intl")) or ""
+    assert "H5" in note and "PC" in note, (
+        "tuniu.intl 说明没点出「H5/API 出数、PC 被拦」的分端事实：%r" % note)
+    assert "滑块" in note, "没说明 PC 为什么测不出：%r" % note
+    assert "n" in note, "没说明「测不出不记 n」的口径：%r" % note
+
+
 def test_api_exposes_dim_notes():
     src = io.open(os.path.join(ROOT, "core", "channels.py"),
                   encoding="utf-8").read()

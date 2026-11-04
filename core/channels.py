@@ -328,6 +328,10 @@ def surface_state(plat: str, surface: str) -> str:
 DIMENSION_NOTES = {
     ("tongcheng", "intl"): "国际只走「窗历」（日历族）：出的是逐日最低价，"
                            "没有航班号/机型/时刻（日历本身不含航班级信息）",
+    ("tuniu", "intl"): "国际走 H5/API（`m.tuniu.com/flight/` 页内切国际）："
+                       "2026-11-01 账本 H5/API 32 次 ok、2985 行；PC 有实现但"
+                       "被滑块拦住，按「测不出」记空，不记 n。远期日期查询受限，"
+                       ">30 天优先走 H5/API",
     ("app_qunar", "intl"): "国际列表卡带航班号/时刻/价格（2026-11-01 实测 "
                            "CA847 ¥3305 / MU213 / BA168）；国际没有独立日历通路",
     ("app_qunar", "round_trip"): "国内往返真机跑通（左右两列去/返 + 页脚往返"
