@@ -534,7 +534,31 @@ def _tap_calendar_cell(dev, xml: str, ymd: str) -> tuple:
         time.sleep(2)
         left = dev.dump() or ""
         if "Search_Calendar_Dialog" in left:
-            return False, "点了日期但弹层没关"
+            # **弹层没关是可恢复的**（2026-11-03~04 实测 15 次）：
+            # 落点偶尔偏到弹层头部，日历不关；原代码直接判失败放弃，
+            # 于是「明细页没解析出带价航班」整条航线白跑。
+            # 先按 BACK 关掉弹层，再点一次就好。
+            try:
+                from .app_base import dismiss_until_gone
+                gone, left2 = dismiss_until_gone(
+                    dev, "Search_Calendar_Dialog", tries=1)
+            except Exception:
+                gone, left2 = ("Search_Calendar_Dialog" not in (dev.dump() or "")), ""
+            if not gone:
+                return False, "点了日期但弹层没关"
+            # 弹层是被 BACK 关掉的：这一次点击没生效，重试一次点击
+            if attempt < 4:
+                xml = dev.dump() or ""
+                cell2 = _calendar_cell(xml, ymd)
+                if cell2 is not None and dev.tap(*cell2):
+                    time.sleep(2)
+                    left = dev.dump() or ""
+                    if "Search_Calendar_Dialog" in left:
+                        return False, "点了日期但弹层没关（重试后仍开）"
+                else:
+                    return False, "点了日期但弹层没关（重试时找不到格子）"
+            else:
+                return False, "点了日期但弹层没关"
         # 点完必须核对首页日期行真的换了：没换时点「机票查询」会重查上一日，
         # 结果被打上目标日期——价格错配而看不出任何异常。
         shown = home_date_text(left)

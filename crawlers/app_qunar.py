@@ -1415,7 +1415,24 @@ class AppQunarCrawler(AppCrawler):
                 # 会重查上一天，结果被打上目标日期——价格错配且毫无异常。
                 back = dev.dump() or ""
                 if "选择日期" in back:
-                    return False        # 弹层没关 = 没选上
+                    # **弹层没关可恢复**（与智行同一类现场）：按 BACK 关掉再点一次。
+                    # 直接放弃会让整条航线白跑（"选不上日期"）。
+                    try:
+                        from .app_base import dismiss_until_gone
+                        gone, back = dismiss_until_gone(dev, "选择日期", tries=1)
+                    except Exception:
+                        gone = "选择日期" not in back
+                    if not gone:
+                        return False        # 弹层没关 = 没选上
+                    cell2 = _month_day_cell(dev.dump() or "", target)
+                    if cell2 is None:
+                        return False
+                    if not dev.tap(*_center(cell2)):
+                        return False
+                    _sleep(2)
+                    back = dev.dump() or ""
+                    if "选择日期" in back:
+                        return False
                 return _find_text(back, want_cn) is not None
             # 目标月份块还没滚到可视区（或在屏幕外）：朝目标方向滚一屏。
             # 网格只渲染可见区，所以「格子不在」要翻页——但**方向不能赌**：

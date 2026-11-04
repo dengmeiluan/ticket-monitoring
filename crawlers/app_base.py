@@ -78,6 +78,38 @@ def wait_ready(dev, marker: str, *, exclude=(), frames: int = 14,
                         % (i + 1, int(time.time() - t0), marker))
 
 
+def dismiss_until_gone(dev, marker: str, *, tries: int = 2,
+                       wait_s: float = 1.5) -> tuple:
+    """弹层/页面标记还在时按 BACK 尝试关掉：返回 ``(gone, xml)``。
+
+    为什么需要（2026-11-03~04 实测 15 次）：App 里"点日期 → 日历弹层应自己关"，
+    但落点偶尔偏到弹层头部，于是弹层不关。原代码**直接判失败放弃**
+    （`点了日期但弹层没关` → 明细页没数据 → 整条航线白跑）。
+    而这类失败是**可恢复**的：按一次 BACK 关掉弹层，再点一次就成了。
+
+    ``marker`` 是"弹层还在"的标志文案（如 ``Search_Calendar_Dialog``）。
+    """
+    xml = ""
+    for _ in range(max(1, int(tries))):
+        try:
+            xml = dev.dump() or ""
+        except Exception:
+            # uiautomator 挂掉时 dump 会抛：不能让它把整条采集带崩
+            return False, xml
+        if str(marker) not in xml:
+            return True, xml
+        try:
+            dev.keyevent("KEYCODE_BACK")
+        except Exception:
+            return False, xml
+        time.sleep(max(0.2, float(wait_s)))
+    try:
+        xml = dev.dump() or ""
+    except Exception:
+        return False, xml
+    return (str(marker) not in xml), xml
+
+
 class AppCrawler:
     """Android App 渠道基类（单设备串行采集）。"""
 
