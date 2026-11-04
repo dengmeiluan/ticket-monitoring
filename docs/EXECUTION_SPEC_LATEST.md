@@ -26,21 +26,18 @@
 
 ## 1. 项目事实与当前状态（开工必核验）
 
-### 1.0 当前状态快照（2026-11-04 11:10，先核验再干活）
+### 1.0 当前状态快照（2026-11-04 11:35，先核验再干活）
 
-- **代码树**：HEAD `9f22461`（本批 r925–r932 + r959 已入库）：设备锁 owner/预算观测上
-  健康页、`fetch_budget_s` 配置控件、qunar 城市档位自愈、`paced` 主动让位语义、
-  App 等页面帧预算、价格解析统一到 `core.price`（¥ 前缀/遮罩价）、空库缺
-  `fetch_paths` 表按「账本不在」跳过。
-- **门禁**（2026-11-04 当时快照，非现状）：tracked collect **6593**；干净克隆 `1f6eb0d` 全量 **6548 passed /
-  45 skipped / 0 failed**（workers 8，432.55s，6593 口径；45 skip 为无生产账本/
-  真机样本），UI **670/670**（6 片，433.7s）；主树 6560 口径（2026-11-04 当时）全量
-  **6541 passed / 19 skipped / 0 failed**（521.94s）。CI 4 测试片 + 2 UI 片在
-  `9f22461` 上重跑（`r805aa` 空库缺表已按 skip 收口）；`channel_contract --strict`
-  10 家 × 11 轴无缺口；静态站戳 `code:e383ed520a7d` = 当前 `webui.py`，已随本批重烘。
-- **发布**：四平台包由 `release-build` 从最终 SHA 重建；Release 正文用
-  `docs/RELEASE_BODY.md` 初版式模板填充（含多程仅 2 段、paced 语义、设备锁观测）；
-  tag `v1.0` 在资产/正文核验后最后重指。
+- **代码树**：代码 HEAD `0103b4f`（本批 r925–r934 + r959；r935 智行日期入口待入库）：
+  设备锁 owner/预算观测上健康页、`fetch_budget_s` 配置控件、qunar 城市档位自愈/
+  ¥ 价与中转航班号归一、`paced` 主动让位、App 等页面帧预算与弹层 BACK 重试。
+- **门禁**：tracked collect **6612**；干净克隆 `d618528` 全量 **6566 passed / 45 skipped /
+  0 failed**（526.39s，6611 口径；45 skip 为无生产账本/真机样本），UI **670/670**；
+  CI 4 测试片 + 2 UI 片在 `0103b4f` 全绿（`ci-ok` success）；`channel_contract --strict`
+  10 家 × 11 轴无缺口；`release_align_check --local` 25/25；静态站戳
+  `code:e383ed520a7d` = 当前 `webui.py`。
+- **发布**：四平台 `release-build` 从最终文档提交重建；正文用 `docs/RELEASE_BODY.md`
+  初版式模板填充（多程仅 2 段、paced、设备锁观测）；tag `v1.0` 在资产/正文核验后最后重指。
 - **多程开口程（2026-11-03 16:41 实测）**：profile 副本 + 临时库跑
   SHA→TYO 11-20 / OSA→SHA 11-26，页面「多程超低价」组合卡自报
   **「多程含税价 ¥2184」**（legs 9C8515 + MM079），`tripType=MC`、
@@ -60,9 +57,10 @@
   像素门禁 `test_app_zhixing_icon_has_no_promo_banner`。
 - **唯一声明源**：`core/channels.py`。新增渠道/维度先跑 `python -m core.channel_contract --strict`
   与 `test_r903/r904/r905`；声明字典禁止重复键，hint 承诺的按钮必须真实渲染。
-- **发布状态**：Release `v1.0` → `e65cee1`（2026-11-03 09:54 由 `ab04c22` 重指，多 4 个提交；v1.5.307，10 渠道正文/四资产 digest 4/4；CI/release-build/Pages 在 `e65cee1` 均 success；**该轮四平台包构建早于 `numpy` 依赖声明（21:10），冻结包内滑块缺口检测会静默无候选——下一次发版必须按最终 `requirements.txt` 重建四平台包并重算资产 SHA/正文**）；ghcr `sha-e65cee1` = `latest` digest `5fb025bb3488…`（同 digest）；`sha-ab04c22` 仍可拉取（digest `9b72acb1a6b9…`）但已不对应 Release；公开站点戳 `code:db416c15fca7` 由更新后的 main 部署（release 树 webui 为 `6c85a00f14c1`）；live 8765 仍是 `_release_ab04`（`ab04c22` 树）；
-  工作树未提交/未发布，推送、tag、Release、Pages、live 切换均需明确授权。
-  live 切换的可执行步骤与回滚见 `docs/LIVE_PROMOTION_RUNBOOK.md`。
+- **发布状态**：Release `v1.0` 本轮从 `e65cee1` 刷新到本次文档提交（代码 `0103b4f`）：
+  四平台包按最终 `requirements.txt` 重建、正文初版式重写、tag 最后重指；旧 `e65cee1`
+  资产（早于 numpy）作废。live 8765 仍 `_release_ab04`，切换需明确授权；
+  步骤与回滚见 `docs/LIVE_PROMOTION_RUNBOOK.md`。
 - **本文结构**：§1–§12 是执行口径；§12 之后是历次门禁与时序台账，**不是当前状态**；
   当前状态以本块与 §1 前段为准。
 
