@@ -653,20 +653,24 @@ def test_no_ghost_tokens_in_spec():
     assert not ghosts, "规范引用了代码中不存在的令牌: %s" % ghosts
 
 def test_handoff_core_modules_exist():
-    """HANDOFF 架构速览里点名的 core 模块必须真实存在。
+    """架构类文档里点名的 core 模块必须真实存在。
 
     防的是：模块被删除/改名后文档仍指着一个不存在的路径，
-    接手者按文档去找却扑空。
+    接手者按文档去找却扑空。原来只查根目录 HANDOFF.md（本地日志、
+    不入库）；干净克隆没有它，门禁就成了一条永远不跑的 skip。
+    现在查**所有已入库的 README 与 docs/*.md**，覆盖面更大且可复核。
     """
-    import os
-    handoff = (ROOT / "HANDOFF.md")
-    if not handoff.exists():
-        pytest.skip("HANDOFF.md 不在版本库（gitignore），跳过")
-    text = handoff.read_text(encoding="utf-8")
-    refs = set(re.findall(r"^(core/[a-z_]+\.py)", text, re.M))
-    assert len(refs) >= 8, "架构速览点名的 core 模块过少（%d），疑似解析失败" % len(refs)
+    docs = [ROOT / "README.md", ROOT / "README_EN.md"]
+    docs += sorted((ROOT / "docs").glob("*.md"))
+    refs = set()
+    for p in docs:
+        if not p.is_file():
+            continue
+        text = p.read_text(encoding="utf-8", errors="replace")
+        refs |= set(re.findall(r"core/[a-z_]+\.py", text))
+    assert len(refs) >= 8, "文档点名的 core 模块过少（%d），疑似解析失败" % len(refs)
     missing = [r for r in sorted(refs) if not (ROOT / r).exists()]
-    assert not missing, "HANDOFF 指向不存在的模块: %s" % missing
+    assert not missing, "文档指向不存在的模块: %s" % missing
 
 def test_probe_design_hard_contracts():
     """探针台设计文档的硬契约必须与代码一致（14 日价带 / 字段规格数 / 5 渠道矩阵）。"""
@@ -958,12 +962,12 @@ def test_playbook_claimed_improvements_hold():
     若近期又出现，说明功能退化或文档需更新。
     """
     playbook_path = ROOT / "docs" / "RATE_LIMIT_PLAYBOOK.md"
-    log_path = ROOT / "logs" / "monitor.log"
-    if not playbook_path.exists() or not log_path.exists():
-        pytest.skip("PLAYBOOK 或日志不存在")
+    log_path = ROOT / "tests" / "fixtures" / "monitor_round_app.txt"
+    assert playbook_path.exists(), "PLAYBOOK 不在版本库"
     doc = playbook_path.read_text(encoding="utf-8", errors="replace")
-    if "现况对照" not in doc:
-        pytest.skip("PLAYBOOK 尚无现况对照表")
+    assert "现况对照" in doc, "PLAYBOOK 尚无现况对照表"
+    if not log_path.exists():
+        return  # 没有日志样本时无法复现；PLAYBOOK 仍被上面的存在性守住
 
     lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
     hits = [l for l in lines if "SessionBusyError" in l]
@@ -1174,33 +1178,36 @@ def test_fliggy_transfer_claim_matches_code():
     中转卡片也建行入库。读者据此以为飞猪不能比中转价，会漏掉一条真实通路。
     """
     fliggy = ROOT / "crawlers" / "fliggy.py"
-    if not fliggy.exists():
-        pytest.skip("fliggy crawler 不存在")
+    assert fliggy.exists(), "fliggy crawler 不在，判据失去靶子"
     src = fliggy.read_text(encoding="utf-8", errors="replace")
 
     # 代码侧事实：中转块确实被解析
     parses_transfer = ("中转" in src and "transCity" in src) or ("中转块" in src)
-    if not parses_transfer:
-        pytest.skip("fliggy 已不解析中转，文档可写「缺失」")
+    assert parses_transfer, "fliggy 已不解析中转，需人工复核文档口径"
 
+    docs = [ROOT / "README.md", ROOT / "README_EN.md"]
+    docs += sorted((ROOT / "docs").glob("*.md"))
     handoff = ROOT / "HANDOFF.md"
-    if not handoff.exists():
-        pytest.skip("HANDOFF 不存在")
-    for line in handoff.read_text(encoding="utf-8", errors="replace").splitlines():
-        # 只抓「飞猪…中转缺失/无中转分区」这种紧密否定句式；
-        # 历史记录里一行同时提到「飞猪」和「中转」是常态，不能按同现判定。
-        if not re.search(r"飞猪[^\n]{0,20}中转[^\n]{0,10}(?:缺失|无)", line):
+    if handoff.exists():
+        docs.append(handoff)
+    for p in docs:
+        if not p.is_file():
             continue
-        if any(k in line for k in ("已不成立", "~~", "曾经", "旧称", "不再")):
-            continue
-        raise AssertionError(
-            "HANDOFF 仍称飞猪中转缺失，但 crawler 已解析中转块：%s" % line.strip()[:90])
+        for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+            # 只抓「飞猪…中转缺失/无中转分区」这种紧密否定句式；
+            # 历史记录里一行同时提到「飞猪」和「中转」是常态，不能按同现判定。
+            if not re.search(r"飞猪[^\n]{0,20}中转[^\n]{0,10}(?:缺失|无中转|不可用)", line):
+                continue
+            if any(k in line for k in ("已不成立", "~~", "曾经", "旧称", "不再",
+                                       "不得", "门禁", "判据")):
+                continue
+            raise AssertionError(
+                "%s 仍称飞猪中转缺失，但 crawler 已解析中转块：%s"
+                % (p.name, line.strip()[:90]))
 
     # 「仅直达」同族：库内 fliggy 元素实测有大量中转（transfer=true / transCity 非空），
     # 任何文档写"飞猪仅直达/只有直飞"都属过期。允许带"旧记/已过期/推翻"的更正语境。
-    for p in (ROOT / "HANDOFF.md", ROOT / "README.md",
-              ROOT / "README_EN.md", ROOT / "docs" / "INTL_DESIGN.md",
-              ROOT / "docs" / "CHANNEL_SESSION.md"):
+    for p in docs:
         if not p.exists():
             continue
         for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
@@ -1222,19 +1229,19 @@ def test_handoff_core_units_all_blocks_count():
     而读者会拿它判断"能不能直跑"。
     """
     core = ROOT / "tests" / "test_core_units.py"
-    handoff = ROOT / "HANDOFF.md"
-    if not core.exists() or not handoff.exists():
-        pytest.skip("文件不存在")
+    assert core.exists(), "test_core_units.py 不在，判据失去靶子"
     actual = sum(1 for ln in core.read_text(encoding="utf-8", errors="replace").splitlines()
                  if ln.startswith("ALL = "))
-    text = handoff.read_text(encoding="utf-8", errors="replace")
-    m = re.search(r"(一|两|二|\d+)\s*个\s*\*{0,2}\s*`ALL = `\s*\*{0,2}\s*收集块", text)
-    assert m, ("HANDOFF 已不再提 `ALL = ` 收集块数量——"
-              "本门禁失去锚点，需人工确认该节是否被删/改写")
-    zh = {"一": 1, "两": 2, "二": 2}
-    claimed = zh.get(m.group(1)) or int(m.group(1))
-    assert claimed == actual, (
-        "HANDOFF 说剩 %d 个 `ALL = ` 块，实际 %d 个" % (claimed, actual))
+    # 口径锚点必须留在**已入库**的执行规范门禁目录里（根 HANDOFF 不入库，
+    # 干净克隆读不到，旧写法等于永远 skip）。
+    spec = (ROOT / "docs" / "EXECUTION_SPEC_LATEST.md").read_text(
+        encoding="utf-8", errors="replace")
+    assert "test_handoff_core_units_all_blocks_count" in spec, (
+        "执行规范的门禁目录不再收录本条，需人工确认是否被删")
+    assert "`ALL = `" in spec, "规范里不再提 `ALL = ` 收集块"
+    assert actual == 1, (
+        "test_core_units.py 现有 %d 个 `ALL = ` 收集块（文档口径为 1）——"
+        "变更后需同步规范与门禁" % actual)
 
 
 def test_spec_mandatory_gates_have_uitest_coverage():
@@ -2219,28 +2226,25 @@ def test_all_docs_api_routes_exist():
     assert not offenders, "文档提到但 webui.py 中不存在的路由: %s" % offenders
 
 def test_handoff_status_section_has_no_hardcoded_pid():
-    """HANDOFF「当前状态」段不得写死进程 PID——重启即失效。
+    """发布 Runbook 不得把 PID 写成「当前值」——重启即失效。
 
     实测踩过：正文写「PID 169944」，而当时 `.monitor.pid` 是 95172、
     netstat 里实际监听的是 189700，三个值互不相同。
-    正确做法是给出获取方式（netstat / .monitor.pid 及其差异说明）。
+    已入库的 Runbook 是唯一常驻的现场记录；它必须：
+      * 给出获取 PID 的方式（netstat / psutil）；
+      * 开头的状态块把 PID 标成历史快照（执行结果/现场复核/当时），
+        而不是「当前 PID」。
     """
-    p = ROOT / "HANDOFF.md"
-    if not p.exists():
-        pytest.skip("HANDOFF 不存在")
-    lines = p.read_text(encoding="utf-8", errors="replace").splitlines()
-    try:
-        start = next(i for i, l in enumerate(lines) if l.startswith("**当前状态"))
-    except StopIteration:
-        pytest.skip("HANDOFF 无「当前状态」段")
-    # 段落到下一个空行后的标题/表格为止
-    end = start + 1
-    while end < len(lines) and not lines[end].startswith("| 项 |"):
-        end += 1
-    seg = "\n".join(lines[start:end])
-    assert not re.search(r"PID\s*\**\s*\d{3,}", seg) and not re.search(r"PID \*\*\d{3,}", seg), (
-        "HANDOFF 当前状态段写死了 PID（重启即失效）：请改为给出获取方式")
-    assert "netstat" in seg, "当前状态段应给出取 PID 的方式（netstat）"
+    p = ROOT / "docs" / "LIVE_PROMOTION_RUNBOOK.md"
+    assert p.exists(), "发布 Runbook 不在版本库，判据失去靶子"
+    text = p.read_text(encoding="utf-8", errors="replace")
+    assert "netstat" in text, "Runbook 没给出取 PID 的方式（netstat）"
+    head = "\n".join(text.splitlines()[:10])
+    if re.search(r"PID\s*\**\s*\d{3,}", head):
+        assert re.search(r"执行结果|现场复核|当时|快照", head), (
+            "Runbook 开头把 PID 写成当前值（重启即失效）：请标为历史快照")
+    assert not re.search(r"当前\s*PID\s*\**\s*\d{3,}", text), (
+        "Runbook 出现「当前 PID 数字」——重启即失效，应给出获取方式")
 
 
 def test_uncommitted_rounds_note_is_consistent():
@@ -2254,40 +2258,50 @@ def test_uncommitted_rounds_note_is_consistent():
     写死端点的门禁会因文档换了表述而静默 skip，反而失去守护作用。
     """
     spec = ROOT / "docs" / "EXECUTION_SPEC_LATEST.md"
-    handoff = ROOT / "HANDOFF.md"
-    if not spec.exists() or not handoff.exists():
-        pytest.skip("文档不存在")
+    assert spec.exists(), "执行规范不在版本库"
     s = spec.read_text(encoding="utf-8", errors="replace")
-    h = handoff.read_text(encoding="utf-8", errors="replace")
-    assert re.search(r"r418\s*起", s), "SPEC 未声明「r418 起的新轮次尚未提交」"
-    assert re.search(r"r418\s*起", h), (
-        "SPEC 已声明 r418 起未提交，HANDOFF 头部却没有同步说明")
-    assert "尚未提交" in h or "只在工作区" in h, (
-        "HANDOFF 未说明这些轮次尚未提交")
+    m = re.search(r"(r\d{3,})\s*起[^\n]{0,80}(?:未提交|只在工作区|尚未提交)", s)
+    assert m, "SPEC 没有声明「rNNN 起的新轮次尚未提交」"
+    start = m.group(1)
+    # 任何**其他已入库文档**若也声明「rNNN 起未提交」，起点必须与 SPEC 一致；
+    # 根 HANDOFF 是本地日志、不入库，不再作为判据来源。
+    docs = [ROOT / "README.md", ROOT / "README_EN.md"]
+    docs += sorted((ROOT / "docs").glob("*.md"))
+    bad = []
+    for p in docs:
+        if p.resolve() == spec.resolve() or not p.is_file():
+            continue
+        text = p.read_text(encoding="utf-8", errors="replace")
+        for line in text.splitlines():
+            mm = re.search(r"(r\d{3,})\s*起[^\n]{0,80}(?:未提交|只在工作区|尚未提交)", line)
+            if mm and mm.group(1) != start:
+                bad.append((p.name, mm.group(1)))
+    assert not bad, (
+        "这些文档对「未提交起点」与 SPEC（%s）不一致：%s" % (start, bad[:4]))
 
 
 def test_handoff_header_date_not_behind_body():
-    """HANDOFF 头部「最后更新」日期不得早于正文里出现的最新日期。
+    """执行规范头部「最后更新」日期不得早于正文里出现的最新日期。
 
     实测踩过：头部写 `最后更新：2026-10-27`，正文同一文件里却写
     「截至 2026-10-28 02:30 到 r430」——读者看头部会以为这是昨天的交割，
     实际内容已更新到今天。头部日期是"这份文档有多新"的唯一信号，落后即误导。
+    根 HANDOFF 不入库；现在以常驻的执行规范为锚（它才是干净克隆能读到的那份）。
     """
-    handoff = ROOT / "HANDOFF.md"
-    if not handoff.exists():
-        pytest.skip("HANDOFF.md 不在版本库（gitignore），跳过")
-    lines = handoff.read_text(encoding="utf-8", errors="replace").splitlines()
+    spec = ROOT / "docs" / "EXECUTION_SPEC_LATEST.md"
+    assert spec.exists(), "执行规范不在版本库，判据失去靶子"
+    lines = spec.read_text(encoding="utf-8", errors="replace").splitlines()
     head = next((l for l in lines[:12] if "最后更新" in l), None)
-    assert head is not None, "HANDOFF 头部缺少「最后更新」行，本门禁失去锚点"
+    assert head is not None, "执行规范头部缺少「最后更新」行，本门禁失去锚点"
     m = re.search(r"(20\d\d-\d\d-\d\d)", head)
     assert m, "「最后更新」未写日期：" + head.strip()[:80]
     head_date = m.group(1)
     body = "\n".join(lines)
     # 只取「文档时效」语境的日期：截至/实测/复核/更新。
-    # 不能扫所有日期——HANDOFF 里大量 `SHA→HAK 2027-01-29` 是**航班日期**，
+    # 不能扫所有日期——正文里大量 `2027-01-29` 是**航班日期**，
     # 拿它当"文档最新日期"会要求头部写到 2027 年（实测踩过）。
     dates = re.findall(r"(?:截至|实测|复核|更新[：:]?)\s*(20\d\d-\d\d-\d\d)", body)
-    assert dates, "HANDOFF 正文没有可供判断时效的日期（截至/实测/复核/更新）"
+    assert dates, "执行规范正文没有可供判断时效的日期（截至/实测/复核/更新）"
     newest = max(dates)
     assert head_date >= newest, (
         "HANDOFF 头部「最后更新：%s」早于正文最新时效日期 %s——头部需同步"
@@ -2782,48 +2796,63 @@ def test_mobile_runtime_status_claims_match_reality():
     以为要从头装环境，实际已经装好了。
     """
     import shutil
-    import subprocess
     plan = ROOT / "docs" / "MOBILE_PATH_B_PLAN.md"
-    if not plan.exists():
-        pytest.skip("PATH_B_PLAN 不存在")
+    assert plan.exists(), "PATH_B_PLAN 不在版本库，判据失去靶子"
     doc = plan.read_text(encoding="utf-8", errors="replace")
 
-    adb = shutil.which("adb")
-    if not adb:
-        # 项目内 adbutils 自带 adb
-        cand = ROOT / "_scratch" / "spike_mobile"
-        if not cand.is_dir():
-            pytest.skip("无 adb 可用")
-    try:
-        from adbutils import adb as _adb
-        devices = [d.serial for d in _adb.list()]
-    except Exception:
-        pytest.skip("adbutils 不可用")
+    def _time_scoped():
+        return "**当时**" in doc or "当时" in doc
+
+    devices = []
+    if shutil.which("adb") or (ROOT / "_scratch" / "spike_mobile").is_dir():
+        try:
+            from adbutils import adb as _adb
+            devices = [d.serial for d in _adb.list()]
+        except Exception:
+            devices = []
+    if not devices:
+        # 没有设备时无法证伪「已装」，但仍能守一件事：这句话必须带
+        # 时点限定，不能成为对当前环境的断言。
+        assert ("本机还没装任何 Android 运行时" not in doc
+                or _time_scoped()), (
+            "文档无时点限定地声称「本机还没装任何 Android 运行时」"
+            "——读者会以为现在仍要从头装环境")
+        return
 
     has_device = bool(devices)
-    stale = "本机还没装任何 Android 运行时" in doc and "**当时**" not in doc
+    stale = "本机还没装任何 Android 运行时" in doc and not _time_scoped()
     if has_device and stale:
         raise AssertionError(
             "文档声称未装 Android 运行时，但 adb 已连上设备 %s——需更新" % devices)
 
 
 def test_handoff_mobile_verdict_not_left_at_theory():
-    """HANDOFF 的 App 抓包结论不得停留在"仅理论可行"而不提已实测跑通。
+    """App 抓包结论不得停留在"仅理论可行"而不提已实测跑通。
 
     实测踩过：结论行只写「理论可行…成本高…不作为主方案」，
     而另一份文档里 MuMu 已把美团/智行都跑通——同一个仓库两种结论。
-    判据：HANDOFF 提到 App 抓包时，必须同时出现实测结论与"未接入爬虫"的边界。
+    根 HANDOFF 不入库；判据改用两份**已入库**文档：
+      * `docs/MOBILE_MUMU_ACCEPTANCE.md` —— 真机实测已跑通；
+      * `docs/HANDOFF_FULL_SESSION.md` —— 边界：运行时跑通 ≠ 已接入爬虫。
     """
+    mumu = ROOT / "docs" / "MOBILE_MUMU_ACCEPTANCE.md"
+    assert mumu.exists(), "MuMu 验收文档不在版本库"
+    text = mumu.read_text(encoding="utf-8", errors="replace")
+    assert "实测跑通" in text, "MuMu 文档没有实测跑通结论"
+
+    full = ROOT / "docs" / "HANDOFF_FULL_SESSION.md"
+    assert full.exists(), "交接全文不在版本库"
+    ftxt = full.read_text(encoding="utf-8", errors="replace")
+    assert "未接入" in ftxt, "交接文档没写清边界（运行时跑通 ≠ 渠道已支持）"
+
     handoff = ROOT / "HANDOFF.md"
-    if not handoff.exists():
-        pytest.skip("HANDOFF 不存在")
-    text = handoff.read_text(encoding="utf-8", errors="replace")
-    if "App 抓包" not in text:
-        pytest.skip("HANDOFF 未讨论 App 抓包")
-    assert "MOBILE_RUNTIME_VERIFICATION" in text, (
-        "HANDOFF 谈 App 抓包却没指向实测记录文档")
-    assert "仍未接入爬虫" in text or "不等于渠道已支持" in text, (
-        "HANDOFF 未写清边界：运行时跑通 ≠ 渠道已支持")
+    if handoff.exists():
+        htxt = handoff.read_text(encoding="utf-8", errors="replace")
+        if "App 抓包" in htxt:
+            assert "MOBILE_RUNTIME_VERIFICATION" in htxt, (
+                "HANDOFF 谈 App 抓包却没指向实测记录文档")
+            assert "仍未接入爬虫" in htxt or "不等于渠道已支持" in htxt, (
+                "HANDOFF 未写清边界：运行时跑通 ≠ 渠道已支持")
 
 def test_计划文档checkbox状态须与实际一致():
     """计划类文档若 0 个勾选但产物已存在，必须写明「落地状态」。
@@ -3304,11 +3333,7 @@ def test_design_context_doc_matches_code():
     写「近 48h 轮次聚类」（实际范围 48h/7天/30天/90天/半年，默认 30 天）。
     """
     p = ROOT / ".impeccable.md"
-    if not p.exists():
-        # 该文件被 .gitignore（本地设计上下文，不入库），CI checkout 里没有。
-        # 缺失时本门禁无对象可校验——跳过而不是判红（判红只说明环境不同）。
-        import pytest as _pytest
-        _pytest.skip(".impeccable.md 未入库（本地设计上下文），跳过")
+    assert p.exists(), "设计上下文不在版本库（已纳入公开树）"
     doc = p.read_text(encoding="utf-8", errors="replace")
 
     # 1) 文档里出现的每个 hex 色值，要么在 webui.py 里存在，要么被标注为"废弃/旧"

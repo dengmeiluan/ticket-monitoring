@@ -31,8 +31,8 @@ from crawlers.app_zhixing_lowfare import (  # noqa: E402
     page_selection, selection_covers,
 )
 
-# 真机 dump（2026-10-31 海口→上海 特价结果页）；_scratch 不入库
-REAL = os.path.join(ROOT, "_scratch", "r732_teja_result.xml")
+# 真机 dump（2026-10-31 海口→上海 特价结果页），入库为固定样本
+REAL = os.path.join(ROOT, "tests", "fixtures", "zhixing_low_fare_result.xml")
 
 
 def _xml(rows, extra=""):
@@ -142,9 +142,7 @@ def test_find_entry_returns_the_teja_tab():
 
 def test_real_device_dump_gives_three_days_no_reference_price():
     """真机回归：3 天各一条，且都不等于「近期成交价 462」。"""
-    import pytest
-    if not os.path.exists(REAL):
-        pytest.skip("真机 dump 不在（_scratch 不入库）")
+    assert os.path.exists(REAL), "真机 dump 样本缺失：%s" % REAL
     xml = io.open(REAL, encoding="utf-8").read()
     got = parse_low_fare_rows(xml)
     assert len(got) == 3, got

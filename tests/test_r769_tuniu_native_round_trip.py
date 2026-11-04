@@ -98,15 +98,14 @@ def test_one_way_still_sends_exactly_one_segment(crawler):
 def test_round_trip_marks_rows_as_rt_with_back_date(crawler):
     """往返行的 extra 要带 tripType=RT 与 backDate，否则下游看不出口径。
 
-    用真实抓下来的 fareList（`_scratch/r769/_fixture_full.json`，
-    BJS→SHA 2026-11-27 回 12-01 的全量 209 行）喂假 client。
+    用真实抓下来的 fareList（`tests/fixtures/tuniu_rt_sample.json`，
+    2026-10-31 响应裁剪的单行样本）喂假 client。
     """
     import io as _io
     fx = os.path.join(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__))), "_scratch", "r769",
-        "_fixture_full.json")
-    if not os.path.isfile(fx):
-        pytest.skip("真实夹具不在本工作树")
+        os.path.abspath(__file__))), "tests", "fixtures",
+        "tuniu_rt_sample.json")
+    assert os.path.isfile(fx), "真实夹具缺失：%s" % fx
     fixture = json.load(_io.open(fx, encoding="utf-8")) or {}
     # 两张表都要：fareList 给价格，flightList 给日期/机场（r769 踩过：
     # 只存 fareList 时 dep_date 全空 → _offers_to_flights 产出 0 条，

@@ -1,0 +1,162 @@
+{
+ "fareList": [
+  {
+   "airLinePriceShow": 1,
+   "copyLowestFlag": false,
+   "filtered": {
+    "aPortIataCode": "PVG",
+    "airlineIataCode": "MU",
+    "avgDelayTime": "",
+    "cabinType": "1,2",
+    "codeShare": "N",
+    "dPortIataCode": "PEK",
+    "departureTime": "1",
+    "direct": "1",
+    "planeModel": "中"
+   },
+   "flightOptions": [
+    {
+     "flightNos": "MU5100"
+    }
+   ],
+   "flightPriceList": [
+    {
+     "fareBreakdownList": [
+      {
+       "baseFare": 2372,
+       "bcTaxExclusiveFare": 2348,
+       "changeFee": 0,
+       "diffFee": 0,
+       "discount": "0",
+       "psgType": "ADT",
+       "totalRiseFee": 0
+      },
+      {
+       "baseFare": 2372,
+       "bcTaxExclusiveFare": -1,
+       "changeFee": 0,
+       "diffFee": 0,
+       "discount": "0",
+       "psgType": "CHD",
+       "totalRiseFee": 0
+      },
+      {
+       "baseFare": 1680,
+       "bcTaxExclusiveFare": -1,
+       "changeFee": 0,
+       "diffFee": 0,
+       "discount": "0",
+       "psgType": "INF",
+       "totalRiseFee": 0
+      }
+     ],
+     "priceInfoId": "MSZRJjA=",
+     "priceJourneyCabinList": [
+      {
+       "priceFlightCabinList": [
+        {
+         "actionCode": "0",
+         "cabinClass": "J",
+         "cabinCode": "Q",
+         "cabinType": 2,
+         "cabinTypeName": "公务舱",
+         "calBottomPrice": true,
+         "crowdExclude": false,
+         "crowdTagId": 0,
+         "hasWifi": false,
+         "pmfId": 0,
+         "showPromotion": false
+        }
+       ]
+      }
+     ],
+     "supportBlack": true,
+     "vendorId": "100"
+    },
+    {
+     "fareBreakdownList": [
+      {
+       "baseFare": 952,
+       "bcTaxExclusiveFare": 942,
+       "changeFee": 0,
+       "diffFee": 0,
+       "discount": "0",
+       "psgType": "ADT",
+       "totalRiseFee": 0
+      },
+      {
+       "baseFare": 952,
+       "bcTaxExclusiveFare": -1,
+       "changeFee": 0,
+       "diffFee": 0,
+       "discount": "0",
+       "psgType": "CHD",
+       "totalRiseFee": 0
+      }
+     ],
+     "priceInfoId": "MjImVCYxMDE0OTk=",
+     "priceJourneyCabinList": [
+      {
+       "priceFlightCabinList": [
+        {
+         "actionCode": "101499",
+         "cabinClass": "Y",
+         "cabinCode": "T",
+         "cabinType": 1,
+         "cabinTypeName": "经济舱",
+         "calBottomPrice": true,
+         "crowdExclude": false,
+         "crowdTagId": 0,
+         "crowdTagName": "",
+         "hasWifi": false,
+         "pmfId": 0,
+         "showPromotion": false
+        }
+       ]
+      }
+     ],
+     "supportBlack": true,
+     "vendorId": "100"
+    }
+   ]
+  }
+ ],
+ "flightList": {
+  "MU5100#2026-11-27#BJS#SHA": {
+   "aCityIataCode": "SHA",
+   "aCityName": "上海",
+   "aPortIataCode": "PVG",
+   "aPortName": "浦东机场",
+   "aTerminal": "T1",
+   "airComImageUrl": "https://m.tuniucdn.com/fb2/t1/G1/M00/08/6D/Cii9EVbNinCINxjgAAA-wVuEaZ8AACRoQES4gIAAD7Z262.png",
+   "airlineCompany": "东航",
+   "airlineIataCode": "MU",
+   "arrivalDate": "2026-11-27",
+   "arrivalTime": "08:55",
+   "avgDelayTime": "",
+   "codeShare": "",
+   "craftType": "327",
+   "craftTypeName": "空客321",
+   "dCityIataCode": "BJS",
+   "dCityName": "北京",
+   "dPortIataCode": "PEK",
+   "dPortName": "首都机场",
+   "dTerminal": "T2",
+   "departureDate": "2026-11-27",
+   "departureTime": "07:00",
+   "flightNo": "MU5100",
+   "flightTime": "115",
+   "flightYear": "",
+   "foldFlag": true,
+   "hasWifi": false,
+   "journeyType": "",
+   "mealFlag": true,
+   "mealName": "早餐",
+   "onTimeRate": "100%",
+   "planeModel": 2,
+   "planeModelName": "中",
+   "stopNum": 0,
+   "stopPoints": []
+  }
+ }
+}

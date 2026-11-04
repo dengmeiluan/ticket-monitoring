@@ -23,41 +23,48 @@
 """
 import io
 import os
-import sqlite3
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import pytest
 
 from core.channels import (BROWSER_CHANNELS, CHANNEL_SURFACES, SURFACES,
                            surface_state)
+from ledger_fixture import groups as _ledger_groups
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB = os.path.join(ROOT, "data", "prices.db")
 
 
-def _production_ledger_available():
-    """CI 会在测试过程中生成 `data/prices.db`（临时库），它不是生产账本。
+def _surface_of(path):
+    p = str(path or "")
+    if p.startswith("PC"):
+        return "pc"
+    if "H5" in p or "API" in p:
+        return "h5"
+    return ""
 
-    端面声明（同程 PC=y 等）由**生产账本**支撑；只有本机生产库含
-    「同程 PC ok」这一条证据时，才做声明-账本对账，否则跳过而不是拿临时库
-    误判（2026-11-02 CI：3 条红来自这里的误判 + Noto 字宽）。
-    """
-    if not os.path.isfile(DB):
-        return False
-    try:
-        conn = sqlite3.connect("file:%s?mode=ro" % DB.replace("\\", "/"),
-                               uri=True)
-        try:
-            n = conn.execute(
-                "select count(*) from fetch_paths where platform='tongcheng'"
-                " and rows>0 and entry_path like 'PC%'").fetchone()[0]
-        finally:
-            conn.close()
-        return bool(n)
-    except sqlite3.Error:
-        return False
+
+def _ok_runs_by_surface(recent=False):
+    """{(platform, surface): ok 轮次}；只数真正出过数的 ok/calendar。"""
+    agg = {}
+    for plat, path, st, runs, rows in _ledger_groups(recent=recent):
+        surf = _surface_of(path)
+        if not surf:
+            continue
+        d = agg.setdefault((plat, surf), {"ok": 0, "rows": 0})
+        if st in ("ok", "calendar") and (rows or 0) > 0:
+            d["ok"] += runs or 0
+            d["rows"] += rows or 0
+    return agg
+
+
+def _has_positive_rows(platform, surface):
+    for plat, path, _st, _runs, rows in _ledger_groups():
+        if plat == platform and _surface_of(path) == surface and (rows or 0) > 0:
+            return True
+    return False
 
 
 def test_every_browser_channel_declares_both_surfaces():
@@ -219,10 +226,10 @@ def test_tongcheng_pc_declaration_matches_implementation():
         "同程 PC 实现不见了（_fetch_pc_dom / getflightlist / URL_TPL_PC）")
     declared = CHANNEL_SURFACES["tongcheng"]["pc"]
     assert declared != "n", "代码在却记 n：等于告诉用户这个端没有"
-    if not _production_ledger_available():
-        pytest.skip("本机不是生产账本（CI 临时库）；同程 PC 证据在生产库")
+    assert _has_positive_rows("tongcheng", "pc"), (
+        "账本证据（含快照）里查不到同程 PC 出数，声明 y 失去依据")
     assert declared == "y", (
-        "生产账本已有同程 PC 出数，声明应保持 y（当前 %r）" % declared)
+        "账本已有同程 PC 出数，声明应保持 y（当前 %r）" % declared)
     # 记账点必须在，否则账本永远等不到那一条
     assert any('"PC"' in ln for ln in src.splitlines()), (
         "PC 通路没有记账点：出了数也不会进账本")
@@ -244,65 +251,35 @@ def test_tuniu_pc_is_implemented_so_must_not_be_n():
     assert "def _fetch_pc_dom" in src, "前提变了：途牛 PC 实现没了，重核本钉"
 
 
-@pytest.mark.skipif(not os.path.isfile(DB), reason="账本不在本工作树")
 def test_declared_n_surface_never_produced_rows():
     """声明 n 的端面，账本里不许有出数记录——出过数就不能说 n。"""
-    if not _production_ledger_available():
-        pytest.skip("非生产账本（CI 临时库）；n 的证据在生产库")
-    conn = sqlite3.connect("file:%s?mode=ro" % DB.replace("\\", "/"),
-                           uri=True)
-    try:
-        cur = conn.cursor()
-        bad = []
-        for p, row in CHANNEL_SURFACES.items():
-            for s, v in row.items():
-                if v != "n":
-                    continue
-                cur.execute(
-                    "select count(*) from fetch_paths "
-                    "where platform=? and rows>0 and "
-                    "((?='pc' and entry_path like 'PC%') or "
-                    " (?='h5' and (entry_path like '%H5%' or "
-                    "              entry_path like '%API%')))", (p, s, s))
-                n = cur.fetchone()[0]
-                if n:
-                    bad.append((p, s, n))
-        assert not bad, (
-            "这些端面声明 n，但账本里有出数记录（声明与事实矛盾）：%s"
-            % bad)
-    finally:
-        conn.close()
+    agg = _ok_runs_by_surface(recent=False)
+    bad = []
+    for p, row in CHANNEL_SURFACES.items():
+        for s, v in row.items():
+            if v != "n":
+                continue
+            n = (agg.get((p, s)) or {}).get("ok", 0)
+            if n:
+                bad.append((p, s, n))
+    assert not bad, (
+        "这些端面声明 n，但账本里有出数记录（声明与事实矛盾）：%s" % bad)
 
 
 def test_declared_y_surface_has_ledger_evidence():
     """反向：声明 y 的端面，账本里必须真出过数（不允许凭感觉写 y）。"""
-    if not os.path.isfile(DB):
-        pytest.skip("账本不在本工作树")
-    if not _production_ledger_available():
-        pytest.skip("非生产账本（CI 临时库）；y 的证据在生产库")
-    conn = sqlite3.connect("file:%s?mode=ro" % DB.replace("\\", "/"),
-                           uri=True)
-    try:
-        cur = conn.cursor()
-        bad = []
-        for p, row in CHANNEL_SURFACES.items():
-            for s, v in row.items():
-                if v != "y":
-                    continue
-                cur.execute(
-                    "select count(*) from fetch_paths "
-                    "where platform=? and rows>0 and "
-                    "((?='pc' and entry_path like 'PC%') or "
-                    " (?='h5' and (entry_path like '%H5%' or "
-                    "              entry_path like '%API%')))", (p, s, s))
-                n = cur.fetchone()[0]
-                if not n:
-                    bad.append((p, s))
-        assert not bad, (
-            "这些端面声明 y，但账本里查不到出数记录（应为 \"\" 未验证）：%s"
-            % bad)
-    finally:
-        conn.close()
+    agg = _ok_runs_by_surface(recent=False)
+    bad = []
+    for p, row in CHANNEL_SURFACES.items():
+        for s, v in row.items():
+            if v != "y":
+                continue
+            n = (agg.get((p, s)) or {}).get("ok", 0)
+            if not n:
+                bad.append((p, s))
+    assert not bad, (
+        "这些端面声明 y，但账本里查不到出数记录（应为 \"\" 未验证）：%s"
+        % bad)
 
 
 def test_blocked_surface_is_explained_in_note():
@@ -313,25 +290,16 @@ def test_blocked_surface_is_explained_in_note():
     悬停里只写「未验证」等于让人以为"再试试可能行"。
     """
     from core.channels import SURFACE_NOTES
-    if not os.path.isfile(DB):
-        pytest.skip("账本不在本工作树")
-    if not _production_ledger_available():
-        pytest.skip("非生产账本（CI 临时库）；blocked 证据在生产库")
-    conn = sqlite3.connect("file:%s?mode=ro" % DB.replace("\\", "/"),
-                           uri=True)
-    try:
-        rows = conn.execute(
-            "select distinct platform from fetch_paths "
-            "where path_status='blocked' and rows=0 "
-            "and entry_path like 'PC%'").fetchall()
-        for (plat,) in rows:
-            note = SURFACE_NOTES.get((plat, "pc")) or ""
-            assert note, "%s PC 有 blocked 记录，却没有悬停说明" % plat
-            assert ("验证" in note or "滑块" in note), (
-                "%s PC 被风控拦住，说明必须点出「需人工验证」：%r"
-                % (plat, note))
-    finally:
-        conn.close()
+    blocked = []
+    for plat, path, st, _runs, rows in _ledger_groups():
+        if st == "blocked" and (rows or 0) == 0 and _surface_of(path) == "pc":
+            blocked.append(plat)
+    for plat in sorted(set(blocked)):
+        note = SURFACE_NOTES.get((plat, "pc")) or ""
+        assert note, "%s PC 有 blocked 记录，却没有悬停说明" % plat
+        assert ("验证" in note or "滑块" in note), (
+            "%s PC 被风控拦住，说明必须点出「需人工验证」：%r"
+            % (plat, note))
 
 
 def test_channel_filter_resolves_app_ids_not_just_names():
@@ -398,49 +366,11 @@ def test_surface_declaration_matches_30d_ledger():
       y  → 30 天内该端必须真出过数（否则是未验证，写成 y 就是吹）
       n  → 30 天内该端必须没有出数记录（出过数就不能说「没有通路」）
       "" → 允许无记录（测不出）
+
+    整理口径：`recent=True` 只统计抓取时近 30 天的组（本机生产库实时算，
+    干净克隆回放 2026-11-04 快照）。y/n 的 30 天窗口语义不变。
     """
-    import sqlite3
-
-    def surface_of(path):
-        p = str(path or "")
-        if p.startswith("PC"):
-            return "pc"
-        if "H5" in p or "API" in p:
-            return "h5"
-        return ""
-
-    if not os.path.isfile(DB):
-        pytest.skip("账本不在本工作树")
-    try:
-        conn = sqlite3.connect("file:%s?mode=ro" % DB.replace("\\", "/"),
-                               uri=True)
-        cur = conn.cursor()
-        cur.execute("""
-            select platform, entry_path, path_status, count(*), sum(rows)
-            from fetch_paths
-            where fetched_at > datetime('now','localtime','-30 days')
-            group by platform, entry_path, path_status
-        """)
-        rows = cur.fetchall()
-    except sqlite3.DatabaseError as exc:
-        # 冻结树里账本由其他用例创建/重建：连接可能打不开，也可能刚
-        # 建出空文件、表还没 create。两种都是环境竞态，不是端面矛盾
-        # （分片并发实测：查询期 no such table 逃过了只包 connect 的守卫）。
-        pytest.skip("账本被并行用例重建/未建表: %s" % exc)
-    try:
-        agg = {}
-        for plat, path, st, n, s in rows:
-            key = (plat, surface_of(path))
-            if not key[1]:
-                continue
-            d = agg.setdefault(key, {"ok": 0})
-            if st in ("ok", "calendar") and (s or 0) > 0:
-                d["ok"] += n or 0
-    finally:
-        conn.close()
-    if not agg:
-        pytest.skip("30 天账本为空，无法核对")
-
+    agg = _ok_runs_by_surface(recent=True)
     bad = []
     for plat, row in CHANNEL_SURFACES.items():
         for s, v in row.items():
@@ -450,6 +380,36 @@ def test_surface_declaration_matches_30d_ledger():
             if v == "n" and n > 0:
                 bad.append("%s.%s 声明 n 但 30 天内出过 %d 次" % (plat, s, n))
     assert not bad, "端面声明与账本矛盾：%s" % bad
+
+
+def test_snapshot_alone_supports_every_declaration():
+    """不读本机库、只回放快照，也必须满足同一套声明。
+
+    干净克隆走的就是这条路径；若快照过期/造错，上面几条会在 CI 里
+    变成无源之水。这里直接禁用本机库，重跑 y/n/blocked/30 天四组判据。
+    """
+    import ledger_fixture as lf
+    saved = lf.DB
+    lf.DB = os.path.join(ROOT, "no-such-ledger.db")
+    try:
+        all_time = _ok_runs_by_surface(recent=False)
+        recent = _ok_runs_by_surface(recent=True)
+        for plat, row in CHANNEL_SURFACES.items():
+            for s, v in row.items():
+                if v == "y":
+                    assert (all_time.get((plat, s)) or {}).get("ok", 0), (
+                        "快照里 %s.%s 没有出数，y 无据" % (plat, s))
+                    assert (recent.get((plat, s)) or {}).get("ok", 0), (
+                        "快照里 %s.%s 近 30 天无出数，y 无据" % (plat, s))
+                elif v == "n":
+                    assert not (all_time.get((plat, s)) or {}).get("ok", 0), (
+                        "快照里 %s.%s 出过数，不能记 n" % (plat, s))
+        blocked = {(p, _surface_of(path)) for p, path, st, _r, rows
+                   in _ledger_groups() if st == "blocked" and not rows}
+        assert ("tuniu", "pc") in blocked, (
+            "快照丢了途牛 PC blocked 证据，悬停说明的门禁失去靶子")
+    finally:
+        lf.DB = saved
 
 
 def test_login_modal_opens_fast_and_switch_rewrites_title():

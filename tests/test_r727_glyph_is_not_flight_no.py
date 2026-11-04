@@ -129,10 +129,8 @@ def test_real_device_dump_has_no_numeric_flight_no():
 
     该 fixture 是本轮抓到的真机页面；修复前最后一行是 `984839`。
     """
-    path = os.path.join(ROOT, "_scratch", "r727", "list_0.xml")
-    if not os.path.exists(path):
-        import pytest
-        pytest.skip("真机 dump 不在（_scratch 不入库）")
+    path = os.path.join(ROOT, "tests", "fixtures", "zhixing_list_glyph.xml")
+    assert os.path.exists(path), "真机 dump 样本缺失：%s" % path
     xml = io.open(path, encoding="utf-8").read()
     rows = parse_flight_rows(xml)
     assert len(rows) == 8, len(rows)

@@ -1,0 +1,69 @@
+{
+"meta": {
+"captured_at": "2026-11-04",
+"source": "production flight_prices，每渠道取最近 1 行、extra 截前 2 条",
+"route": [
+"HAK",
+"SHA",
+"2027-02-14"
+]
+},
+"rows": [
+{
+"platform": "app_qunar",
+"from_city": "HAK",
+"to_city": "SHA",
+"depart_date": "2027-02-14",
+"extra": "[{\"price\": 1600.0, \"code\": \"\", \"name\": \"\", \"depDate\": \"2027-02-14\", \"depTime\": \"14:40\", \"arrTime\": \"12:45\", \"transCity\": \"中转\"}, {\"price\": 1675.0, \"code\": \"CA8574\", \"name\": \"CA8574\", \"depDate\": \"2027-02-14\", \"depTime\": \"20:05\", \"arrTime\": \"22:45\"}]",
+"fetched_at": "2026-11-02 22:36:49"
+},
+{
+"platform": "app_zhixing",
+"from_city": "HAK",
+"to_city": "SHA",
+"depart_date": "2027-02-14",
+"extra": "[{\"price\": 1721.0, \"code\": \"CA8574\", \"name\": \"国航\", \"depDate\": \"2027-02-14\", \"depTime\": \"20:05\", \"arrTime\": \"22:45\"}, {\"price\": 2081.0, \"code\": \"MU6356\", \"name\": \"东航\", \"depDate\": \"2027-02-14\", \"depTime\": \"06:20\", \"arrTime\": \"08:55\"}]",
+"fetched_at": "2026-11-04 13:09:49"
+},
+{
+"platform": "ctrip",
+"from_city": "HAK",
+"to_city": "SHA",
+"depart_date": "2027-02-14",
+"extra": "[{\"price\": 2110.0, \"code\": \"HO5655\", \"name\": \"HO5655\", \"depTime\": \"06:20\", \"arrTime\": \"08:55\", \"depDate\": \"2027-02-14\", \"arrDate\": \"2027-02-14\", \"totalDuration\": \"2时35分\", \"cabin\": \"经济舱\", \"plane\": \"空客320(中)\", \"prate\": \"100\", \"meal\": \"早餐\", \"shareCarrier\": \"MU6356\", \"airlineCode\": \"HO\", \"discount\": \"10折\", \"depTerminal\": \"T1\", \"arrTerminal\": \"T1\", \"leftTickets\": 9, \"avgDelay\": 5, \"depAirport\": \"美兰\", \"arrAirport\": \"浦东\", \"depAirportCode\": \"HAK\", \"arrAirportCode\": \"PVG\", \"planeSize\": \"中型机\", \"cabinCode\": \"Y\", \"baggage\": \"免费托运20KG\", \"carryon\": \"手提8KG·1件\", \"seatTilt\": 100, \"bridgeRate\": 100}, {\"price\": 2320.0, \"code\": \"HO1088\", \"name\": \"HO1088\", \"depTime\": \"19:55\", \"arrTime\": \"22:45\", \"depDate\": \"2027-02-14\", \"arrDate\": \"2027-02-14\", \"totalDuration\": \"2时50分\", \"cabin\": \"经济舱\", \"plane\": \"空客32S(中)\", \"prate\": \"100\", \"meal\": \"有小食\", \"airlineCode\": \"HO\", \"discount\": \"10折\", \"depTerminal\": \"T1\", \"arrTerminal\": \"T2\", \"leftTickets\": 10, \"bizPrice\": 9280, \"bizCabin\": \"公务\", \"avgDelay\": 15, \"depAirport\": \"美兰\", \"arrAirport\": \"虹桥\", \"depAirportCode\": \"HAK\", \"arrAirportCode\": \"SHA\", \"planeSize\": \"中型机\", \"cabinCode\": \"Y\", \"seatTilt\": 100, \"bridgeRate\": 100}]",
+"fetched_at": "2026-11-04 13:10:15"
+},
+{
+"platform": "fliggy",
+"from_city": "HAK",
+"to_city": "SHA",
+"depart_date": "2027-02-14",
+"extra": "[{\"name\": \"厦航MF7547\", \"code\": \"MF7547\", \"depDate\": \"2027-02-14\", \"airlineCode\": \"MF\", \"shareCarrier\": \"东方航空MU6356\", \"plane\": \"320NEO\", \"planeSize\": \"中型机\", \"depTime\": \"06:20\", \"arrTime\": \"08:55\", \"arrDate\": \"2027-02-14\", \"depAirport\": \"美兰国际机场\", \"depTerminal\": \"T1\", \"arrAirport\": \"浦东国际机场\", \"arrTerminal\": \"T1\", \"price\": 2110.0, \"discount\": \"全价\"}, {\"name\": \"吉祥HO5655\", \"code\": \"HO5655\", \"depDate\": \"2027-02-14\", \"airlineCode\": \"HO\", \"shareCarrier\": \"东方航空MU6356\", \"plane\": \"320NEO\", \"planeSize\": \"中型机\", \"depTime\": \"06:20\", \"arrTime\": \"08:55\", \"arrDate\": \"2027-02-14\", \"depAirport\": \"美兰国际机场\", \"depTerminal\": \"T1\", \"arrAirport\": \"浦东国际机场\", \"arrTerminal\": \"T1\", \"price\": 2110.0, \"discount\": \"全价\"}]",
+"fetched_at": "2026-11-02 20:16:42"
+},
+{
+"platform": "qunar",
+"from_city": "HAK",
+"to_city": "SHA",
+"depart_date": "2027-02-14",
+"extra": "[{\"price\": 1750.0, \"code\": \"CA8574\", \"name\": \"国航CA8574\", \"depTime\": \"20:05\", \"arrTime\": \"22:45\", \"depDate\": \"2027-02-14\", \"arrDate\": \"2027-02-14\", \"totalDuration\": \"2时40分\", \"plane\": \"空客321(中)\", \"planeSize\": \"中型机\", \"meal\": \"无餐食\", \"baggage\": \"免费托运20KG\", \"stopFlight\": false, \"depTerminal\": \"T1\", \"arrTerminal\": \"T2\", \"depAirport\": \"美兰\", \"arrAirport\": \"浦东\", \"depAirportCode\": \"HAK\", \"arrAirportCode\": \"PVG\", \"airlineCode\": \"CA\", \"discount\": \"10折\", \"labels\": \"出票后2小时内错购退票\", \"infantPrice\": 180, \"bizPrice\": 5250, \"refundChange\": \"{\\\"returnFee\\\":0,\\\"changeFee\\\":0}\", \"returnFee\": 0, \"changeFee\": 0, \"trendGo\": [[\"02-07\", 1160], [\"02-08\", 1610], [\"02-09\", 1750], [\"02-10\", 1750], [\"02-11\", 1750], [\"02-12\", 1750], [\"02-13\", 1750], [\"02-14\", 1750], [\"02-15\", 1590], [\"02-16\", 1750], [\"02-17\", 1580], [\"02-18\", 1580], [\"02-19\", 1480], [\"02-20\", 1360], [\"02-21\", 1000]]}, {\"price\": 1750.0, \"code\": \"SC5162\", \"name\": \"山航SC5162\", \"depTime\": \"20:05\", \"arrTime\": \"22:45\", \"depDate\": \"2027-02-14\", \"arrDate\": \"2027-02-14\", \"totalDuration\": \"2时40分\", \"plane\": \"空客321(中)\", \"planeSize\": \"中型机\", \"shareCarrier\": \"国航CA8574\", \"meal\": \"无餐食\", \"baggage\": \"免费托运20KG\", \"stopFlight\": false, \"depTerminal\": \"T1\", \"arrTerminal\": \"T2\", \"depAirport\": \"美兰\", \"arrAirport\": \"浦东\", \"depAirportCode\": \"HAK\", \"arrAirportCode\": \"PVG\", \"airlineCode\": \"SC\", \"discount\": \"10折\", \"labels\": \"体验价\", \"childPrice\": 880, \"infantPrice\": 180, \"refundChange\": \"{\\\"returnFee\\\":0,\\\"changeFee\\\":0}\", \"returnFee\": 0, \"changeFee\": 0}]",
+"fetched_at": "2026-11-04 10:03:15"
+},
+{
+"platform": "tongcheng",
+"from_city": "HAK",
+"to_city": "SHA",
+"depart_date": "2027-02-14",
+"extra": "[{\"price\": 2110.0, \"code\": \"CZ6765\", \"name\": \"南方航空CZ6765\", \"depTime\": \"16:45\", \"arrTime\": \"19:30\", \"depDate\": \"2027-02-14\", \"arrDate\": \"2027-02-14\", \"plane\": \"空客320(中)\"}, {\"price\": 2320.0, \"code\": \"HO1088\", \"name\": \"吉祥航空HO1088\", \"depTime\": \"19:55\", \"arrTime\": \"22:45\", \"depDate\": \"2027-02-14\", \"arrDate\": \"2027-02-14\", \"plane\": \"空客A320(中)\"}]",
+"fetched_at": "2026-11-04 10:03:43"
+},
+{
+"platform": "tuniu",
+"from_city": "HAK",
+"to_city": "SHA",
+"depart_date": "2027-02-14",
+"extra": "[{\"price\": 2550.0, \"code\": \"AQ1733\", \"name\": \"九元AQ1733\", \"depTime\": \"12:50\", \"arrTime\": \"18:20\", \"depDate\": \"2027-02-14\", \"arrDate\": \"2027-02-14\", \"totalDuration\": \"5时30分\", \"cabin\": \"经济舱\", \"blackCard\": true, \"plane\": \"B738\", \"meal\": \"无餐\", \"prate\": \"90\", \"stopCitys\": \"广州\", \"stopTime\": \"1小时55分\", \"stopWin\": \"14:10-16:05\", \"arrTerminal\": \"T2\", \"depTerminal\": \"T1\", \"airlineCode\": \"AQ\", \"stdFare\": 2524.0, \"discount\": \"全价\", \"depAirport\": \"美兰机场\", \"arrAirport\": \"浦东机场\", \"depAirportCode\": \"HAK\", \"arrAirportCode\": \"PVG\", \"cabinCode\": \"B0\", \"childPrice\": 1275.0, \"infantPrice\": 255.0}, {\"price\": 1750.0, \"code\": \"SC5162\", \"name\": \"山航SC5162\", \"depTime\": \"20:05\", \"arrTime\": \"22:45\", \"depDate\": \"2027-02-14\", \"arrDate\": \"2027-02-14\", \"totalDuration\": \"2时40分\", \"cabin\": \"经济舱\", \"plane\": \"空客321\", \"meal\": \"无餐\", \"prate\": \"96\", \"arrTerminal\": \"T2\", \"depTerminal\": \"T1\", \"shareCarrier\": \"CA8574\", \"airlineCode\": \"SC\", \"depAirport\": \"美兰机场\", \"arrAirport\": \"浦东机场\", \"depAirportCode\": \"HAK\", \"arrAirportCode\": \"PVG\", \"cabinCode\": \"Y\", \"childPrice\": 880.0}]",
+"fetched_at": "2026-11-04 10:04:10"
+}
+]
+}

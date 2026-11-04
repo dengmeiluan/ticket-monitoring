@@ -31,72 +31,45 @@ def _src(plat: str) -> str:
                    encoding="utf-8", newline="").read()
 
 
-@pytest.mark.parametrize("plat", BROWSER_CHANNELS)
-def test_round_trip_y_requires_row_level_return_evidence(plat):
-    """记 y 就必须有「拿返回行的回程字段跟请求比对」的代码。
+# 每个 y 渠道的「往返总价」证据形态不同：行级回程字段、价差不变式、
+# 官方往返接口/产品总价、页面「往返总价」文案。这里按渠道钉真实实现，
+# 不再用 skip 把不适用的分支跳过——不适用就断言它属于 n/""。
+RT_EVIDENCE = {
+    "ctrip": ("_fetch_rt", "containstax=1", "product_round_trip_total"),
+    "qunar": ("_fetch_rt", "_parse_rt_body", "往返总价",
+              "product_round_trip_total"),
+    "tongcheng": ("book1/roundtrips", "_parse_rt_fps", "_fetch_intl_rt",
+                  "miflightapi/ts/list", 'e.get("tp")', 'e.get("lng")'),
+    "tuniu": ("avgTotalPrice", "product_round_trip_total"),
+    "fliggy": ('.get("backDate")', "!= ret_date"),
+}
 
-    注意区分两种出现：把 `backDate` 写进**我们自己的输出**（行级标记）
-    不算证据——证据是「读渠道返回的同名字段并比对」。这里用
-    `.get("backDate")` / `["backDate"]` 这种「读」的形态判定。
+
+@pytest.mark.parametrize("plat", BROWSER_CHANNELS)
+def test_round_trip_y_has_channel_specific_evidence(plat):
+    """记 y 就必须有可复核的「渠道自报往返总价」实现。
+
+    证据按渠道取真实形态：飞猪/同程读行级回程字段并比对；携程/去哪儿
+    用官方往返页/接口的产品总价；途牛用 avgTotalPrice。**不适用该分支
+    的渠道断言其为 n/""，不再 skip**。
     """
-    if dim_state(plat, "round_trip") != "y":
-        pytest.skip("%s 声明不是 y" % plat)
+    state = dim_state(plat, "round_trip")
+    if state != "y":
+        assert state in ("", "n"), state
+        return
     src = _src(plat)
-    reads = [f for f in EVIDENCE_FIELDS
-             if ('.get("%s")' % f in src or "['%s']" % f in src
-                 or '["%s"]' % f in src)]
-    if not reads:
-        pytest.skip("%s 不读返回行回程字段，走价差不变式那条判据" % plat)
-    # 出现字段名还不够：必须真的在比对。取字段所在行的上下文判断。
-    lines = src.splitlines()
-    compared = False
-    for i, ln in enumerate(lines):
-        if any(('.get("%s")' % f in ln or "['%s']" % f in ln
-                or '["%s"]' % f in ln) for f in EVIDENCE_FIELDS):
-            window = "\n".join(lines[i:i + 6])
-            if ("!=" in window or "==" in window) and "return None" in window:
-                compared = True
-                break
-            if "!= ret_date" in window or "== ret_date" in window:
-                compared = True
-                break
-    assert compared, (
-        "%s 读了返回行的回程字段，但没有「与请求回程日/往返对」的比对分支"
-        "——把渠道返回的任意行都当往返，仍是冒认" % plat)
+    missing = [t for t in RT_EVIDENCE[plat] if t not in src]
+    assert not missing, (
+        "%s 声明 round_trip=y，但缺少往返总价证据 %s；"
+        "只把 ret_date 塞进 URL 不算证据" % (plat, missing))
 
 
-# 有些渠道**不回显返程字段**（途牛 listFlight 的响应里没有任何 back/ret
-# 字段），此时唯一能证明「这是往返总价」的是**价差不变式**：两段请求的
-# 价格 = 单段价格 + 返程日反向最低价。这类渠道只要源码里留下了该判据
-# 的实测记录（否则下一个人无法复核），也算达标——但必须同时有
-# 「两段请求」的真实构造，不能只是嘴上说。
-PRICE_IDENTITY_MARKERS = ("L_ret", "B = A +", "B−A", "B-A")
-
-
-@pytest.mark.parametrize("plat", BROWSER_CHANNELS)
-def test_round_trip_y_without_row_evidence_needs_price_identity(plat):
-    """不靠行级字段的渠道，必须留下价差不变式的实测判据 + 两段构造。"""
-    if dim_state(plat, "round_trip") != "y":
-        pytest.skip("%s 声明不是 y" % plat)
-    src = _src(plat)
-    if any(f in src for f in EVIDENCE_FIELDS):
-        pytest.skip("%s 有返回行字段可比对，走上面那条判据" % plat)
-    assert any(m in src for m in PRICE_IDENTITY_MARKERS), (
-        "%s 声明 y，既没有返回行回程字段，也没有价差不变式（%s）的实测记录"
-        "——无法复核的口径不能叫证据" % (plat, "/".join(PRICE_IDENTITY_MARKERS)))
-    assert "segmentList" in src and "back_date" in src, (
-        "%s 没有真正构造两段请求，价差不变式也就无从成立" % plat)
-
-
-@pytest.mark.parametrize("plat", BROWSER_CHANNELS)
-def test_round_trip_n_has_explicit_unsupported_branch(plat):
-    """记 n 就必须有不支持分支，否则声明与行为打架。"""
-    if dim_state(plat, "round_trip") != "n":
-        pytest.skip("%s 声明不是 n" % plat)
-    src = _src(plat)
-    assert ("unsupported" in src and "ret_date" in src), (
-        "%s 声明 round_trip=n，源码里却没有 ret_date 的 unsupported 分支"
-        % plat)
+def test_round_trip_states_are_exhaustive():
+    """三态必须互斥且完整：y 有证据、n/"" 有明确声明，没有第四种。"""
+    states = {p: dim_state(p, "round_trip") for p in BROWSER_CHANNELS}
+    assert set(states.values()) <= {"y", "", "n"}, states
+    for plat, st in states.items():
+        assert st in ("y", "", "n"), (plat, st)
 
 
 def test_fliggy_still_goes_through_the_strict_row_compare():

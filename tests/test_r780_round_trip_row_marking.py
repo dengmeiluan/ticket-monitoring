@@ -52,9 +52,17 @@ def test_round_trip_capable_channel_marks_rows(plat):
     按写法判会误报（r780 实测：途牛用后者，被这条断言误判成没标）。
     真正「产出的 JSON 里有没有这个键」由下面用真实夹具的用例保证。
     """
-    if dim_state(plat, "round_trip") != "y":
-        pytest.skip("%s 声明不是 y" % plat)
+    state = dim_state(plat, "round_trip")
     src = _src(plat)
+    if state != "y":
+        # 非 y 渠道也必须给一个可证伪的结论：不写 RT 标记就是它的承诺。
+        # fliggy App 目前是唯一一家 ""（未声明），若哪天偷偷写标记而不
+        # 升声明，用户会在混排里看到无法解释的往返行。
+        assert state in ("", "n"), "%s 的 round_trip 状态越界：%r" % (plat, state)
+        assert "tripType" not in src, (
+            "%s 未声明 round_trip=y，却在源码里写 tripType——声明与行为打架"
+            % plat)
+        return
     assert "tripType" in src and "RT" in src, (
         "%s 声明支持往返，但源码里没有 tripType=RT 标记——混排时无法区分口径"
         % plat)
@@ -62,9 +70,10 @@ def test_round_trip_capable_channel_marks_rows(plat):
 
 def test_tuniu_round_trip_rows_carry_rt_and_back_date():
     """途牛：真实夹具跑一遍，RT 行必须带 tripType 与 backDate。"""
-    fx = os.path.join(ROOT, "_scratch", "r769", "_fixture_full.json")
-    if not os.path.isfile(fx):
-        pytest.skip("真实夹具不在本工作树")
+    # 2026-10-31 真实响应的单行裁剪版（一条 MU5100 往返 offer + 对应
+    # flightList 详情），放 tests/fixtures 让干净克隆也能复核。
+    fx = os.path.join(ROOT, "tests", "fixtures", "tuniu_rt_sample.json")
+    assert os.path.isfile(fx), "真实夹具缺失：%s" % fx
     from unittest import mock
     from crawlers.tuniu import TuniuCrawler
 

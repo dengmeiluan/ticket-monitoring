@@ -227,15 +227,20 @@ def test_intl_success_quiets_following_intl_but_not_domestic(
 
     assert len(q.fetch("SHA", "BKK", ["2026-11-16"])) == 1
     assert q._intl_quiet_until > time.time()
-    # 同一轮的下一条国际线让位：不发请求，按「主动让位」入账
+    # r940：让位窗口只挡「刚查过的」。LHR 从没轮到过 → 本窗口放行一次
+    # （否则配置里第一条国际线永远独吞配额，后面三条饿死）。
+    assert len(q.fetch("SHA", "LHR", ["2026-11-16"])) == 1
+    assert len(calls) == 2
+    assert "SHA-LHR" in q._intl_route_seen
+    # 同一个窗口再要 LHR：已经轮到过，必须让位；按「主动让位」入账
     # （r929：让位不是我方被拒，记 soft_reject 会把成功率读低）
     assert q.fetch("SHA", "LHR", ["2026-11-16"]) == []
-    assert len(calls) == 1
+    assert len(calls) == 2
     assert any(p.get("status") == "paced" for p in q.paths)
     assert not any(p.get("status") == "soft_reject" for p in q.paths)
     # 国内列表另有配额，不受国际让位影响
     assert len(q.fetch("SHA", "HAK", ["2027-01-29"])) == 1
-    assert len(calls) == 2
+    assert len(calls) == 3
 
 
 def test_intl_soft_empty_quiets_following_intl(tmp_path, monkeypatch):
@@ -247,9 +252,13 @@ def test_intl_soft_empty_quiets_following_intl(tmp_path, monkeypatch):
     assert q.fetch("SHA", "BKK", ["2026-11-16"]) == []
     assert len(calls) == 2          # 首次 + 软空退避重试一次
     assert q._intl_quiet_until > time.time()
-    # 后续国际线本轮不再连打
+    # r940：LHR 从没轮到过 → 本窗口放行一次（同样软空重试，共 2 次请求）
     assert q.fetch("SHA", "LHR", ["2026-11-16"]) == []
-    assert len(calls) == 2
+    assert len(calls) == 4
+    assert "SHA-LHR" in q._intl_route_seen
+    # 再要 LHR：已经轮到过，本轮不再连打
+    assert q.fetch("SHA", "LHR", ["2026-11-16"]) == []
+    assert len(calls) == 4
 
 
 def test_login_signal_with_auth_online_is_soft(tmp_path):

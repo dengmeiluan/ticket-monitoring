@@ -65,12 +65,29 @@ def test_round_trip_home_is_switched_to_single():
     assert q._ID_BACK_DATE_LL not in xml
 
 
-def test_single_home_is_left_alone():
+def test_single_home_resets_mode_idempotently():
+    """首页看着是单程也要点一次「单程」——App 内部可能记着多程。
+
+    2026-11-04 实测：首页有城市位、无「第一程」，看起来完全是单程；点搜索
+    却直接进「多程航班」结果页（App 把上次搜索记成了多程的第一段）。
+    点一次「单程」tab 就能把内部模式重置回来，且对真单程无副作用。
+    """
     c = _Crawler()
     dev = _FakeDev([_home(False)])
     xml = c._switch_to_single(dev, _home(False))
-    assert dev.taps == [], "已经是单程档，不该白点一下"
+    assert dev.taps == [(300, 439)], "没有幂等重置「单程」档"
     assert xml == _home(False)
+
+
+def test_page_without_single_control_is_left_alone():
+    """没有「单程」控件（结果页/弹层）时不能瞎点。"""
+    c = _Crawler()
+    page = ('<hierarchy><node text="选择航班" bounds="[0,0][900,60]" />'
+            '</hierarchy>')
+    dev = _FakeDev([page])
+    xml = c._switch_to_single(dev, page)
+    assert dev.taps == [], "没有单程控件却点了屏幕"
+    assert xml == page
 
 
 def test_single_fetch_switches_before_picking_dates():

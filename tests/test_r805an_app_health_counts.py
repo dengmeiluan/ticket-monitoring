@@ -110,16 +110,12 @@ def test_real_log_app_channels_are_not_reported_failed():
     这条是对「面板说失败、账本说成功」的**直接**回归——只要日志里
     真出现过「抓取完成，得到 N 条」，健康度就不能说它失败。
     """
-    path = os.path.join(ROOT, "logs", "monitor.log")
-    if not os.path.isfile(path):
-        import pytest
-        pytest.skip("生产日志不在本工作树")
+    path = os.path.join(ROOT, "tests", "fixtures", "monitor_round_app.txt")
+    assert os.path.isfile(path), "生产日志摘录缺失：%s" % path
     text = io.open(path, encoding="utf-8", errors="replace").read()
     lines = text.splitlines()
     idx = [i for i, l in enumerate(lines) if "开始一轮扫描" in l]
-    if not idx:
-        import pytest
-        pytest.skip("日志里没有轮次标记")
+    assert idx, "摘录里没有轮次标记"
     from core.health import parse_health
     out = parse_health("\n".join(lines[idx[-1]:]), hours=2400)
     rounds = out.get("rounds") or []

@@ -76,41 +76,30 @@ def test_panel_renders_the_stalled_state_distinctly():
     assert i < j, "「采集停了」分支必须排在「待首轮」之前"
 
 
-def test_backend_supplies_cross_window_last_seen():
-    """真实库形态：窗口内一条记录都没有（path_stats 返回空 dict），
-    仍然要能拿到该渠道全表最近样本，否则永远是「待首轮」。
+def test_backend_supplies_cross_window_last_seen(monkeypatch, tmp_path):
+    """窗口内一条记录都没有时，仍要能拿到全表最近样本。
 
-    实测 data/prices.db：`path_stats(24)` → `{}`，而 fliggy 最后一条样本
-    在 10-28 14:33（26 小时前）。这正是用户「登录都配好了但全红」的场景。
+    用临时库固定「fliggy 最后一条样本在 26 小时前」的形态：不依赖本机
+    生产库当下是否恰好在跑，干净克隆也能复核同一条判据。
     """
-    import datetime as _dt
+    import sqlite3
 
     import webui
-    from core.pacing import advise
 
-    # 这条门禁的对象是「真实库里窗口外还有样本」的形态。库里该渠道一条
-    # 样本都没有时（例如本轮没跑采集、或换了空库），`_last_seen_of` 返回
-    # 空是**正确**行为，不是缺陷——报红只会天天掩盖真回归。
-    if not webui._last_seen_of("fliggy"):
-        import pytest
-        pytest.skip("真实库里没有 fliggy 样本，跨窗口口径无检查对象")
-    ls = webui._last_seen_of("fliggy")
-    assert ls, "拿不到不限窗口的最近样本"
-    # 「停了」的门槛是 6 小时（core/pacing.advise）。真实库里样本年龄会随
-    # 采集/跑测变化——曾写死「26 小时前」，样本一变新就红成「实现坏了」。
-    # 按库里**实际年龄**分流：够旧才断言 stalled，较新就只守
-    # 「不退回待首轮」（跨窗口能取到时间戳本身）。
+    stale = _ts(26)
+    db = str(tmp_path / "prices.db")
+    conn = sqlite3.connect(db)
     try:
-        _age_h = (_dt.datetime.now() - _dt.datetime.strptime(
-            ls, "%Y-%m-%d %H:%M:%S")).total_seconds() / 3600.0
-    except Exception:
-        _age_h = 99.0
+        conn.execute("CREATE TABLE fetch_paths (platform TEXT, fetched_at TEXT)")
+        conn.execute("INSERT INTO fetch_paths VALUES ('fliggy', ?)", (stale,))
+        conn.commit()
+    finally:
+        conn.close()
+    monkeypatch.setattr(webui._State, "cfg",
+                        {"output": {"db_path": db}}, raising=False)
+    ls = webui._last_seen_of("fliggy")
+    assert ls == stale, "拿不到不限窗口的最近样本：%r" % (ls,)
     a = advise("fliggy", {}, {}, node={"last_seen_at": ls}, quiet={})
-    if _age_h < 6:
-        # 样本还新鲜（真实库被采集/其它测试刷新过）：本用例的前提「窗口外
-        # 且已很旧」不成立，硬断言 stalled 会把正确行为判成缺陷。
-        import pytest
-        pytest.skip("库里最近样本只有 %.1f 小时，未达「停了」门槛 6h" % _age_h)
     assert a["state"] == "stalled", \
-        "拿到 %.1f 小时前的样本仍判成「待首轮」：%r" % (_age_h, a)
+        "拿到 26 小时前的样本仍判成「待首轮」：%r" % (a,)
     assert "登录" in a["hint"], "没有点明与登录无关"

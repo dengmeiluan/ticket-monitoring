@@ -50,8 +50,8 @@ sys.path.insert(0, ROOT)
 
 from crawlers.app_qunar import AppQunarCrawler, _ID_BACK_DATE_LL  # noqa: E402
 
-_SCENE = os.path.join(ROOT, "debug", "scene",
-                      "qunar_app_20261104_121050_nolist-2026-11-16.txt")
+_SCENE = os.path.join(ROOT, "tests", "fixtures",
+                      "qunar_multi_city_scene.txt")
 
 
 def _crawler():
@@ -141,8 +141,7 @@ def test_multi_result_page_backs_out_then_switches():
 def test_real_scene_is_multi_city():
     """这份 dump 是病根本身：它不是往返（无返程日期位），是多程。"""
     if not os.path.isfile(_SCENE):
-        import pytest
-        pytest.skip("真实现场不存在（可能被清理）")
+        raise AssertionError("真实现场快照缺失：%s" % _SCENE)
     s = io.open(_SCENE, encoding="utf-8", errors="replace").read()
     assert _ID_BACK_DATE_LL not in s, "现场有返程日期位，那就不是多程问题"
     assert "第一程" in s and "第二程" in s, "现场不是多程页，判据假设失效"
@@ -219,15 +218,11 @@ def test_force_stop_fallback_exists():
 
 def test_real_scene_second_occurrence_has_no_single_control():
     """第二份现场确认：多程结果页确实没有「单程」可点。"""
-    import glob
-    ps = sorted(glob.glob(os.path.join(ROOT, "debug", "scene", "*nolist*")))
-    if not ps:
-        import pytest
-        pytest.skip("现场不存在（可能已清理）")
-    s = io.open(ps[-1], encoding="utf-8", errors="replace").read()
-    if "多程" not in s:
-        import pytest
-        pytest.skip("最新现场不是多程页，本用例不适用")
+    p = os.path.join(ROOT, "tests", "fixtures",
+                     "qunar_multi_city_scene_2.txt")
+    assert os.path.isfile(p), "第二份现场快照缺失：%s" % p
+    s = io.open(p, encoding="utf-8", errors="replace").read()
+    assert "多程" in s, "第二份现场不是多程页，判据假设失效"
     assert "单程" not in s, "现场有「单程」控件，那就不该走重建兜底"
     assert "抱歉未找到" in s or "第一程" in s
 
@@ -253,8 +248,11 @@ def test_normal_home_with_multi_tab_is_not_multi_city():
             '<node text="11月16日" bounds="[10,100][90,130]" />')
     d = Dev([home])
     c._switch_to_single(d, home)
-    assert d.taps == [], "正常首页被误判成多程并点了「单程」"
+    # **允许点一次「单程」**（2026-11-04 实测定论：App 会把上次搜索记成多程，
+    # 即使首页看起来是单程；幂等点一次单程能把内部模式重置回来）。
+    # 这里守住的不变量是：**不许误触发退栈/重建**（那才是代价大的动作）。
     assert d.backs == 0, "正常首页被误判并触发了退栈"
+    assert len(d.taps) <= 1, "正常首页点了不止一次（会拖慢每轮）"
 
 
 def test_multi_result_page_still_detected_by_long_text():
@@ -273,3 +271,126 @@ def test_precise_criteria_in_source():
                   encoding="utf-8").read()
     assert 'or "多程" in low' not in src, "宽判据回来了（会误伤正常首页）"
     assert 'or "多程" in (xml or "")' not in src, "宽判据回来了"
+
+
+# ---------------------------------------------------------------------------
+# 8. 点搜索前必须确认「现在是单程表单」（本轮新增）
+# ---------------------------------------------------------------------------
+def test_pre_search_asserts_single_mode():
+    """不确认就点搜索 → 得到多程结果页 → 记 `no-list-page`（看不出真因）。
+
+    实测 34 次 `no-list-page` 全是这个。现在提前判一次，把原因写成
+    `multi-city-form` / `点搜索前发现停在多程档`，账本上直接看得见。
+    """
+    src = io.open(os.path.join(ROOT, "crawlers", "app_qunar.py"),
+                  encoding="utf-8").read()
+    i = src.find("def _search_and_parse")
+    assert i > 0
+    j = src.find("def _to_prices", i)
+    body = src[i:j]
+    assert "multi-city-form" in body, "点搜索前没有档位断言"
+    assert "点搜索前发现停在多程档" in body, "没有把原因写进账本"
+    # 断言必须在**点搜索之前**
+    assert body.find("multi-city-form") < body.find("tap(*_center(btn))"), \
+        "档位断言跑到点搜索之后了（那已经晚了）"
+
+
+def test_multi_city_form_reason_is_distinct_from_no_list_page():
+    """`multi-city-form` 必须与 `no-list-page` 区分开。
+
+    两者在账本上含义完全不同：
+    * `multi-city-form` = 我方没切档（可修）
+    * `no-list-page`    = 点了搜索但列表没出来（可能真没数据）
+    混成一个，下一轮又得猜。
+    """
+    src = io.open(os.path.join(ROOT, "crawlers", "app_qunar.py"),
+                  encoding="utf-8").read()
+    assert '"multi-city-form"' in src
+    assert '"no-list-page"' in src
+    assert src.count("multi-city-form") >= 1
+
+
+# ---------------------------------------------------------------------------
+# 9. 搜索前必须留痕：把"点之前是什么状态"记一行（本轮新增）
+# ---------------------------------------------------------------------------
+def test_pre_search_state_is_logged():
+    """`_one_date` 在调 `_search_and_parse` 之前要记一行页面状态。
+
+    2026-11-04：`no-list-page` 只能看到最终结果，**看不出按下搜索时表单
+    是哪个档**——同一句账错了 34 次。留一行"命中了哪些标记"，
+    就不用每次翻 8KB dump。
+    """
+    src = io.open(os.path.join(ROOT, "crawlers", "app_qunar.py"),
+                  encoding="utf-8").read()
+    i = src.find("def _one_date")
+    assert i > 0
+    j = src.find("def _ensure_home", i)
+    body = src[i:j]
+    assert "搜索前页面" in body, "搜索前没有留痕"
+    # 留痕必须在调用 _search_and_parse **之前**
+    assert body.find("搜索前页面") < body.find("return self._search_and_parse"), \
+        "留痕跑到搜索之后了（那已经看不出点之前的状态）"
+    # 要能区分这几个关键状态
+    for mk in ("单程日期", "返程日期", "城市位", "多程段", "多程结果"):
+        assert mk in body, "留痕缺少标记：%s" % mk
+
+
+# ---------------------------------------------------------------------------
+# 10. 幂等重置必须**紧贴点搜索**（本轮加固）
+# ---------------------------------------------------------------------------
+def test_reset_happens_right_before_search_tap():
+    """重置「单程」必须放在 `_search_and_parse` 里、点搜索之前。
+
+    放在 `_fetch_locked` 开头是不够的：中间隔着 `_set_city` / `_pick_date`
+    两次页面跳转，任何一次都可能把 App 的搜索模式又写回多程。
+    实测就是这么错的——首页重置过了，点搜索照样进多程结果页。
+    """
+    src = io.open(os.path.join(ROOT, "crawlers", "app_qunar.py"),
+                  encoding="utf-8").read()
+    i = src.find("def _search_and_parse")
+    j = src.find("def _to_prices", i)
+    body = src[i:j]
+    assert "幂等重置" in body, "点搜索前没有做幂等重置"
+    # 重置必须在 `_search_widget`（找搜索按钮）之前
+    assert body.find("幂等重置") < body.find("_search_widget"), \
+        "重置跑到找搜索按钮之后了（太晚）"
+    # 重置后要重新取页面（否则还拿旧帧找按钮）
+    assert "xml = self._scroll_home(dev, want=\"search\")" in body
+
+
+def test_multi_city_reason_says_already_reset():
+    """重置过仍失败时，reason 要写明「已重置」——区分"没试"和"试了不行"。"""
+    src = io.open(os.path.join(ROOT, "crawlers", "app_qunar.py"),
+                  encoding="utf-8").read()
+    assert "已重置仍未切回" in src
+
+
+# ---------------------------------------------------------------------------
+# 11. 切单程**可能清空城市位** —— 必须核对，不能静默搜空航线（本轮新增）
+# ---------------------------------------------------------------------------
+def test_city_cleared_by_reset_is_caught():
+    """点「单程」有可能把已设好的城市清空（2026-11-04 安全检查）。
+
+    如果清了还照常搜索，搜的是**空航线**，结果会被记成"该日无航班"
+    （`empty`）——**把解析问题伪装成业务结论**，比缺数据更糟。
+    所以切档前后要核对城市位，被清空就用独立 reason 报出来。
+    """
+    src = io.open(os.path.join(ROOT, "crawlers", "app_qunar.py"),
+                  encoding="utf-8").read()
+    i = src.find("def _search_and_parse")
+    j = src.find("def _to_prices", i)
+    body = src[i:j]
+    assert "city-cleared-by-reset" in body, "没有保护：切档清空城市后会继续搜"
+    assert "_dep_before" in body and "_dep_after" in body, "没有前后核对"
+    assert "切单程后城市位被清空" in body, "没有把原因写进账本"
+    # 保护必须在点搜索之前
+    assert body.find("city-cleared-by-reset") < body.find("_search_widget"), \
+        "保护跑到点搜索之后了（那已经搜错了）"
+
+
+def test_city_cleared_reason_is_distinct():
+    """`city-cleared-by-reset` 与 `multi-city-form` / `no-list-page` 三者互斥。"""
+    src = io.open(os.path.join(ROOT, "crawlers", "app_qunar.py"),
+                  encoding="utf-8").read()
+    for r in ("city-cleared-by-reset", "multi-city-form", "no-list-page"):
+        assert r in src, "缺少 reason：%s" % r

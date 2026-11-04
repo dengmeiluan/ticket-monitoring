@@ -16,19 +16,23 @@
 「库里真出现过」要自己查 SQL，不能只靠 `_State.users`：历史上采过、
 后来被停用的渠道否则会从审计里消失，等于把已存在的问题藏起来。
 
-判据（对生产库真跑，无数据时 skip）：
+判据（对生产库真跑；干净克隆用固定样本重建同一张表）：
   1. 有 App 行的航线/日期，审计结果里必须出现该 App 渠道；
   2. 它的 `rows > 0`，且字段率不是 None（有分母才算得出率）；
   3. 名字是中文，不是裸 id。
 """
+import io
+import json
 import os
 import sqlite3
 import sys
+import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 DB = os.path.join(ROOT, "data", "prices.db")
+FIXTURE = os.path.join(ROOT, "tests", "fixtures", "field_health_rows.json")
 
 
 def _route_with_app():
@@ -45,18 +49,43 @@ def _route_with_app():
         finally:
             conn.close()
     except sqlite3.DatabaseError:
-        # CI/并行用例可能刚建了一个空/半建库：无表=无样本，按 skip 处理，
-        # 不把「没有账本」记成产品红。
+        # CI/并行用例可能刚建了一个空/半建库：无表=无样本，走固定样本。
         return None
     return row
 
 
-def test_field_health_audits_app_channels():
-    import pytest
+def _fixture_db():
+    """用真实样本行重建最小 flight_prices 表（干净克隆的判据来源）。"""
+    data = json.load(io.open(FIXTURE, encoding="utf-8"))
+    path = os.path.join(tempfile.mkdtemp(prefix="r805ar_"), "prices.db")
+    conn = sqlite3.connect(path)
+    try:
+        conn.execute(
+            "CREATE TABLE flight_prices (platform TEXT, from_city TEXT, "
+            "to_city TEXT, depart_date TEXT, extra TEXT, fetched_at TEXT)")
+        conn.executemany(
+            "INSERT INTO flight_prices (platform, from_city, to_city, "
+            "depart_date, extra, fetched_at) VALUES (?,?,?,?,?,?)",
+            [(r["platform"], r["from_city"], r["to_city"],
+              r["depart_date"], r["extra"], r["fetched_at"])
+             for r in data["rows"]])
+        conn.commit()
+    finally:
+        conn.close()
+    return tuple(data["meta"]["route"]), path
+
+
+def _sample():
+    """(route, db)：本机生产库优先，缺失时用固定样本建临时库。"""
     route = _route_with_app()
-    if not route:
-        pytest.skip("账本里没有 App 渠道的明细行，本判据无样本")
-    fc, tc, date = route
+    if route:
+        return tuple(route), DB
+    return _fixture_db()
+
+
+def test_field_health_audits_app_channels():
+    (fc, tc, date), db = _sample()
+    assert fc and tc and date, "样本航线不完整"
 
     import webui
     # 用城市码直接调用（_probe_city_code 需要完整 cfg；这里绕过解析）
@@ -64,7 +93,7 @@ def test_field_health_audits_app_channels():
     from core.citydata import CODE_NAME
     frm = CODE_NAME.get(fc, fc)
     to = CODE_NAME.get(tc, tc)
-    out = webui._srx_health(frm, to, date, db=DB)
+    out = webui._srx_health(frm, to, date, db=db)
     chans = {c["key"]: c for c in out.get("channels") or []}
     assert chans, "审计结果为空，判据失去锚点"
 
@@ -86,15 +115,29 @@ def test_field_health_audits_app_channels():
 
 def test_browser_channels_still_audited():
     """扩展覆盖面不能把原来的五家挤掉。"""
-    import pytest
-    route = _route_with_app()
-    if not route:
-        pytest.skip("账本里没有样本")
-    fc, tc, date = route
+    (fc, tc, date), db = _sample()
     import webui
     from core.citydata import CODE_NAME
     out = webui._srx_health(CODE_NAME.get(fc, fc), CODE_NAME.get(tc, tc),
-                            date, db=DB)
+                            date, db=db)
     keys = {c["key"] for c in out.get("channels") or []}
     for p in ("ctrip", "qunar", "fliggy", "tongcheng", "tuniu"):
         assert p in keys, "浏览器渠道 %s 从审计里消失了" % p
+
+
+def test_fixture_alone_audits_app_and_browser_channels():
+    """干净克隆没有生产库：固定样本重建的表也必须过同一套判据。"""
+    (fc, tc, date), db = _fixture_db()
+    assert db != DB, "本用例必须走固定样本，不能回落到生产库"
+    import webui
+    from core.citydata import CODE_NAME
+    out = webui._srx_health(CODE_NAME.get(fc, fc), CODE_NAME.get(tc, tc),
+                            date, db=db)
+    chans = {c["key"]: c for c in out.get("channels") or []}
+    for p in ("ctrip", "qunar", "fliggy", "tongcheng", "tuniu"):
+        assert p in chans, "浏览器渠道 %s 从审计里消失了" % p
+    apps = [c for c in chans.values() if str(c["key"]).startswith("app")]
+    assert apps, "固定样本里有 App 行，审计却没有 App 渠道"
+    for c in apps:
+        assert int(c["rows"]) > 0, c
+        assert not str(c["name"]).startswith("app_"), c

@@ -38,8 +38,11 @@ sys.path.insert(0, ROOT)
 from crawlers.qunar import QunarCrawler  # noqa: E402
 
 
-def _crawler():
-    return QunarCrawler({"user_data_dir": "user_data"}, None)
+def _crawler(tmp_path=None):
+    """测试专用 crawler：**不读生产轮转文件**（否则断言受真实状态影响）。"""
+    import tempfile
+    root = str(tmp_path) if tmp_path is not None else tempfile.mkdtemp(prefix="r940_")
+    return QunarCrawler({"user_data_dir": root, "profile": "qunar"}, None)
 
 
 def _arm_quiet(c, left_s=600, reason="上一条国际查询软空/限流"):

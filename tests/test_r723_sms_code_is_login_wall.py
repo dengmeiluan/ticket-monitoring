@@ -84,8 +84,12 @@ def test_each_app_channel_uses_same_login_judgement(plat):
     assert cls is not None, "渠道 %s 未注册" % plat
     inst = cls({"user_data_dir": "_scratch/r723_data"},
                __import__("logging").getLogger("r723"))
-    if not hasattr(inst, "_is_login_page"):
-        pytest.skip("%s 没有自己的 _is_login_page（直接用基类）" % plat)
+    if type(inst).__dict__.get("_is_login_page") is None:
+        # 子类没有私有判据：直接走基类 is_login_wall，这本身即同源。
+        # 仍要证明「验证码页是登录墙、普通列表不是」在它身上成立。
+        assert inst.is_login_wall(SMS_CODE_PAGE) is True
+        assert inst.is_login_wall(FLIGHT_LIST) is False
+        return
     # 验证码页：两份判据必须给同一个答案
     assert inst._is_login_page(SMS_CODE_PAGE) == inst.is_login_wall(SMS_CODE_PAGE), (
         "%s 的 _is_login_page 与基类登录墙判据不一致（验证码页）" % plat)
