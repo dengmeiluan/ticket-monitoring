@@ -73,6 +73,30 @@ ROOT_PROPS = {
 EMU_PROP_PAT = ("mumu", "netease", "nemu", "vbox", "goldfish", "qemu",
                 "bluestacks", "ldplayer", "noxtn")
 
+# 这些前缀的键**不是可写的 prop**，删不掉也不该算"没清掉"：
+# ``init.svc.*`` / ``init.svc_debug_pid.*`` 是 init 的服务运行状态
+# （``init.svc.nemuinit=running`` 之类），由系统维护，resetprop 删了也会立刻回来。
+# 把它们算进"厂商残留"只会让自检永远清不了零分（2026-11-04 实机踩到）。
+_NONPROP_PREFIX = ("init.svc.", "init.svc_debug_pid.", "ro.boottime.",
+                   "sys.", "dev.")
+
+
+def _is_vendor_prop(key: str, value=None) -> bool:
+    """这个键是不是"厂商注入的可清理 prop"（而不是系统运行态）。
+
+    给了 ``value`` 时**只把"值非空"算作暴露面**：清空后的键还在
+    （``[nemud.player_engine]: []``），但它已经不再自报"我是 MUMU15"，
+    若仍算残留，自检就永远到不了满分（2026-11-04 实机踩到）。
+    """
+    k = str(key or "").lower()
+    if not k or k.startswith(_NONPROP_PREFIX):
+        return False
+    if not any(p in k for p in EMU_PROP_PAT):
+        return False
+    if value is not None and not str(value).strip():
+        return False
+    return True
+
 # 本层不处理的残留（如实报告，不要假装清掉了）
 UNFIXABLE = (
     ("play_integrity", "Play Integrity / SafetyNet 需要真机 TEE，任何模拟器都过不了"),
@@ -119,31 +143,38 @@ def detect(dev) -> dict:
         if needle.lower() in str(props.get(k, "")).lower():
             rep["emulator"].append("prop:%s=%s" % (k, props.get(k)))
     blob = " ".join("%s=%s" % (k, v) for k, v in props.items()
-                    if any(p in k.lower() for p in EMU_PROP_PAT))
+                    if _is_vendor_prop(k, v))
     if blob.strip():
         rep["emulator"].append("props:%s" % blob[:200])
 
     # --- 文件系统层（与 props 独立，props 干净也可能命中）---
-    fs = _text(_call(dev, "shell", "sh", "-c",
-                     "ls /system/bin/su /system/xbin/su /sbin/su "
-                     "/system/app/Superuser.apk /data/adb/magisk "
-                     "/dev/qemu_pipe 2>/dev/null || true"))
-    for line in fs.splitlines():
-        p = line.strip()
-        if p:
-            (rep["emulator"] if "qemu_pipe" in p else rep["root"]).append(
-                "fs:%s" % p)
+    #
+    # **必须用 `test -e` 逐路径判存在，不能用 `ls`**（2026-11-04 实机踩到）：
+    # `ls /a /b /c` 在某个参数是**目录**或**符号链接**时会把它的内容列出来，
+    # 于是 `/mnt/shared`（指向 `/`）让 `ls -d` 打印出整屏根目录条目
+    # （acct/adb_keys/apex/bin/…），自检分被扣到 0 分——操作员看到「自检 0 分」
+    # 以为隐藏失败，实际是误报。`test -e` 只回 0/1，不会有目录展开问题。
+    _FS_ROOTS = ("/system/bin/su", "/system/xbin/su", "/sbin/su",
+                 "/system/app/Superuser.apk", "/data/adb/magisk")
+    for p in _FS_ROOTS:
+        if _text(_call(dev, "shell", "sh", "-c",
+                       "test -e %s && echo TM_YES || echo TM_NO" % _q(p))
+                 ).strip() == "TM_YES":
+            rep["root"].append("fs:%s" % p)
+    if _text(_call(dev, "shell", "sh", "-c",
+                   "test -e /dev/qemu_pipe && echo TM_YES || echo TM_NO")
+             ).strip() == "TM_YES":
+        rep["emulator"].append("fs:/dev/qemu_pipe")
+
     # 模拟器厂商的共享目录：App 一个 File.exists() 就能判定，props 改不掉。
     # MuMu 的 /mnt/shared 与 /sdcard/MuMuSharedFolder 是默认存在的一对。
-    shared = _text(_call(
-        dev, "shell", "sh", "-c",
-        "ls -d /mnt/shared /sdcard/MuMuSharedFolder /sdcard/MuMu 2>/dev/null"
-        " || true"))
-    for line in shared.splitlines():
-        p = line.strip()
-        if p:
-            rep["emulator"].append("shared:%s（MuMu 共享目录，需在模拟器设置里关掉）"
-                                   % p)
+    # 同样用 `test -e`（`/mnt/shared` 常是符号链接，`ls` 会展开成根目录）。
+    for p in ("/mnt/shared", "/sdcard/MuMuSharedFolder", "/sdcard/MuMu"):
+        if _text(_call(dev, "shell", "sh", "-c",
+                       "test -e %s && echo TM_YES || echo TM_NO" % _q(p))
+                 ).strip() == "TM_YES":
+            rep["emulator"].append(
+                "shared:%s（MuMu 共享目录，需在模拟器设置里关掉）" % p)
 
     # --- Magisk ---
     rp = _magisk(dev)
@@ -242,26 +273,49 @@ def hide(dev, packages=None, config=None) -> dict:
         else:
             script.append("setprop %s %s >/dev/null 2>&1 && echo 'OK %s'"
                           % (_q(k), _q(v), k))
-    if rp:
-        # 厂商 props 直接删（存在即证据）
-        for line in _text(_call(dev, "shell", "getprop")).splitlines():
-            if "]: [" not in line:
-                continue
-            key = line.strip()[1:].split("]: [")[0]
-            if any(p in key.lower() for p in EMU_PROP_PAT):
-                script.append("%s --delete %s >/dev/null 2>&1 && echo 'DEL %s'"
-                              % (rp, _q(key), key))
+    # 厂商 props：**删不掉就清空**（2026-11-04 实机实测）
+    #
+    # MuMu 会注入一整套 `nemud.*`，里面直接自报家门：
+    #     nemud.player_engine      = MUMU15      ← 比机型字段更致命
+    #     nemud.player_architecture= x86_64
+    #     nemud.device.id          = <手机号/设备号>
+    # App 一个 getprop 就能确认"这是 MuMu 15"。
+    #
+    # 实测：这些键**不是 ro.\***，`setprop` 可以把值写成空（键仍在，值为 `[]`）。
+    # 风控 SDK 判的是"值里有没有内容"，所以**清空就够了**——不必纠结"键还在"。
+    # 有 Magisk 时优先 `resetprop --delete`（连键一起消掉，更干净）。
+    vendor_keys = []
+    for line in _text(_call(dev, "shell", "getprop")).splitlines():
+        if "]: [" not in line:
+            continue
+        key = line.strip()[1:].split("]: [")[0]
+        val = line.strip()[1:].partition("]: [")[2].rstrip("]")
+        # 只碰**厂商注入的 prop**；`init.svc.*` 之类是系统运行态，删不掉也不该算残留
+        # **值已空的跳过**：清过一次就不用每轮再清 41 次（省 adb 往返）。
+        if _is_vendor_prop(key, val):
+            vendor_keys.append(key)
+    for key in vendor_keys:
+        if rp:
+            script.append("%s --delete %s >/dev/null 2>&1 && echo 'DEL %s'"
+                          % (rp, _q(key), key))
+        else:
+            # 没有 resetprop 也要清：setprop 写空串（非 ro.* 时可成功）
+            script.append("setprop %s '' >/dev/null 2>&1 && echo 'CLR %s'"
+                          % (_q(key), key))
     out = _text(as_root(dev, "; ".join(script) or "true"))
     ok_keys = [ln[3:].strip() for ln in out.splitlines()
                if ln.strip().startswith("OK ")]
     del_keys = [ln[4:].strip() for ln in out.splitlines()
                 if ln.strip().startswith("DEL ")]
-    acts.append({"cmd": "props:%d set / %d deleted" % (len(ok_keys),
-                                                       len(del_keys)),
-                 "ok": bool(ok_keys or del_keys), "why": "清 root/厂商 props"})
+    clr_keys = [ln[4:].strip() for ln in out.splitlines()
+                if ln.strip().startswith("CLR ")]
+    acts.append({"cmd": "props:%d set / %d deleted / %d cleared"
+                        % (len(ok_keys), len(del_keys), len(clr_keys)),
+                 "ok": bool(ok_keys or del_keys or clr_keys),
+                 "why": "清 root/厂商 props（厂商键删不掉时清空值）"})
     if not rp:
         acts.append({"cmd": "resetprop", "ok": False,
-                     "why": "没有 Magisk：ro.* 只读，setprop 会失败（这些键改不动）"})
+                     "why": "没有 Magisk：ro.* 只读改不动；nemud.* 等可写键已改用清空"})
 
     # 2) Magisk DenyList
     acts += _denylist(dev, names, rp)
