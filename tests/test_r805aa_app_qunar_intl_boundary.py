@@ -52,6 +52,11 @@ def _ledger():
             "SELECT platform, path_status, COUNT(*), SUM(rows) "
             "FROM fetch_paths WHERE platform LIKE 'app%' "
             "GROUP BY platform, path_status").fetchall()
+    except sqlite3.OperationalError:
+        # CI 干净环境里 data/prices.db 可能由别的用例先创建、但还没建
+        # fetch_paths 表——文件存在 ≠ 账本存在，按「账本不在」跳过，
+        # 不能把建表时序当成产品失败（2026-11-04 CI test(2) 实测）。
+        return None
     finally:
         con.close()
 
