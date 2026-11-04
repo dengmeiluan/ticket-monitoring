@@ -32,10 +32,10 @@
 - **代码树**：HEAD `1c0b8c4`（r925–r939 + r959 已入库）：设备锁 owner/预算观测上健康页、
   `fetch_budget_s` 配置控件、qunar 城市档位自愈/¥ 价与中转航班号归一、`paced` 主动让位、
   App 帧预算/弹层 BACK 重试、智行日期入口兼容横线格式、失败现场落盘。
-- **门禁**（2026-11-04 当时快照）：tracked collect **6666**；tracked 口径全量 **6666 passed / 0 skipped /
-  0 failed**（2026-11-04 14:31，工作树另含并行会话 7 条未跟踪用例）；干净克隆 `13aba7e` 为 **6665 passed / 0 skipped /
+- **门禁**（2026-11-04 当时快照）：tracked collect **6673**；tracked 口径全量 **6673 passed / 0 skipped /
+  0 failed**（2026-11-04 14:31；qunar 等待预算 7 条用例已入库）；干净克隆 `13aba7e` 为 **6665 passed / 0 skipped /
   0 failed**（450.65s；真机样本/账本已入 `tests/fixtures`，无环境 skip），UI **670/670**；
-  CI 4 测试片 + 2 UI 片在 `1c0b8c4` 上重跑；`channel_contract --strict` 10 家 × 11 轴无缺口；
+  CI 4 测试片 + 2 UI 片在 `5b66f44` 上重跑；`channel_contract --strict` 10 家 × 11 轴无缺口；
   `release_align_check --local` 25/25；静态站戳 `code:f479ecf59efd` = 当前 `webui.py`。
 - **发布**：Release 本轮从 `532072e` 再对齐到本次文档提交（代码 `1c0b8c4`）：四平台资产重建、
   初版式正文更新、tag 最后重指；内容含 App 图标精修与 r935–r939 健壮性修复。
