@@ -797,9 +797,20 @@ class AppQunarCrawler(AppCrawler):
         """
         low = xml or ""
         is_round = _ID_BACK_DATE_LL in low
-        # 多程页特征：有「第一程」+「第二程」段落，且没有首页城市位。
-        # 用一个能同时覆盖"在首页多程表单"和"在多程结果页"的判据。
-        is_multi = ("第一程" in low and "第二程" in low)
+        # 多程判据必须**精确**（2026-11-04 踩过坑）：
+        # 首页本来就有「多程」这个 tab 文案，`"多程" in xml` 在**正常单程首页**
+        # 上也是 True —— 用它当判据会把正常页面判成多程，进而误触发
+        # force-stop 重建（我第一版就这么写的，实测 175 节点的普通页也命中）。
+        #
+        # 真正的多程特征（两份现场实证）：
+        #   ① 多程**表单**：有「第一程」+「第二程」两段，且没有单程日期位；
+        #   ② 多程**结果页**：`未找到符合条件的多程航班` / `建议…分开预订`。
+        # 用这两条长文案，不会被 tab 文案误伤。
+        is_multi = (
+            ("第一程" in low and "第二程" in low)
+            or "多程航班" in low
+            or "分开预订" in low
+        )
         if not (is_round or is_multi):
             return xml
         seg = _find_id(xml, _ID_SINGLE_ONLY_SWITCH)
@@ -919,6 +930,31 @@ class AppQunarCrawler(AppCrawler):
         # 更糟的是不报错时会把往返总价当成单程价记下来。判据就是返程
         # 日期位在不在，只点一次「单程」，与往返流程切档同源。
         xml = self._switch_to_single(dev, xml)
+
+        # **兜底：切档失败就硬重建**（2026-11-04）。
+        # 多程**结果页**上没有「单程」控件、BACK 也退不回表单（现场
+        # `nolist-2026-11-16` 就是这种）。`_switch_to_single` 尽力之后若仍
+        # 看到多程特征，只剩一条路：force-stop + 深链，让 App 从首页入口重建
+        # （`_ensure_home` 内部已有这套）。重建后再切一次单程。
+        #
+        # ⚠ 判据必须精确：首页本身就有「多程」tab，用 `"多程" in xml` 会把
+        # 正常页面判成多程 → 每轮白做一次 force-stop（实测 175 节点普通页命中）。
+        _still_multi = (
+            ("第一程" in (xml or "") and "第二程" in (xml or ""))
+            or "多程航班" in (xml or "")
+            or "分开预订" in (xml or "")
+        )
+        if _still_multi:
+            self.logger.info("[%s] 仍停在多程页（无单程控件/BACK 退不出），"
+                             "force-stop 重建后重试单程", self.name)
+            xml = self._ensure_home(dev)
+            xml = self._switch_to_single(dev, xml)
+            if ("第一程" in (xml or "") and "第二程" in (xml or "")) \
+                    or "多程航班" in (xml or ""):
+                # 重建也救不回来：如实记账，别假装在单程页上继续跑
+                self.path_note("app-mode", "timeout",
+                               detail="多程档残留：切单程与重建均未成功")
+                return []
 
         from_name = self._city_name(from_city)
         to_name = self._city_name(to_city)

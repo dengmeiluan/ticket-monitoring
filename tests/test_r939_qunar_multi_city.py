@@ -183,3 +183,93 @@ def test_back_is_bounded():
     d = Dev([MULTI])          # 永远是结果页，退不出去
     c._switch_to_single(d, MULTI)
     assert d.backs <= 3, "退栈没有上限：%d 次" % d.backs
+
+
+# ---------------------------------------------------------------------------
+# 6. 多程**结果页**：没有「单程」控件、BACK 也退不出 → 必须重建
+# ---------------------------------------------------------------------------
+def test_multi_result_page_without_switch_control_is_detected():
+    """现场 `nolist-2026-11-16` 第二次：只有「多程」字样、**没有**「单程」。
+
+    说明只认「第一程+第二程」不够——多程**结果页**可能只带「多程」文案。
+    判据必须放宽到"出现「多程」即需处理"。
+    """
+    src = io.open(os.path.join(ROOT, "crawlers", "app_qunar.py"),
+                  encoding="utf-8").read()
+    i = src.find("def _switch_to_single")
+    body = src[i:i + 3200]
+    # 必须覆盖多程结果页（用长文案，而不是 tab 上的「多程」二字——
+    # 首页本来就有那个 tab，用它当判据会把正常页面判成多程，实测踩过）
+    assert '"多程航班" in low' in body, "多程结果页判据缺失"
+    assert '"分开预订" in low' in body, "多程结果页文案判据缺失"
+
+
+def test_force_stop_fallback_exists():
+    """切档与 BACK 都失败时，必须有 force-stop + 深链重建的兜底。
+
+    多程结果页不在正常导航栈里，BACK 退不回表单——只能硬重建。
+    没有这一步，整轮就在多程页上跑，记 `no-list-page`。
+    """
+    src = io.open(os.path.join(ROOT, "crawlers", "app_qunar.py"),
+                  encoding="utf-8").read()
+    assert "force-stop 重建后重试单程" in src, "没有重建兜底"
+    assert "多程档残留：切单程与重建均未成功" in src, \
+        "重建也失败时没有如实记账"
+
+
+def test_real_scene_second_occurrence_has_no_single_control():
+    """第二份现场确认：多程结果页确实没有「单程」可点。"""
+    import glob
+    ps = sorted(glob.glob(os.path.join(ROOT, "debug", "scene", "*nolist*")))
+    if not ps:
+        import pytest
+        pytest.skip("现场不存在（可能已清理）")
+    s = io.open(ps[-1], encoding="utf-8", errors="replace").read()
+    if "多程" not in s:
+        import pytest
+        pytest.skip("最新现场不是多程页，本用例不适用")
+    assert "单程" not in s, "现场有「单程」控件，那就不该走重建兜底"
+    assert "抱歉未找到" in s or "第一程" in s
+
+
+# ---------------------------------------------------------------------------
+# 7. **正常首页不许被误判成多程**（本轮修的 bug）
+# ---------------------------------------------------------------------------
+def test_normal_home_with_multi_tab_is_not_multi_city():
+    """首页本来就有「多程」tab —— 不能用 `"多程" in xml` 当判据。
+
+    2026-11-04 我第一版就是这么写的：
+    ```python
+    is_multi = (("第一程" in low and "第二程" in low) or "多程" in low)
+    ```
+    实测在一个 **175 节点的正常页面**上 `"多程" in xml` 就是 True ——
+    于是每轮都会判成多程、白做一次 force-stop 重建。
+    """
+    c = _crawler()
+    home = ('<node text="机票查询" bounds="[0,0][100,40]" />'
+            '<node text="单程" bounds="[10,50][60,90]" />'
+            '<node text="往返" bounds="[70,50][120,90]" />'
+            '<node text="多程" bounds="[130,50][180,90]" />'      # ← tab 文案
+            '<node text="11月16日" bounds="[10,100][90,130]" />')
+    d = Dev([home])
+    c._switch_to_single(d, home)
+    assert d.taps == [], "正常首页被误判成多程并点了「单程」"
+    assert d.backs == 0, "正常首页被误判并触发了退栈"
+
+
+def test_multi_result_page_still_detected_by_long_text():
+    """真正的多程结果页用长文案判，仍然命中。"""
+    result = ('<node text="选择航班" bounds="[0,0][100,40]" />'
+              '<node text="抱歉未找到符合条件的多程航班" '
+              'bounds="[0,60][900,90]" />'
+              '<node text="建议修改搜索条件或分开预订" '
+              'bounds="[0,100][900,130]" />')
+    assert "多程航班" in result or "分开预订" in result
+
+
+def test_precise_criteria_in_source():
+    """源码里不许再出现宽判据 `"多程" in low`。"""
+    src = io.open(os.path.join(ROOT, "crawlers", "app_qunar.py"),
+                  encoding="utf-8").read()
+    assert 'or "多程" in low' not in src, "宽判据回来了（会误伤正常首页）"
+    assert 'or "多程" in (xml or "")' not in src, "宽判据回来了"

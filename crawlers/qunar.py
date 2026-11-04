@@ -236,6 +236,61 @@ class QunarCrawler(BaseCrawler):
         # BKK 出数后，LHR/NRT/SIN 连续 3 条全 1999，而国内 70 条正常）。
         self._intl_quiet_until = 0.0
         self._intl_quiet_reason = ""
+        # 每条国际航线"上次真正轮到"的时间（路由键 -> ts）。
+        # 让位窗口只挡"刚查过的"，不挡"一直没轮到的"——否则每轮都从配置里
+        # 第一条国际航线开始，后面的永远饿死（2026-11-04 实测 qunar 23%）。
+        self._intl_route_seen = self._load_intl_rotation()
+        # 上一个"已用过绕过"的让位窗口标记（存窗口结束时刻）。
+        # 每个让位窗口最多绕过一次：既不饿死后面的航线，也不会一次放全
+        # 4 条国际线同时撞 1999（2026-11-04）。
+        self._intl_bypass_at = 0.0
+
+    # ---------- 国际航线轮转的持久化 ----------
+    #
+    # 为什么必须落盘（2026-11-04）：`_intl_route_seen` 放内存里，**每次进程
+    # 重启就清空**，于是轮转从头开始——而配置里第一条永远是 SHA→NRT，
+    # 结果"NRT 每次都能吃到重启后的第一次配额"。当天我重启了 6 次，
+    # 等于把轮转永久钉在第一条上。
+    #
+    # 落盘之后，重启也能接着上次的轮转位置继续，4 条国际航线才真公平。
+    _INTL_ROT_FILE = "intl_rotation.json"
+
+    def _intl_rot_path(self) -> str:
+        try:
+            root = str((self.config or {}).get("user_data_dir") or "user_data")
+        except Exception:
+            root = "user_data"
+        prof = str((self.config or {}).get("profile") or "qunar")
+        return os.path.join(root, prof, self._INTL_ROT_FILE)
+
+    def _load_intl_rotation(self) -> dict:
+        """读上次的轮转位置；读不到就空（等价"都没轮到过"）。"""
+        try:
+            with open(self._intl_rot_path(), encoding="utf-8") as f:
+                d = json.load(f)
+            if not isinstance(d, dict):
+                return {}
+            out = {}
+            for k, v in d.items():
+                try:
+                    out[str(k)] = float(v)
+                except (TypeError, ValueError):
+                    continue
+            return out
+        except (OSError, ValueError, TypeError):
+            return {}
+
+    def _save_intl_rotation(self):
+        """写回轮转位置；写失败不影响采集。"""
+        try:
+            p = self._intl_rot_path()
+            d = os.path.dirname(p)
+            if d:
+                os.makedirs(d, exist_ok=True)
+            with open(p, "w", encoding="utf-8", newline="\n") as f:
+                json.dump(self._intl_route_seen, f, ensure_ascii=False)
+        except (OSError, TypeError, ValueError):
+            pass
 
     CITY_NAME = {
         "SZX": "深圳", "KMG": "昆明", "PEK": "北京", "BJS": "北京",
@@ -456,20 +511,54 @@ class QunarCrawler(BaseCrawler):
         self._soft_empty_retried = False
         _is_intl = bool(is_intl_route(from_city, to_city)) and not ret_date
         if _is_intl and self._intl_quiet_until > _t.time():
-            _left = int(self._intl_quiet_until - _t.time())
-            self.logger.info(
-                "[qunar] 国际查询让位 %ds（%s），本轮跳过 %s→%s",
-                _left, self._intl_quiet_reason or "渠道限流保护",
-                from_city, to_city)
-            self.path_note(
-                # 记 ``paced`` 而不是 ``soft_reject``：让位是**我方主动不发
-                # 请求**（守国际列表配额），不是"被地方拒绝"。记成软拒会把
-                # 主动让步算成渠道失败——qunar 账面成功率只剩 50%，看着像
-                # 被风控，实际是在守配额（2026-11-04 复盘）。
-                "QUERY", "paced",
-                detail="国际查询让位：%s"
-                       % (self._intl_quiet_reason or "渠道限流保护"))
-            return []
+            # **配额让位要轮转，不能永远饿死后面的航线**（2026-11-04）。
+            #
+            # 原行为：让位窗口内**所有**国际航线一律跳过。而采集每轮都从
+            # 同一条开始（配置里第一条是 SHA→NRT），于是：
+            #   第 1 条拿配额 → 后 3 条全让位 → 下一轮**又从第 1 条开始**。
+            # 结果 NRT 天天成功，BKK/SIN/LHR 永远轮不到。实测今天 qunar
+            # 30 次里只有 7 次 ok（23%），而失败全是 `1999/8 国际列表限流`。
+            #
+            # 现在改成：如果这条航线**很久没被真正查过**（超过半个让位窗口），
+            # 就放它这一次——让位窗口只挡"刚查过的"，不挡"一直没轮到的"。
+            # 这样 4 条国际航线会公平轮转，而不是一条独吞配额。
+            _rk_key = "%s-%s" % (from_city, to_city)
+            _last_try = float(self._intl_route_seen.get(_rk_key) or 0)
+            _starved = (_t.time() - _last_try) >= max(60.0,
+                                                     self.INTL_SOFT_QUIET_S / 2)
+            # **首轮/从没轮到过的航线也要算"饿"**：没有记录（_last_try=0）
+            # 意味着它一次都没拿到过配额，正是最该放行的。
+            # 但为了不一次放全（4 条国际同时打会连撞 1999），每个让位窗口
+            # **最多绕过一次**——绕过的那条立刻记 ts，下个窗口轮到下一条。
+            _never = _last_try <= 0
+            _bypass_ok = (self._intl_bypass_at != self._intl_quiet_until)
+            if (_never or _starved) and _bypass_ok:
+                self._intl_bypass_at = self._intl_quiet_until
+                self.logger.info(
+                    "[qunar] 国际航线轮转：%s→%s %s，越过让位窗口放行一次"
+                    "（%s）",
+                    from_city, to_city,
+                    "从没轮到过" if _never
+                    else "已 %.0f 分钟没轮到" % ((_t.time() - _last_try) / 60.0),
+                    self._intl_quiet_reason or "配额保护")
+            else:
+                _left = int(self._intl_quiet_until - _t.time())
+                self.logger.info(
+                    "[qunar] 国际查询让位 %ds（%s），本轮跳过 %s→%s",
+                    _left, self._intl_quiet_reason or "渠道限流保护",
+                    from_city, to_city)
+                self.path_note(
+                    # 记 ``paced`` 而不是 ``soft_reject``：让位是**我方主动不发
+                    # 请求**（守国际列表配额），不是"被地方拒绝"。记成 soft_reject
+                    # 会把主动让步算成渠道失败——qunar 账面成功率只剩 50%，
+                    # 看着像被风控，实际是在守配额（2026-11-04 复盘）。
+                    "QUERY", "paced",
+                    detail="国际查询让位：%s"
+                           % (self._intl_quiet_reason or "渠道限流保护"))
+                return []
+            # 放行这次：记下"这条轮到过了"，下次让位窗口优先放过别的航线
+            self._intl_route_seen[_rk_key] = _t.time()
+            self._save_intl_rotation()
         # 往返（r815j）：国内 touch 往返页去程卡直接给产品「往返总价」，
         # 只采这个价（返程卡的「补 ¥N」是增量，不当总价）。国际往返
         # 仍走 interlist 单程面，未验证组合总价，显式拒绝。
