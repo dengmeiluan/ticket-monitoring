@@ -349,6 +349,22 @@ class QunarCrawler(BaseCrawler):
     # 冷却期类级共享（多查询间生效），拿到数据即重置
     _MIN_GAP_S = 8                 # 相邻查询礼貌间隔（登录态实测零限流，20→12→8；失败有阶梯退避兜底）
     _BACKOFF_S = (90, 180, 300)    # 疑似限流的阶梯退避
+    # 单轮"错峰等待"累计预算（秒）。实测 12:00 后累计 **2891s = 48.6 分钟**，
+    # 全是纯空等，却把整条采集线卡住（app_qunar 一整轮没轮到）。
+    # 取 300s：够走完一次 90/180 的阶梯，又不至于把一轮拖没。
+    ROUND_WAIT_BUDGET_S = 300
+    # 类级累计：本轮已空等多少秒 + 本窗口起点。`fetch()` 每条航线调一次，
+    # 预算得跨调用累计，否则"每条约 90s"永远撞不到上限（实测累计 48.6 分钟）。
+    _WAIT_BUDGET = {"used_s": 0.0, "since": 0.0}
+
+    def _reset_wait_budget_if_stale(self, window_s: float = 2100.0):
+        """窗口（默认 35 分钟 ≈ 一轮）过去就把累计清零。"""
+        import time as _t
+        st = QunarCrawler._WAIT_BUDGET
+        now = _t.time()
+        if not st.get("since") or (now - float(st["since"])) > window_s:
+            st["used_s"] = 0.0
+            st["since"] = now
     # r385：国际列表 1999 单次间歇放行的同轮短退避（A/B 实测 1.5 分钟
     # 内自愈；取 45s 兼顾"够它放行"与"不拖死整轮"）
     INTL_1999_RETRY_S = 45
@@ -510,6 +526,9 @@ class QunarCrawler(BaseCrawler):
         self._last_failure_status = ""
         self._soft_empty_retried = False
         _is_intl = bool(is_intl_route(from_city, to_city)) and not ret_date
+        # **本轮等待预算的计时起点**：`fetch()` 是"每条航线一次"，而等待预算
+        # 要按"一整轮"算，所以用类级累计 + 时间窗（窗口 = 一轮的量级）。
+        self._reset_wait_budget_if_stale()
         if _is_intl and self._intl_quiet_until > _t.time():
             # **配额让位要轮转，不能永远饿死后面的航线**（2026-11-04）。
             #
@@ -576,8 +595,29 @@ class QunarCrawler(BaseCrawler):
             wait = max(QunarCrawler._cooldown_until - _t.time(),
                        self._MIN_GAP_S - (_t.time() - QunarCrawler._last_done_ts))
             if wait > 0:
+                # **单轮等待预算**（2026-11-04）：实测 12:00 之后 qunar 的
+                # "错峰等待"累计 **2891 秒 = 48.6 分钟**，全部是纯空等——
+                # 而它占着采集线程，后面的 app_qunar/app_zhixing/同程/途牛
+                # 全被推迟（实测 app_qunar 一整轮都没轮到）。
+                #
+                # 退避本身没错（守配额），但**不能无限等**：一轮里累计超过
+                # 预算就放弃本轮，把时间让给别的渠道——它们不冲突，不需要
+                # 陪 qunar 一起等。
+                if QunarCrawler._WAIT_BUDGET["used_s"] + wait > self.ROUND_WAIT_BUDGET_S:
+                    self.logger.warning(
+                        "[qunar] 本轮等待已达预算（已 %.0fs + 需 %.0fs > %ds），"
+                        "放弃本轮 %s→%s，把时间让给其它渠道",
+                        QunarCrawler._WAIT_BUDGET["used_s"], wait,
+                        int(self.ROUND_WAIT_BUDGET_S), from_city, to_city)
+                    for _d in (dates or []):
+                        self.path_note(
+                            "QUERY", "paced", date=_d,
+                            detail="本轮等待预算用尽（已 %.0fs），主动让位"
+                                   % QunarCrawler._WAIT_BUDGET["used_s"])
+                    return []
                 self.logger.info("[qunar] 错峰等待 %ds", int(wait))
                 _t.sleep(wait)
+                QunarCrawler._WAIT_BUDGET["used_s"] += wait
             fail_status = ""
             try:
                 res = self._fetch_inner(from_city, to_city, dates)
