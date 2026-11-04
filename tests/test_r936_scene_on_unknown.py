@@ -73,9 +73,16 @@ def test_save_scene_keeps_desc_only_nodes(tmp_path, monkeypatch):
     assert "ItemPrice" in body
 
 
-def test_save_scene_is_fail_soft(monkeypatch):
-    """写不进去不能抛（采集优先）。"""
-    monkeypatch.setenv("TICKET_SCENE_DIR", "/definitely/not/writable/\x00")
+def test_save_scene_is_fail_soft(monkeypatch, tmp_path):
+    """写不进去不能抛（采集优先）。
+
+    用「普通文件当目录」制造不可写：不依赖权限（root/runner 差异），
+    也不往环境变量塞 NUL（Linux 的 os.environ 会先抛 ValueError，
+    测试还没进 save_scene 就红了——2026-11-04 CI test(2) 实测）。
+    """
+    blocker = tmp_path / "blocker"
+    blocker.write_text("x", encoding="utf-8")
+    monkeypatch.setenv("TICKET_SCENE_DIR", str(blocker / "sub"))
     assert save_scene("x", "<node text='a' bounds='[0,0][1,1]' />") == ""
 
 
