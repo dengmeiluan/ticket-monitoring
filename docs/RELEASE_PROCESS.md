@@ -60,6 +60,11 @@ Release cadence:
    - the project’s live 8765 acceptance
    - the channel × domestic/international matrix
    - required performance measurements
+   - a **clean clone** full run (`git clone` the exact release tree, no `data/`,
+     `logs/`, `_scratch/`) must report **0 skipped** on the 6665-test scale.
+     Data/environment skips are release blockers; if an environment-only gate
+     (missing font/Chromium/adb) truly cannot run, list it explicitly in the
+     release report instead of letting it hide inside a green summary.
 3. **Back up** the complete Git history, uncommitted work and necessary audit evidence outside the repository; verify restore. Backups must never enter the public repository or packages.
 4. **Converge history**: inventory public branches, tags, Releases and deployments; reduce the final source to a single root initialization commit. Before and after the rewrite, compare the source tree and assert that no verified feature is lost except explicit public-material and distribution cleanup. Check for new remote commits before updating; use operations with expected-state protection. Record the operation in the release notes.
 5. **Bump and bake**: only after gates pass, bump the version in `main.py`, its version gate and `docs/release-notes-v<version>.md`; update README/EN counts, screenshots and site. CN/EN README, Release and site keep the full first-release introduction with one chapter order, one screenshot order, one set of facts and one capability boundary. Public material must not accumulate internal rounds, duplicated release prose or development logs.
