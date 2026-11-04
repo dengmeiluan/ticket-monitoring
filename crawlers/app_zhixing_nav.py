@@ -112,7 +112,7 @@ def is_intl_form(xml: str) -> bool:
 _HOME_MARK = "机票查询"
 
 
-def _await_home(dev, timeout_s: float = 30.0) -> tuple:
+def _await_home(dev, timeout_s: float = 30.0, frames: int = 10) -> tuple:
     """等到一帧能看见首页表单（「机票查询」在）的页面。返回 (xml, ready)。
 
     冷启动实测：`app_start` 之后头几帧 `dump()` 全是空串（uiautomator
@@ -123,12 +123,18 @@ def _await_home(dev, timeout_s: float = 30.0) -> tuple:
 
     同时也排除「停在别页」：城市选择页/日历弹层里也没有「机票查询」，
     拿它们判档位同样会得到「没有国际档标记」的假结论。
+
+    **按帧数预算**（与 `set_flight_route` 同一策略，2026-11-04）：
+    纯秒数在"整机被 5 个浏览器渠道拖住"时一帧要 ~20s，30s 只够 1–2 帧，
+    会判「dump 连续为空」——看着像 uiautomator 挂了，其实只是慢。
     """
-    deadline = time.time() + timeout_s
-    while time.time() < deadline:
+    deadline = time.time() + max(5.0, float(timeout_s))
+    for _ in range(max(2, int(frames))):
         xml = dev.dump() or ""
         if _HOME_MARK in xml and "Search_Calendar_Dialog_Title" not in xml:
             return xml, True
+        if time.time() > deadline:
+            break
         time.sleep(2.0)
     return "", False
 

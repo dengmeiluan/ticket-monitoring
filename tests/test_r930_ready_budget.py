@@ -130,3 +130,21 @@ def test_zhixing_uses_frame_budget():
     assert "for _ in range(6)" in src, "BACK 回退仍是 4 级（两层弹层会差一步）"
     # 失败文案必须报出**实际帧数与耗时**，便于下次判断是慢还是真打不开
     assert "等 %d 帧" in src
+
+
+def test_await_home_also_uses_frame_budget():
+    """同一策略的第二处：`_await_home` 也必须是帧预算。
+
+    2026-11-04 复查发现 `_await_home` 仍是纯秒数（默认 30s）。慢机
+    （5 个浏览器渠道同时占 CPU，单帧 ~20s）30s 只够 1–2 帧，于是判
+    「没取到首页（dump 连续为空），无法判断当前档位」——看着像
+    uiautomator 挂了，其实只是慢。
+    """
+    src = io.open(os.path.join(ROOT, "crawlers", "app_zhixing_nav.py"),
+                  encoding="utf-8").read()
+    i = src.find("def _await_home")
+    assert i > 0
+    seg = src[i:i + 1800]
+    assert "frames: int = 10" in seg, "_await_home 没有帧预算参数"
+    assert "for _ in range(max(2, int(frames)))" in seg, \
+        "_await_home 仍按纯时间循环"
