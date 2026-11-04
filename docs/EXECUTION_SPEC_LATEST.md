@@ -31,11 +31,11 @@
 - **代码树**：代码 HEAD `0103b4f`（本批 r925–r934 + r959；r935 智行日期入口待入库）：
   设备锁 owner/预算观测上健康页、`fetch_budget_s` 配置控件、qunar 城市档位自愈/
   ¥ 价与中转航班号归一、`paced` 主动让位、App 等页面帧预算与弹层 BACK 重试。
-- **门禁**：tracked collect **6612**；干净克隆 `d618528` 全量 **6566 passed / 45 skipped /
+- **门禁**（2026-11-04 当时快照）：tracked collect **6612**；干净克隆 `d618528` 全量 **6566 passed / 45 skipped /
   0 failed**（526.39s，6611 口径；45 skip 为无生产账本/真机样本），UI **670/670**；
   CI 4 测试片 + 2 UI 片在 `0103b4f` 全绿（`ci-ok` success）；`channel_contract --strict`
   10 家 × 11 轴无缺口；`release_align_check --local` 25/25；静态站戳
-  `code:e383ed520a7d` = 当前 `webui.py`。
+  `code:f479ecf59efd` = 当前 `webui.py`。
 - **发布**：四平台 `release-build` 从最终文档提交重建；正文用 `docs/RELEASE_BODY.md`
   初版式模板填充（多程仅 2 段、paced、设备锁观测）；tag `v1.0` 在资产/正文核验后最后重指。
 - **多程开口程（2026-11-03 16:41 实测）**：profile 副本 + 临时库跑

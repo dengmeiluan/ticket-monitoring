@@ -5648,6 +5648,28 @@ a.chlink:hover{border-color:var(--ctlbd);background:var(--bg2);color:var(--blue)
    在 7% 品牌底上实测 2.5-2.9:1）+ 8% 品牌底，跨页面同名同相 */
 #searchview .srx-probeform .srx-pchip:has(input:checked){border-color:var(--ctlbd);background:color-mix(in srgb,var(--pc,var(--blue)) 8%,var(--card));color:var(--tx);font-weight:600}
 #searchview .srx-probeform .srx-pchip:focus-within{outline:2px solid var(--blue);outline-offset:2px}
+/* App 渠道 chip：官方图标放大到 22px + App 角标 + 选中勾/品牌光环。
+   原先把 16px 方标塞进 26px 胶囊，一排无字图标读作匿名色点（2026-11-04
+   用户截图点名）；图标仍是官方原图，只改呈现，不做近似重绘。 */
+#searchview .srx-probeform .srx-pchip-ic{width:36px;height:30px;padding:0;justify-content:center;border-radius:9px;
+ background:linear-gradient(180deg,var(--card),color-mix(in srgb,var(--card) 94%,var(--pc,var(--blue)) 6%))}
+#searchview .srx-probeform .srx-pchip-ic .bic{--bic:22px;margin:0;border-radius:7px;
+ box-shadow:0 0 0 1px rgba(15,23,42,.14),0 2px 5px rgba(15,23,42,.18)}
+#searchview .srx-probeform .srx-pchip-ic .bic::after{background:
+ linear-gradient(180deg,rgba(255,255,255,.16),transparent 44%),
+ radial-gradient(90% 55% at 50% 0,rgba(255,255,255,.10),transparent 62%)}
+#searchview .srx-probeform .srx-pchip-ic::after{content:"APP";position:absolute;right:1px;bottom:0;
+ padding:0 2px;border-radius:3px;font:800 7px/9px var(--num);letter-spacing:.2px;color:#fff;
+ background:color-mix(in srgb,var(--pc,var(--blue)) 78%,#0f172a);
+ box-shadow:0 1px 2px rgba(15,23,42,.20);pointer-events:none}
+#searchview .srx-probeform .srx-pchip-ic:has(input:checked){
+ border-color:color-mix(in srgb,var(--pc,var(--blue)) 55%,var(--ctlbd));
+ background:color-mix(in srgb,var(--pc,var(--blue)) 10%,var(--card));
+ box-shadow:0 0 0 2px color-mix(in srgb,var(--pc,var(--blue)) 16%,transparent)}
+#searchview .srx-probeform .srx-pchip-ic:has(input:checked)::before{content:"✓";position:absolute;top:-4px;right:-4px;
+ width:12px;height:12px;border-radius:50%;background:var(--pc,var(--blue));color:#fff;
+ font:800 8px/12px var(--num);text-align:center;
+ box-shadow:0 0 0 1.5px var(--card),0 1px 2px rgba(15,23,42,.25)}
 @media(min-width:761px) and (max-width:1179px){
  #searchview .srx-probeform{grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr) 142px auto auto;grid-template-areas:"from arr to date go exit" "plat plat plat plat plat plat"}
  #searchview .srx-probeform .srx-platpick{width:100%;flex-wrap:nowrap;overflow-x:auto;padding-top:2px}
