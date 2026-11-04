@@ -59,12 +59,53 @@ class AdbDevice:
         # 里写死的常量属于「设计坐标」，而 UI 树 bounds 属于「设备坐标」。
         self.design = None
         self._size_cache = None
+        # 协作式截止时间（2026-11-04）：为 0 表示不限制。
+        # 为什么需要：路由级超时只是"不再等 future"，worker **仍在跑**并继续
+        # 占着设备锁——实测导致 apscheduler 连续 10 小时全部 skipped。
+        # 截止时间让 worker 在**下一个 adb 调用**处主动放弃，从而真正释放锁。
+        self._deadline = 0.0
+        self.deadline_hits = 0
+
+    # ---------- 协作式截止 ----------
+    def set_deadline(self, budget_s: float = 0, now: float = None) -> float:
+        """arm 一个"从现在起 budget_s 秒后过期"的截止时间；0=解除。
+
+        返回绝对过期时间戳（0 表示不限制）。所有 adb 指令在发出前都会检查，
+        过期就当场返回 None（调用方本来就按 None 处理失败），于是整条
+        采集链路会在**几毫秒内**退回、释放设备锁，而不是挂到天荒地老。
+        """
+        try:
+            b = float(budget_s or 0)
+        except (TypeError, ValueError):
+            b = 0.0
+        if b <= 0:
+            self._deadline = 0.0
+            return 0.0
+        base = float(now if now is not None else time.time())
+        self._deadline = base + b
+        return self._deadline
+
+    def deadline_left(self, now: float = None) -> float:
+        """剩余预算秒数（0=不限或不剩）。"""
+        if not self._deadline:
+            return 0.0
+        return max(0.0, self._deadline - float(
+            now if now is not None else time.time()))
+
+    def _expired(self, now: float = None) -> bool:
+        return bool(self._deadline) and self.deadline_left(now) <= 0
 
     # ---------- 基础 ----------
     def _base(self):
         return [self.adb_path, "-s", self.serial]
 
     def _sh(self, *args, timeout=None):
+        # 截止时间守卫放在**最前面**：卡死都发生在 adb 上，这里拦住就等于
+        # 把"挂 900s"压缩成"立刻放弃 + 释放锁"。
+        if self._expired():
+            self.deadline_hits += 1
+            self.last_error = "deadline exceeded"
+            return None
         proc = _run(self._base() + list(args), timeout or self.timeout)
         if proc is None:
             self.last_error = "timeout or spawn failure"

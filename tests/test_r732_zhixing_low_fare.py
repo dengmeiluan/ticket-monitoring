@@ -197,7 +197,7 @@ def test_low_fare_taps_search_with_bounds(monkeypatch):
         def device(self):
             return dev
 
-        def device_lock(self):
+        def device_lock(self, owner=""):
             return contextlib.nullcontext()
 
     c = AppZhixingCrawler({"user_data_dir": "user_data",
@@ -273,7 +273,7 @@ def test_low_fare_refuses_stale_page_without_tapping(monkeypatch):
         def device(self):
             return dev
 
-        def device_lock(self):
+        def device_lock(self, owner=""):
             return contextlib.nullcontext()
 
     c = AppZhixingCrawler({"user_data_dir": "user_data",

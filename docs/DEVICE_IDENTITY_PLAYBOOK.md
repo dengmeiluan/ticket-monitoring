@@ -260,7 +260,49 @@ MuMu 12 若自带「手机型号」自定义，可以先用它打底（改成任
   `verified = 1`（只有 `android_id` 那条走 `settings put` 真生效）、
   `ro.*` 全进 `mismatch`。
 
----
+### 3.6 MuMu 会注入 `nemud.*`：这是比机型更硬的暴露面
+
+2026-11-04 实机枚举到的（App 一个 `getprop` 就能读到）：
+
+```
+nemud.player_engine        = MUMU15      ← 直接自报"我是 MuMu 15"
+nemud.player_architecture  = x86_64
+nemud.device.id            = 865247046277134
+nemud.player_channel       = apinochannel
+nemud.display_init_rotation= 90
+```
+
+**这类键不是 `ro.*`，`setprop` 可以把值写成空**（实测：`setprop nemud.fps_limit ''`
+后读回 `[]`）。风控 SDK 判的是"值里有没有内容"，所以**清空就够了**，
+不必纠结"键还在"。`stealth.hide()` 已经这么做（无 Magisk 时走 `setprop 'k' ''`，
+有 Magisk 走 `resetprop --delete`），实测一次清掉 **41 条**。
+
+残留说明：`ro.nemu=1`、`ro.build.version.nemux=true` 是 `ro.*`，**没有 Magisk 删不掉**
+——`detect()` 会如实报出来，这是真残留，不是误报。
+
+### 3.7 自检分数必须是真的：`ls` 会骗你（2026-11-04 修）
+
+之前日志里出现 `自检 0 分（剩余：fs:acct, fs:adb_keys, fs:apex, fs:bin, …）`，
+看起来像"隐藏彻底失败"。实际是**误报**：
+
+```python
+ls /system/bin/su /system/xbin/su /sbin/su   # 某个参数是目录/符号链接时…
+```
+
+`ls` 会把那个参数的**内容**列出来——于是整个根目录（`acct/bin/cache/…`）
+被当成 17 条 root 残留，`-6×17` 把分数扣到 0。
+
+`stealth.detect()` 和 `fingerprint.audit()` **两处同源 bug**，都修成
+`test -e <path>` 逐路径判存在。修完实测：
+
+| 项 | 修前 | 修后 |
+|---|---|---|
+| `stealth.detect()` | 0 分（37 条假残留） | **92 分**（剩 `ro.nemu=1` 两条真痕迹） |
+| `fingerprint.audit()` | 0 分（17 条假残留） | **88 分**（剩 ABI x86 两条，已知且刻意） |
+
+为什么必须修：谎报会让操作员**去修一个不存在的问题**（反复重装 Magisk、
+改 props），而不是看真实残留。而且它把真痕迹（`ro.nemu=1`）淹没在噪声里。
+
 
 ## 4. 会话层：把「重登次数」压下去
 

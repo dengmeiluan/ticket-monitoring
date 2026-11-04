@@ -244,20 +244,68 @@ class AndroidRuntime:
             self.log("info", "设备锁等待 %.0fs 后取得（上一持有者=%s）",
                      waited, _LOCK_STATE.get("owner") or "?")
         _LOCK_STATE.update({"owner": str(owner or "?"), "since": _t.time()})
+        # **arm 协作式截止时间**：拿到锁就同时给设备一个预算，超时后 worker
+        # 会在下一个 adb 调用处主动放弃 → 真正释放锁。
+        # 这是"路由级超时"治不了的那个洞的正解（详见 device.set_deadline）。
+        budget = self._fetch_budget_s()
+        dev = self._device
+        if dev is not None and budget > 0:
+            try:
+                dev.set_deadline(budget)
+            except Exception:
+                pass
         try:
             yield
         finally:
+            if dev is not None:
+                try:
+                    hits = int(getattr(dev, "deadline_hits", 0) or 0)
+                    dev.set_deadline(0)          # 解除，别影响后续操作
+                except Exception:
+                    hits = 0
+            else:
+                hits = 0
             held = _t.time() - float(_LOCK_STATE.get("since") or _t.time())
-            if held >= 120:
+            if hits:
+                # 明确留痕：这一轮是**因为预算耗尽被主动掐断**，不是设备掉线
+                self.log("warning",
+                         "%s 采集超出预算 %.0fs，已主动放弃（%d 次 adb 被拦），"
+                         "锁已释放", _LOCK_STATE.get("owner") or "?", budget, hits)
+            elif held >= 120:
                 # 单次持有超过 2 分钟就留痕：正常一轮 App 采集通常在 60s 内
                 self.log("warning", "设备锁被 %s 持有 %.0fs（偏长，留意是否卡住）",
                          _LOCK_STATE.get("owner") or "?", held)
             _LOCK_STATE.update({"owner": "", "since": 0.0})
             _DEVICE_LOCK.release()
 
+    def _fetch_budget_s(self) -> float:
+        """单次 App 采集的预算秒数（``android.fetch_budget_s``）。
+
+        默认 **540s**——刻意低于路由级超时（900s）：必须先让 worker 自己
+        退出并释放锁，路由那边才不会因为"等不到人"而把整轮拖住。
+        0 = 不限制（回到旧行为，出问题时可以一键关掉）。
+        """
+        try:
+            # getattr 兜底：单测里常用 `__new__` 造桩对象，没有走 __init__
+            # 就没有 raw 属性——辅助方法不能因此抛异常（fail-soft 惯例）。
+            raw = getattr(self, "raw", None) or {}
+            v = raw.get("fetch_budget_s", 540) if isinstance(raw, dict) else 540
+            n = float(v)
+        except (TypeError, ValueError):
+            return 540.0
+        return max(0.0, min(3600.0, n))
+
     def lock_state(self) -> dict:
         """当前设备锁持有者（给健康面板/排障用）。"""
-        return dict(_LOCK_STATE)
+        st = dict(_LOCK_STATE)
+        try:
+            st["budget_left"] = (self._device.deadline_left()
+                                 if self._device is not None else 0.0)
+            st["deadline_hits"] = int(getattr(self._device, "deadline_hits", 0)
+                                      or 0)
+        except Exception:
+            pass
+        return st
 
     def log(self, level: str, msg: str, *args):
         if self.logger is None:

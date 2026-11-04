@@ -696,13 +696,15 @@ def audit(dev) -> dict:
             leaks.append({"key": key, "value": val, "why": why,
                           "fix": "identity"})
     # root 残留（文件系统层面的，props 改不掉）
-    root_hint = _text(_call(
-        dev, "shell", "sh", "-c",
-        "ls /system/bin/su /system/xbin/su /sbin/su /data/adb/magisk 2>/dev/null"
-        " || true"))
-    for line in root_hint.splitlines():
-        p = line.strip()
-        if p:
+    #
+    # **必须用 `test -e` 逐路径判存在**（2026-11-04 实机踩到，与 stealth 同源 bug）：
+    # `ls /a /b /c` 在某个参数是目录/符号链接时会把它的**内容**列出来，于是
+    # 整个根目录（acct/bin/cache/…）被当成 17 条 root 残留，`-6×17` 直接把自检
+    # 分扣到 0。操作员看到「自检 0 分」会以为隐藏失败，实际是误报。
+    # 用 stealth 的同名探测保持单一实现，避免两处再次漂移。
+    for p in ("/system/bin/su", "/system/xbin/su", "/sbin/su",
+              "/data/adb/magisk"):
+        if _exact_path_exists(dev, p):
             leaks.append({"key": "fs", "value": p,
                           "why": "root 痕迹（props 改不掉，靠 DenyList/Shamiko）",
                           "fix": "magisk-denylist"})
@@ -732,6 +734,18 @@ def _is_emulator(props: dict) -> bool:
                                  "vbox86", "bluestacks", "qemu")):
         return True
     return str(p.get("ro.kernel.qemu", "")).strip() == "1"
+
+
+def _exact_path_exists(dev, path: str) -> bool:
+    """路径**本身**是否存在（用 ``test -e``，绝不用 ``ls``）。
+
+    ``ls /a /b /c`` 在某个参数是目录或符号链接时会把它的内容列出来，
+    于是"有没有 su"变成"把根目录列了一遍"——这正是 2026-11-04 自检 0 分
+    误报的根因。``test -e`` 只回 0/1，不存在这个歧义。
+    """
+    out = _text(_call(dev, "shell", "sh", "-c",
+                      "test -e %s && echo TM_YES || echo TM_NO" % _q(path)))
+    return out.strip() == "TM_YES"
 
 
 def _cfg(raw) -> dict:

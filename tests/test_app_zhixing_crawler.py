@@ -37,7 +37,7 @@ class FakeRuntime:
     def device(self):
         return self.device_obj
 
-    def device_lock(self, timeout=600):
+    def device_lock(self, timeout=600, owner=""):
         self.locks += 1
         return FakeLock()
 
