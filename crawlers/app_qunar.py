@@ -778,18 +778,47 @@ class AppQunarCrawler(AppCrawler):
         return True, ""
 
     def _switch_to_single(self, dev, xml: str) -> str:
-        """首页若停在「往返」档就点回「单程」，返回切档后的 XML。
+        """首页若停在「往返」或「多程」档就点回「单程」，返回切档后的 XML。
 
         判据是**返程日期位在不在**（`atom_flight_ll_back_date`），不是
         RadioButton 的 checked——同一渲染帧里 checked 会滞后再更新。
         已经单程就直接返回，不白点。
+
+        **多程也必须切**（2026-11-04 现场）：`nolist-2026-11-16` 那份 dump
+        停在**多程**档——
+
+            选择航班 / 抱歉未找到符合条件的多程航班
+            第一程 上海→伦敦 11月16日 / 第二程 海口→东京 2月17日
+
+        而原来只认"往返"（`atom_flight_ll_back_date`）。多程页**没有**
+        返程日期位，于是判据不命中 → 认为"已是单程" → 不切档 → 直接搜索
+        → 落到多程结果页（"未找到符合条件的多程航班"）→ `detect_state`
+        拿不到时刻对 → 记 `no-list-page`。实测近两天 **34 次**全是这个。
         """
-        if _ID_BACK_DATE_LL not in (xml or ""):
+        low = xml or ""
+        is_round = _ID_BACK_DATE_LL in low
+        # 多程页特征：有「第一程」+「第二程」段落，且没有首页城市位。
+        # 用一个能同时覆盖"在首页多程表单"和"在多程结果页"的判据。
+        is_multi = ("第一程" in low and "第二程" in low)
+        if not (is_round or is_multi):
             return xml
         seg = _find_id(xml, _ID_SINGLE_ONLY_SWITCH)
         if seg is None:
             seg = _find_text(xml, "单程")
         if seg is None:
+            # 多程结果页上可能没有档位切换控件（那是列表/空态页，不是表单）。
+            # 这种情况按 BACK 退回首页表单再找，别在原地打转。
+            if is_multi and not is_round:
+                dev.keyevent("KEYCODE_BACK")
+                _sleep(2)
+                back = dev.dump() or ""
+                seg = _find_id(back, _ID_SINGLE_ONLY_SWITCH) \
+                    or _find_text(back, "单程")
+                if seg is None:
+                    return back
+                dev.tap(*_center(seg))
+                _sleep(3)
+                return dev.dump() or back
             return xml
         dev.tap(*_center(seg))
         _sleep(3)
@@ -1559,6 +1588,28 @@ class AppQunarCrawler(AppCrawler):
                 return [], "no-priced-rows"
         # 列表页打开过但确实没航班（或全部无价）→ 这才是 empty；
         # 连列表页都没出现 → 超时，不是「没票」。
+        if not saw_list_page:
+            # **必须留现场**（2026-11-04）：这条分支原来只返回 `no-list-page`
+            # 就结束了，账本上只有一句"未取到可用结果"，**看不出当时在哪一页**
+            # —— 是停在首页、还是卡在城市页、还是列表页骨架没渲染。
+            # 实测两次 `no-list-page` 各花了 154s/170s 设备时间却查不出原因。
+            _save_fail_scene("nolist-" + (target or ""), last)
+            try:
+                # 一行说清"当时停在哪"：首页标记 / 城市页标记 / 列表页标记
+                # 各在不在，比事后打开 8KB 的 dump 快得多。
+                _hint = []
+                for _lab, _mark in (("首页", "机票查询"),
+                                    ("城市页", "搜索国家/城市"),
+                                    ("列表页", "选择航班"),
+                                    ("登录", "登录")):
+                    if _mark in (last or ""):
+                        _hint.append(_lab)
+                self.logger.info(
+                    "[%s] %s 列表页未出现（%d 字，命中：%s），已落现场 nolist",
+                    self.name, target, len(last or ""),
+                    "/".join(_hint) or "无已知标记")
+            except Exception:
+                pass
         return [], ("empty" if saw_list_page else "no-list-page")
 
     def _to_prices(self, rows: List[dict], date: str,

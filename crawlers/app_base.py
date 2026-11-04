@@ -78,6 +78,57 @@ def wait_ready(dev, marker: str, *, exclude=(), frames: int = 14,
                         % (i + 1, int(time.time() - t0), marker))
 
 
+def save_scene(tag: str, xml: str, *, prefix: str = "app", root: str = "",
+               limit: int = 150) -> str:
+    """把「屏幕上可读的节点」落一份到 ``debug/scene``，返回落盘路径。
+
+    为什么要有这个（2026-11-04）：App 渠道失败时账本只留一行状态
+    （`no-list-page` / `无法识别的页面状态`），**看不出当时停在哪一屏**。
+    这类"认不出页面"的失败最需要现场，而原来只有 qunar 自己写了一份
+    `_save_fail_scene`，其它渠道出问题时**完全没有证据**——
+    于是同一个失败连查几轮还在猜。
+
+    真机 dump 常 200KB 不宜整份保存：只留前 ``limit`` 条带
+    文案/id/content-desc 的节点（含坐标）。写文件失败不影响采集。
+
+    ``TICKET_SCENE_DIR`` 是测试隔离锚（`tests/conftest.py`）：替身设备
+    故意失败时按 CWD 写会把合成现场混进生产 ``debug/scene``（实测踩过）。
+    """
+    try:
+        import os as _os
+        import re as _re
+        import time as _t
+        d = (root or _os.environ.get("TICKET_SCENE_DIR")
+             or _os.path.join("debug", "scene"))
+        _os.makedirs(d, exist_ok=True)
+        p = _os.path.join(d, "%s_%s_%s.txt"
+                          % (prefix, _t.strftime("%Y%m%d_%H%M%S"), tag))
+        rows = []
+        for m in _re.finditer(r"<node\b([^>]*?)/?>", xml or ""):
+            seg = m.group(1)
+            txt = _re.search(r'text="([^"]*)"', seg)
+            rid = _re.search(r'resource-id="([^"]*)"', seg)
+            dsc = _re.search(r'content-desc="([^"]*)"', seg)
+            bnd = _re.search(
+                r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', seg)
+            t = (txt.group(1) if txt else "").strip()
+            i_ = (rid.group(1) if rid else "").strip()
+            c_ = (dsc.group(1) if dsc else "").strip()
+            if not (t or i_ or c_) or not bnd:
+                continue
+            rows.append("%s | %s | %s | %s,%s,%s,%s"
+                        % (i_.split("/")[-1] or c_[:40], t, c_[:60],
+                           bnd.group(1), bnd.group(2),
+                           bnd.group(3), bnd.group(4)))
+            if len(rows) >= max(1, int(limit)):
+                break
+        with open(p, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(rows) + "\n")
+        return p
+    except Exception:
+        return ""
+
+
 def dismiss_until_gone(dev, marker: str, *, tries: int = 2,
                        wait_s: float = 1.5) -> tuple:
     """弹层/页面标记还在时按 BACK 尝试关掉：返回 ``(gone, xml)``。

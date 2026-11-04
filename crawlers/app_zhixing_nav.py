@@ -196,12 +196,24 @@ def open_date_dialog(dev, log=None) -> tuple:
         return True, "已打开"
 
     trigger = None
+    # 日期入口的文案有**两种格式**（2026-11-04 实测 fixtures）：
+    #   中文：`11月16日`（首页日期行，更像"入口"）
+    #   横线：`10-29` / `11-16`（日历条格子，fixture 里全是这种）
+    # 原来只认中文格式，于是国际档首页只显示 `11-16` 时判「找不到日期入口」，
+    # 长窗口日历打不开 → `明细页解析不出带价航班` → 整条国际航线没明细。
+    # 优先取中文格式（它是"打开日历"的那一行）；没有才用横线格子。
+    dash = None
     for n in nodes(xml):
-        if re.fullmatch(r"\d{1,2}月\d{1,2}日", n.text or ""):
+        t = (n.text or "").strip()
+        if re.fullmatch(r"\d{1,2}月\d{1,2}日", t):
             trigger = n
             break
+        if dash is None and re.fullmatch(r"\d{1,2}-\d{1,2}", t):
+            dash = n
     if trigger is None:
-        return False, "找不到日期入口"
+        trigger = dash
+    if trigger is None:
+        return False, "找不到日期入口（无 `N月N日` / `N-N` 文案）"
     if not dev.tap(trigger.cx, trigger.cy):
         return False, "点击日期失败"
 
@@ -543,28 +555,25 @@ def _tap_calendar_cell(dev, xml: str, ymd: str) -> tuple:
             # **弹层没关是可恢复的**（2026-11-03~04 实测 15 次）：
             # 落点偶尔偏到弹层头部，日历不关；原代码直接判失败放弃，
             # 于是「明细页没解析出带价航班」整条航线白跑。
-            # 先按 BACK 关掉弹层，再点一次就好。
+            #
+            # 关键：BACK **把弹层关掉了**，所以重试不能就地找格子
+            # （2026-11-04 实测报「重试时找不到格子」——弹层都没了当然找不到）。
+            # 重试必须**重新打开弹层**，再走一遍滚动查找 + 点击。
             try:
                 from .app_base import dismiss_until_gone
-                gone, left2 = dismiss_until_gone(
+                gone, _ = dismiss_until_gone(
                     dev, "Search_Calendar_Dialog", tries=1)
             except Exception:
-                gone, left2 = ("Search_Calendar_Dialog" not in (dev.dump() or "")), ""
+                gone = "Search_Calendar_Dialog" not in (dev.dump() or "")
             if not gone:
                 return False, "点了日期但弹层没关"
-            # 弹层是被 BACK 关掉的：这一次点击没生效，重试一次点击
-            if attempt < 4:
-                xml = dev.dump() or ""
-                cell2 = _calendar_cell(xml, ymd)
-                if cell2 is not None and dev.tap(*cell2):
-                    time.sleep(2)
-                    left = dev.dump() or ""
-                    if "Search_Calendar_Dialog" in left:
-                        return False, "点了日期但弹层没关（重试后仍开）"
-                else:
-                    return False, "点了日期但弹层没关（重试时找不到格子）"
-            else:
+            if attempt >= 4:
                 return False, "点了日期但弹层没关"
+            # 重新打开弹层，再递归地走一次本函数（次数由 attempt 上限兜住）
+            reopened, why = open_date_dialog(dev)
+            if not reopened:
+                return False, "点了日期但弹层没关（重开弹层失败：%s）" % why
+            return _tap_calendar_cell(dev, dev.dump() or "", ymd)
         # 点完必须核对首页日期行真的换了：没换时点「机票查询」会重查上一日，
         # 结果被打上目标日期——价格错配而看不出任何异常。
         shown = home_date_text(left)

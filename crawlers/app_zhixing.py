@@ -361,6 +361,27 @@ class AppZhixingCrawler(AppCrawler):
             # 记 timeout 而不是 blocked：`blocked` 在 pacing 里归 captcha
             # （300s 阶梯熔断），而"页面结构不认识"重试也不会变好，
             # 更不该让整个 App 渠道停摆——这是解析器要修，不是要躲。
+            #
+            # **必须留现场**（2026-11-04）：这条分支原来只记一行账就返回，
+            # 而"页面认不出"正是最需要 dump 的时刻。没有 dump 就只能看到
+            # 「可能是 App 改版」这种等于没说的结论，下一轮还得猜。
+            try:
+                from .app_base import save_scene
+                save_scene("unknown-page", xml, prefix="zhixing_app")
+            except Exception:
+                pass
+            try:
+                # 一行说清命中了哪些已知标记，比打开整份 dump 快得多
+                _hits = [lab for lab, mk in
+                         (("首页", "机票查询"), ("城市页", "搜索国家/城市"),
+                          ("城市页", "选择城市"), ("日历", "选择日期"),
+                          ("登录", "登录"), ("列表", "航班"))
+                         if mk in (xml or "")]
+                self.logger.info(
+                    "[%s] 页面状态认不出（%d 字，命中：%s），已落现场 unknown-page",
+                    self.name, len(xml or ""), "/".join(_hits) or "无已知标记")
+            except Exception:
+                pass
             self.path_note("app-list", "timeout",
                            detail="无法识别的页面状态（可能是 App 改版）")
             return []

@@ -536,7 +536,14 @@ class BaseCrawler:
         # 会漏掉最常见的人机验证。path_note 是各渠道确认"这条路过不去"
         # 的统一落点，在这里补页面 URL（调用方没显式给 url 时才用页面
         # 兜底），截图仍由上下文收尾统一落盘。
-        if rec["status"] in ("blocked", "login", "soft_reject"):
+        #
+        # **`soft_reject` 不算"被拦"**（2026-11-04）：它是"发了、对方软拒/
+        # 限流"（去哪儿 1999 就是这一类），不是风控拦截。原来看起来一并
+        # 记进 `last_block_url` → `debug/scene/*_block.txt` 越堆越多，
+        # 实测 62 份里 **57 份其实是 1999 限流**，读起来像"被风控拦了 62 次"，
+        # 把真拦截（人机验证）淹掉了。账本里 status 已经区分了两者，
+        # 现场留证也该区分。
+        if rec["status"] in ("blocked", "login"):
             try:
                 page = getattr(self, "_last_page", None)
                 purl = str(getattr(page, "url", "") or "") if page else ""

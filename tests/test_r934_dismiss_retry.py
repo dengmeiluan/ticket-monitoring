@@ -121,11 +121,14 @@ def test_dump_failure_is_fail_soft():
 def test_zhixing_retries_instead_of_giving_up():
     src = io.open(os.path.join(ROOT, "crawlers", "app_zhixing_nav.py"),
                   encoding="utf-8").read()
-    # 按**整条重试路径**断言，不拿「首次失败文案」前的固定窗口：
-    # 失败 return 在关层判断里，真正的重试分支在它之后（2026-11-04）。
+    # 只钉**不变量**：弹层没关不许直接放弃，必须 BACK + 重试。
+    # r938 之后重试的正确形态是「重新打开弹层再点」（BACK 已把弹层关掉，
+    # 就地找格子注定失败）；具体形态由 test_r938_date_retry_reopen.py 钉住。
     assert "dismiss_until_gone" in src, "智行仍直接放弃，没有 BACK 重试"
-    assert "重试一次点击" in src, "没有记录重试路径"
-    assert "重试后仍开" in src, "重试后仍失败没有独立证据"
+    assert ("open_date_dialog(dev)" in src
+            or "重试一次点击" in src), "没有可用的重试路径"
+    assert ("重开弹层失败" in src or "重试后仍开" in src), \
+        "重试后仍失败没有独立证据"
 
 
 def test_qunar_retries_instead_of_giving_up():
