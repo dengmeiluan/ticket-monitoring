@@ -289,9 +289,15 @@ def test_probe_channels_follow_fixed_priority():
 
 def test_probe_ui_priority_order_source():
     import pathlib
+    import re
     src = pathlib.Path(webui.__file__).read_text(encoding="utf-8")
-    assert "const SRX_PLAT_ORDER=['ctrip','qunar','fliggy','tongcheng','tuniu'];" in src
-    assert 'aria-label="探针渠道（优先级：携程、去哪儿、飞猪、同程、途牛；智行 App / 去哪儿 App 需勾选，走真机通道）"' in src
+    m = re.search(r"const SRX_PLAT_ORDER=\[([^\]]+)\];", src)
+    assert m, "SRX_PLAT_ORDER 定义不在了"
+    order = re.findall(r"'([a-z_]+)'", m.group(1))
+    assert order[:5] == ["ctrip", "qunar", "fliggy", "tongcheng", "tuniu"], order
+    assert set(order[5:]) == {"app_zhixing", "app_qunar", "app_fliggy",
+                              "app_ctrip", "app_tongcheng"}, order
+    assert 'aria-label="探针渠道（优先级：携程、去哪儿、飞猪、同程、途牛，随后是智行/去哪儿/飞猪/携程/同程 App；App 需勾选，走真机通道）"' in src
     # 顺序仍由 SRX_PLAT_ORDER 决定；但**渠道集合必须来自数据**——
     # 原来直接 filter 固定表，App 渠道的实时进度永远不会显示。
     assert "Object.keys(lg.channels||{})" in src and         "SRX_PLAT_ORDER.indexOf(a)" in src

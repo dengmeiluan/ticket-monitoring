@@ -61,7 +61,7 @@ Release cadence:
    - the channel × domestic/international matrix
    - required performance measurements
    - a **clean clone** full run (`git clone` the exact release tree, no `data/`,
-     `logs/`, `_scratch/`) must report **0 skipped** on the 6673-test scale.
+     `logs/`, `_scratch/`) must report **0 skipped** on the 6684-test scale.
      Data/environment skips are release blockers; if an environment-only gate
      (missing font/Chromium/adb) truly cannot run, list it explicitly in the
      release report instead of letting it hide inside a green summary.

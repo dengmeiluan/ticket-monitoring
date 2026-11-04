@@ -770,9 +770,10 @@ def main():
                 # 会在接入 App 渠道后报红，而不可用者其实都写明了原因。
                 _warm_expect = pg.evaluate(
                     "()=>{let n=0;"
-                    "if(typeof APP_PLAT_NAME==='object'&&APP_PLAT_NAME)"
-                    "n+=Object.keys(APP_PLAT_NAME).length;"
-                    "if(typeof SRX_PLAT_ORDER!=='undefined')n+=SRX_PLAT_ORDER.length;"
+                    "if(typeof SRX_PLAT_KEYS!=='undefined'&&SRX_PLAT_KEYS.length)"
+                    "n=SRX_PLAT_KEYS.length;"
+                    "else if(typeof SRX_PLATS==='object'&&SRX_PLATS)"
+                    "n=Object.keys(SRX_PLATS).length;"
                     "return n+1;}")
                 ck("预热行全列（渠道数+全部）且不可用者说明原因",
                    bool(_warm) and _warm.get("n") == _warm_expect

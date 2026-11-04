@@ -93,10 +93,16 @@ def test_best_and_route_calendar_exclude_thin_calendar_rows(tmp_path):
     assert cal and all(p != 719 for _d, p, _tier in cal)
 
 
-def test_srx_links_five_and_intl_supported():
+def test_srx_links_covers_browser_and_app_entries():
     dom = webui._srx_links("SHA", "HAK", "2027-01-29")
-    assert dom["ok"] and len(dom["links"]) == 5
-    assert all(x["ok"] for x in dom["links"]), dom
+    assert dom["ok"] and len(dom["links"]) == 10
+    browser = [x for x in dom["links"] if not x.get("app")]
+    apps = [x for x in dom["links"] if x.get("app")]
+    assert len(browser) == 5 and all(x["ok"] for x in browser), dom
+    # App 渠道没有网页落地页：仍占一行并带 app 标记，前端如实说原因，
+    # 不能因为「没 URL」就让它在渠道卡里整行消失。
+    assert len(apps) == 5 and all(not x["url"] for x in apps), dom
+    assert all("真机" in x["note"] for x in apps), dom
     intl = webui._srx_links("SHA", "BKK", "2026-11-20")
     by = {x["key"]: x for x in intl["links"]}
     # r390：途牛国际深链在任何会话下都停在「正在加载中」→ 宁缺

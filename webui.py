@@ -4300,8 +4300,6 @@ overflow-wrap:anywhere;margin-top:2px;opacity:.95}   /* r342：未定义的 --tx
 #searchview .srx-probestatus.warn{color:var(--warn-deep)}
 #searchview .srx-hero{position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
  flex-wrap:wrap;padding:12px 2px 11px;margin:0 0 10px;border-bottom:1px solid var(--line)}
-#searchview .srx-hero::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;
- background:linear-gradient(90deg,var(--blue),rgba(var(--blue-rgb),0) 62%)}
 #searchview .srx-eyebrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--srx-mono);font-size:10px;
  letter-spacing:var(--ls1);text-transform:uppercase;color:var(--mut)}
 #searchview .srx-live{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:var(--pill);
@@ -5153,7 +5151,7 @@ overflow-wrap:anywhere;margin-top:2px;opacity:.95}   /* r342：未定义的 --tx
 #searchview .srx-f.on{background:rgba(var(--blue-rgb),.07);box-shadow:inset 2px 0 0 var(--blue)}
 #searchview .srx-f .n{color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #searchview .srx-f .v,#searchview .srx-f .mir{font-family:var(--srx-mono);font-size:10px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#searchview .srx-f .v.miss,#searchview .srx-f .mir.miss{color:var(--mut);font-style:italic}
+#searchview .srx-f .v.miss,#searchview .srx-f .mir.miss{color:var(--mut)}
 #searchview .srx-f .r{font-family:var(--srx-mono);font-size:10px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 #searchview .srx-fst{display:inline-flex;align-items:center;justify-content:center;height:18px;padding:0 4px;border-radius:4px;
  border:1px solid var(--line);font-size:10px;white-space:nowrap}
@@ -5638,9 +5636,13 @@ a.chlink:hover{border-color:var(--ctlbd);background:var(--bg2);color:var(--blue)
 #searchview .srx-probeform .go svg{width:13px;height:13px}
 #searchview .srx-probeform .exit{grid-area:exit;height:32px;padding:0 10px;border-radius:7px;font-size:10px}
 #searchview .srx-probeform .srx-platpick{grid-area:plat;display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow-x:auto;min-width:0;scrollbar-width:thin}
+/* 放不下时右缘渐隐，明确「还能横滑」，而不是让最后一枚 chip 被硬切 */
+#searchview .srx-probeform .srx-platpick.hasmore{
+ -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent);
+ mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent)}
 #searchview .srx-probeform .srx-pchip{position:relative;display:inline-flex;align-items:center;gap:5px;min-height:26px;padding:0 8px;
  border:1px solid var(--ctlbd);border-radius:var(--pill);background:var(--card);color:var(--tx2);font-size:11px;letter-spacing:0;cursor:pointer;white-space:nowrap;
- transition:border-color .15s,background .15s,color .15s}
+ flex:0 0 auto;transition:border-color .15s,background .15s,color .15s}
 #searchview .srx-probeform .srx-pchip input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 #searchview .srx-probeform .srx-pchip .dot{width:6px;height:6px;border-radius:50%;background:var(--pc,var(--mut));flex:none}
 #searchview .srx-probeform .srx-pchip .bic{pointer-events:none}
@@ -5648,28 +5650,29 @@ a.chlink:hover{border-color:var(--ctlbd);background:var(--bg2);color:var(--blue)
    在 7% 品牌底上实测 2.5-2.9:1）+ 8% 品牌底，跨页面同名同相 */
 #searchview .srx-probeform .srx-pchip:has(input:checked){border-color:var(--ctlbd);background:color-mix(in srgb,var(--pc,var(--blue)) 8%,var(--card));color:var(--tx);font-weight:600}
 #searchview .srx-probeform .srx-pchip:focus-within{outline:2px solid var(--blue);outline-offset:2px}
-/* App 渠道 chip：官方图标放大到 22px + App 角标 + 选中勾/品牌光环。
-   原先把 16px 方标塞进 26px 胶囊，一排无字图标读作匿名色点（2026-11-04
-   用户截图点名）；图标仍是官方原图，只改呈现，不做近似重绘。 */
-#searchview .srx-probeform .srx-pchip-ic{width:36px;height:30px;padding:0;justify-content:center;border-radius:9px;
- background:linear-gradient(180deg,var(--card),color-mix(in srgb,var(--card) 94%,var(--pc,var(--blue)) 6%))}
-#searchview .srx-probeform .srx-pchip-ic .bic{--bic:22px;margin:0;border-radius:7px;
- box-shadow:0 0 0 1px rgba(15,23,42,.14),0 2px 5px rgba(15,23,42,.18)}
+/* App 渠道 chip（r941/r942）：官方标 + 可见 APP 标。
+   r941 的 22px 方片在 PC 被 flex 压到 22.8px 宽，APP 角标盖住图标，
+   五家读作一排匿名色点（2026-11-04 用户二次点名）。现在：
+   · 所有 chip flex:0 0 auto —— 先保住固有尺寸，窄档由行内滚动承接；
+   · PC 档改为「官方标 + APP 小字」胶囊，边框/选中与浏览器 chip 同一配方；
+   · ≤760 仍用紧凑 36×30 方片 + APP 角标，给窄屏省宽。 */
+#searchview .srx-probeform .srx-pchip-ic{width:auto;min-width:58px;height:28px;padding:0 8px 0 4px;justify-content:flex-start;gap:6px;border-radius:var(--pill);
+ background:var(--card)}
+#searchview .srx-probeform .srx-pchip-ic .bic{--bic:20px;margin:0;border-radius:6px;
+ box-shadow:0 0 0 1px rgba(15,23,42,.12)}
 #searchview .srx-probeform .srx-pchip-ic .bic::after{background:
  linear-gradient(180deg,rgba(255,255,255,.16),transparent 44%),
  radial-gradient(90% 55% at 50% 0,rgba(255,255,255,.10),transparent 62%)}
-#searchview .srx-probeform .srx-pchip-ic::after{content:"APP";position:absolute;right:1px;bottom:0;
- padding:0 2px;border-radius:3px;font:800 7px/9px var(--num);letter-spacing:.2px;color:#fff;
- background:color-mix(in srgb,var(--pc,var(--blue)) 78%,#0f172a);
- box-shadow:0 1px 2px rgba(15,23,42,.20);pointer-events:none}
+#searchview .srx-probeform .srx-pchip-ic .srx-applab{font:800 8px/1 var(--num);letter-spacing:.7px;color:var(--mut);
+ transform:translateY(.5px);pointer-events:none}
+#searchview .srx-probeform .srx-pchip-ic::after{content:none}
+#searchview .srx-probeform .srx-pchip-ic:hover{
+ border-color:color-mix(in srgb,var(--pc,var(--blue)) 38%,var(--ctlbd));
+ background:color-mix(in srgb,var(--pc,var(--blue)) 5%,var(--card))}
 #searchview .srx-probeform .srx-pchip-ic:has(input:checked){
  border-color:color-mix(in srgb,var(--pc,var(--blue)) 55%,var(--ctlbd));
- background:color-mix(in srgb,var(--pc,var(--blue)) 10%,var(--card));
- box-shadow:0 0 0 2px color-mix(in srgb,var(--pc,var(--blue)) 16%,transparent)}
-#searchview .srx-probeform .srx-pchip-ic:has(input:checked)::before{content:"✓";position:absolute;top:-4px;right:-4px;
- width:12px;height:12px;border-radius:50%;background:var(--pc,var(--blue));color:#fff;
- font:800 8px/12px var(--num);text-align:center;
- box-shadow:0 0 0 1.5px var(--card),0 1px 2px rgba(15,23,42,.25)}
+ background:color-mix(in srgb,var(--pc,var(--blue)) 10%,var(--card))}
+#searchview .srx-probeform .srx-pchip-ic:has(input:checked) .srx-applab{color:var(--pc)}
 @media(min-width:761px) and (max-width:1179px){
  #searchview .srx-probeform{grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr) 142px auto auto;grid-template-areas:"from arr to date go exit" "plat plat plat plat plat plat"}
  #searchview .srx-probeform .srx-platpick{width:100%;flex-wrap:nowrap;overflow-x:auto;padding-top:2px}
@@ -5680,6 +5683,13 @@ a.chlink:hover{border-color:var(--ctlbd);background:var(--bg2);color:var(--blue)
  #searchview .srx-probeform .srx-datefield{grid-area:date}
  #searchview .srx-probeform .go{grid-area:go;width:100%}
  #searchview .srx-probeform .exit{grid-area:exit;width:100%}
+ /* 窄档给内容让路：App 回到 36×30 图标方片，APP 用角标；桌面标签隐藏 */
+ #searchview .srx-probeform .srx-pchip-ic{width:36px;min-width:36px;height:30px;padding:0;justify-content:center;gap:0;border-radius:var(--r-ctl)}
+ #searchview .srx-probeform .srx-pchip-ic .bic{--bic:22px;border-radius:var(--r-sm)}
+ #searchview .srx-probeform .srx-pchip-ic .srx-applab{display:none}
+ #searchview .srx-probeform .srx-pchip-ic::after{content:"APP";position:absolute;right:1px;bottom:0;
+  padding:0 2px;border-radius:var(--r-xs);font:800 7px/9px var(--num);letter-spacing:.2px;color:#fff;
+  background:color-mix(in srgb,var(--pc,var(--blue)) 78%,#0f172a);pointer-events:none}
  #searchview .srx-probeform .srx-platpick{grid-area:plat;width:100%;flex-wrap:nowrap;overflow-x:auto;padding:2px 0 1px;scrollbar-width:thin}
 }
 #searchview .srx-citydrop{position:absolute;left:0;top:calc(100% + 4px);z-index:45;width:max(100%,260px);max-width:340px;max-height:268px;overflow:auto;
@@ -5743,8 +5753,19 @@ a.chlink:hover{border-color:var(--ctlbd);background:var(--bg2);color:var(--blue)
   grid-template-areas:"from arr to date go exit" "plat plat plat plat plat plat"}
 }
 @media(min-width:1241px){
- /* 宽桌面渠道片靠右，与卡片右上「探针会话」同缘；字段仍贴左，不被拉宽。 */
- #searchview .srx-probeform .srx-platpick{justify-content:flex-end}
+ /* 宽桌面渠道片居左顺序展开；放不下时由 chip 行自身横向滚动。
+    不能 flex-end：内容宽于轨道时，flex-end 会把前几片推到容器左缘之外，
+    scrollWidth 反而等于 clientWidth，滚也滚不回来（2026-11-04 实测）。 */
+ #searchview .srx-probeform .srx-platpick{justify-content:flex-start}
+}
+@media(min-width:1241px) and (max-width:1799px){
+ /* 1624 档实测：592px 的 chip 内容塞进 543px 轨道，最后两枚 App 被藏。
+    这一档只收内衬与间距（图标仍保 20px，不压缩、不截字），让 10 枚全部露出；
+    ≥1800 恢复宽松尺寸。 */
+ #searchview .srx-probeform .srx-pchip{padding:0 4px;gap:2px;font-size:10px}
+ #searchview .srx-probeform .srx-pchip-ic{min-width:0;padding:0 5px 0 3px;gap:3px}
+ #searchview .srx-probeform .srx-pchip-ic .bic{--bic:20px}
+ #searchview .srx-probeform .srx-pchip-ic .srx-applab{font:800 8px/1 var(--num);letter-spacing:.3px}
 }
 @media(max-width:460px){
  /* 城市两字段保持整行（320 下双列会把联想词/机场名截断）；日期与
@@ -6693,7 +6714,7 @@ html[data-theme="dark"] .bic-plane{filter:none!important}
  #searchview .srx-hero-act{align-self:flex-start!important}
  @media(min-width:901px){#searchview .srx-probe{padding:6px 12px 7px;margin-bottom:8px}#searchview .srx-hero{margin-bottom:6px}#searchview .srx-brief{margin-bottom:4px}#searchview .srx-context{padding:3px 10px;margin-bottom:4px}#searchview .srx-listhead{min-height:44px;padding:6px 12px}}
  #searchview .srx-hero-act .srx-btn{border-color:transparent;background:transparent;height:30px;padding:0 9px}
- #searchview .srx-hero-act .srx-btn:hover{background:var(--card);border-color:transparent;color:var(--blue);box-shadow:0 1px 2px rgba(6,12,20,.08)}
+ #searchview .srx-hero-act .srx-btn:hover{background:var(--card);border-color:transparent;color:var(--blue)}
  #searchview .srx-hero-act select{border-color:transparent;background:var(--card)}
  #searchview .srx-band .srx-day{background:color-mix(in srgb,var(--line) 6%,var(--card))}
  #searchview .srx-band .srx-day.miss{background:transparent}
@@ -7043,7 +7064,7 @@ footer{margin-bottom:18px}
 #searchview .srx-btn.ghost{background:transparent!important;color:var(--r-ink-3)!important}
 #searchview .srx-hero-act{background:var(--r-surface-2)!important;border-radius:var(--r-radius);padding:3px;gap:2px;align-items:center}
 #searchview .srx-hero-act .srx-btn{background:transparent!important;height:30px}
-#searchview .srx-hero-act .srx-btn:hover{background:var(--r-surface)!important;box-shadow:0 1px 2px rgba(16,24,40,.08)!important}
+#searchview .srx-hero-act .srx-btn:hover{background:var(--r-surface)!important;box-shadow:none!important}
 #searchview .srx-more-btn{display:inline-flex!important;background:var(--r-surface-2)!important}
 #searchview .srx-hero-act:not(.open) .srx-btn[data-sec]{display:none!important}
 #searchview .srx-hero-act.open .srx-btn[data-sec]{display:inline-flex!important}
@@ -7191,7 +7212,7 @@ html[data-theme="dark"] .bic-air{box-shadow:0 0 0 1px rgba(255,255,255,.17)!impo
 #searchview .srx-band-h span,#searchview .srx-band-h .srx-axis button{font-size:12px;color:var(--r-ink-3)}
 #searchview .srx-band-h .srx-axis{border:0;border-radius:8px;background:var(--r-surface-2);padding:2px}
 #searchview .srx-band-h .srx-axis button{padding:0 9px;height:26px;border:0;border-radius:6px;background:transparent}
-#searchview .srx-band-h .srx-axis button.on{background:var(--r-surface);color:var(--r-blue);box-shadow:0 1px 2px rgba(16,24,40,.08)}
+#searchview .srx-band-h .srx-axis button.on{background:var(--r-surface);color:var(--r-blue)}
 #searchview .srx-bandnav button{border:0;background:var(--r-surface-2);width:28px;height:28px;border-radius:var(--r3)}
 #searchview .srx-bandnav button:hover{background:var(--r-surface-3);color:var(--r-blue)}
 #searchview .srx-band .srx-day{background:var(--r-surface-2);border:0;border-radius:8px;min-height:44px}
@@ -7280,7 +7301,7 @@ html[data-theme="dark"] .bic-air{box-shadow:0 0 0 1px rgba(255,255,255,.17)!impo
 #searchview .srx-mirror .srx-mchrome{background:var(--r-surface-2);border-bottom:1px solid var(--r-hair)}
 #searchview .srx-mirror .srx-mtabs{gap:2px;padding:4px;background:var(--r-surface-2)}
 #searchview .srx-mirror .srx-mtab{border:0;background:transparent;min-height:28px;border-radius:var(--r3);font-size:12px}
-#searchview .srx-mirror .srx-mtab.on{background:var(--r-surface);color:var(--r-blue);box-shadow:0 1px 2px rgba(16,24,40,.08)}
+#searchview .srx-mirror .srx-mtab.on{background:var(--r-surface);color:var(--r-blue)}
 /* r433：镜像列表同理——每行一条满宽底线（1512 实测 .srx-mrow 10 条），
    与左栏 .srx-row 一起把整页读成表格。镜像行本身已有完整圆角边框
    （4259 行 `border:1px solid var(--line)`）与选中/同行描边，
@@ -10583,6 +10604,7 @@ html[data-theme="dark"] #opscard .opsbtns>button:first-child{color:#0b1220!impor
   <span class="muted">→</span>
   <input type="date" id="spRadarEnd" aria-label="雷达结束日期">
   <span id="spRadarChannels" style="display:inline-flex;flex-wrap:wrap;gap:5px"></span>
+  <span id="spRadarCaps" class="muted" role="note" style="flex:1 1 100%;font-size:11px;line-height:1.55"></span>
   <label class="muted" style="display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="spRadarAlertOn">降价提醒</label>
   <label class="sprad-fld">降幅 <input id="spRadarDrop" type="number" min="0" step="10" aria-label="降价提醒最小降幅" style="width:64px"> 元</label>
   <label class="sprad-fld">阈值 <input id="spRadarTh" type="number" min="0" step="50" aria-label="降价提醒阈值" style="width:84px"> 元 <span class="muted">0=关</span></label>
@@ -10779,7 +10801,7 @@ html[data-theme="dark"] #opscard .opsbtns>button:first-child{color:#0b1220!impor
       r423：并进卡内后仍是一整块满宽信息带，依旧自成一段。现在直接长在
       标题行里（与「渠道诊断」同一行、同一基线），路径即标题的展开说明：
       不再有第二行、不再有底纹块，说明仍绝对定位在行下。 -->
- <div class="srccap" id="srccap" role="group" aria-label="来源接入 SOURCE ACCESS：去哪儿网页版停服后的取数路径，可用性以下方 24h 健康为准">
+ <div class="srccap" id="srccap" role="group" aria-label="去哪儿网页通路 SOURCE ACCESS：只讲去哪儿 PC 停服后的网页取数路径；App 渠道见下方渠道健康与渠道登录">
   <div class="scpath" role="group" aria-label="去哪儿取数路径">
    <div class="scnode dead" title="PC 网页已于 2026-10-10 停服"><span class="sck">PC 网页</span><b>已停服</b><em>2026-10-10 起</em></div>
    <span class="scarr" aria-hidden="true">→</span>
@@ -10794,7 +10816,7 @@ html[data-theme="dark"] #opscard .opsbtns>button:first-child{color:#0b1220!impor
     <a class="scbtn ghost" href="https://touch.qunar.com/h5/flight/" target="_blank" rel="noopener noreferrer" title="打开去哪儿 H5 机票页（登录后出明细）">打开 H5</a>
    </span>
   </div>
-  <span class="scnote" id="scNote">去哪儿 App 专属价与自动下单不在采集范围；其余渠道仍走现有 H5/页面路径。</span>
+  <span class="scnote" id="scNote">本块只讲去哪儿网页通路。App 渠道走 Android 真机采集，状态与日志见下方渠道健康行；下单仍不在采集范围。</span>
  </div>
 </div>
  <div id="healthDiagBody" class="hdiag"><span class="muted">读取中…</span></div></div>
@@ -10891,17 +10913,17 @@ html[data-theme="dark"] #opscard .opsbtns>button:first-child{color:#0b1220!impor
    </div>
    <div class="srx-crow">
     <span class="srx-crow-lab">渠道 <small>优先级 携程 › 去哪儿 › 飞猪 › 同程 › 途牛 › App（需勾选）</small></span>
-    <div class="srx-platpick" id="srxPlatPick" role="group" aria-label="探针渠道（优先级：携程、去哪儿、飞猪、同程、途牛；智行 App / 去哪儿 App 需勾选，走真机通道）" title="渠道优先级：携程 > 去哪儿 > 飞猪 > 同程 > 途牛；App 渠道需勾选，走真机通道（较慢）">
+    <div class="srx-platpick" id="srxPlatPick" role="group" aria-label="探针渠道（优先级：携程、去哪儿、飞猪、同程、途牛，随后是智行/去哪儿/飞猪/携程/同程 App；App 需勾选，走真机通道）" title="渠道优先级：携程 > 去哪儿 > 飞猪 > 同程 > 途牛，随后是五家 App；App 渠道需勾选，走真机通道（较慢）">
      <label class="srx-pchip" data-p="ctrip" style="--pc:var(--c-ctrip)"><input type="checkbox" value="ctrip" checked><span class="dot" aria-hidden="true"></span>携程</label>
      <label class="srx-pchip" data-p="qunar" style="--pc:var(--c-qunar)"><input type="checkbox" value="qunar" checked><span class="dot" aria-hidden="true"></span>去哪儿</label>
      <label class="srx-pchip" data-p="fliggy" style="--pc:var(--c-fliggy)"><input type="checkbox" value="fliggy" checked><span class="dot" aria-hidden="true"></span>飞猪</label>
      <label class="srx-pchip" data-p="tongcheng" style="--pc:var(--c-tongcheng)"><input type="checkbox" value="tongcheng" checked><span class="dot" aria-hidden="true"></span>同程</label>
      <label class="srx-pchip" data-p="tuniu" style="--pc:var(--c-tuniu)"><input type="checkbox" value="tuniu" checked><span class="dot" aria-hidden="true"></span>途牛</label>
-     <label class="srx-pchip srx-pchip-ic" data-p="app_zhixing" style="--pc:var(--c-app_zhixing)" title="智行 App · 真机通道（需勾选）" aria-label="智行 App · 真机通道"><input type="checkbox" value="app_zhixing" aria-label="智行 App"><span class="dot" aria-hidden="true"></span></label>
-     <label class="srx-pchip srx-pchip-ic" data-p="app_qunar" style="--pc:var(--c-app_qunar)" title="去哪儿 App · 真机通道（需勾选）" aria-label="去哪儿 App · 真机通道"><input type="checkbox" value="app_qunar" aria-label="去哪儿 App"><span class="dot" aria-hidden="true"></span></label>
-     <label class="srx-pchip srx-pchip-ic" data-p="app_fliggy" style="--pc:var(--c-app_fliggy)" title="飞猪 App · 真机通道（需勾选）" aria-label="飞猪 App · 真机通道"><input type="checkbox" value="app_fliggy" aria-label="飞猪 App"><span class="dot" aria-hidden="true"></span></label>
-     <label class="srx-pchip srx-pchip-ic" data-p="app_ctrip" style="--pc:var(--c-app_ctrip)" title="携程 App · 真机通道（需勾选）" aria-label="携程 App · 真机通道"><input type="checkbox" value="app_ctrip" aria-label="携程 App"><span class="dot" aria-hidden="true"></span></label>
-     <label class="srx-pchip srx-pchip-ic" data-p="app_tongcheng" style="--pc:var(--c-app_tongcheng)" title="同程 App · 真机通道（需勾选）" aria-label="同程 App · 真机通道"><input type="checkbox" value="app_tongcheng" aria-label="同程 App"><span class="dot" aria-hidden="true"></span></label>
+     <label class="srx-pchip srx-pchip-ic" data-p="app_zhixing" style="--pc:var(--c-app_zhixing)" title="智行 App · 真机通道（需勾选）" aria-label="智行 App · 真机通道"><input type="checkbox" value="app_zhixing" aria-label="智行 App"><span class="dot" aria-hidden="true"></span><span class="srx-applab" aria-hidden="true">APP</span></label>
+     <label class="srx-pchip srx-pchip-ic" data-p="app_qunar" style="--pc:var(--c-app_qunar)" title="去哪儿 App · 真机通道（需勾选）" aria-label="去哪儿 App · 真机通道"><input type="checkbox" value="app_qunar" aria-label="去哪儿 App"><span class="dot" aria-hidden="true"></span><span class="srx-applab" aria-hidden="true">APP</span></label>
+     <label class="srx-pchip srx-pchip-ic" data-p="app_fliggy" style="--pc:var(--c-app_fliggy)" title="飞猪 App · 真机通道（需勾选）" aria-label="飞猪 App · 真机通道"><input type="checkbox" value="app_fliggy" aria-label="飞猪 App"><span class="dot" aria-hidden="true"></span><span class="srx-applab" aria-hidden="true">APP</span></label>
+     <label class="srx-pchip srx-pchip-ic" data-p="app_ctrip" style="--pc:var(--c-app_ctrip)" title="携程 App · 真机通道（需勾选）" aria-label="携程 App · 真机通道"><input type="checkbox" value="app_ctrip" aria-label="携程 App"><span class="dot" aria-hidden="true"></span><span class="srx-applab" aria-hidden="true">APP</span></label>
+     <label class="srx-pchip srx-pchip-ic" data-p="app_tongcheng" style="--pc:var(--c-app_tongcheng)" title="同程 App · 真机通道（需勾选）" aria-label="同程 App · 真机通道"><input type="checkbox" value="app_tongcheng" aria-label="同程 App"><span class="dot" aria-hidden="true"></span><span class="srx-applab" aria-hidden="true">APP</span></label>
     </div>
     <span class="srx-crow-hint" id="srxPlatHint">本次提交使用勾选渠道</span>
    </div>
@@ -11795,7 +11817,17 @@ function togRoute(el){const p=el.dataset.r;if(FLT.routes.has(p))FLT.routes.delet
  el.classList.toggle('on');el.setAttribute('aria-pressed',el.classList.contains('on')?'true':'false');saveUI();table();}
 function buildChips(){if(!S||!S.users.length)return;const u=S.users[U];
  const age=u.platAge||{};
- const ps=[...new Set(u.flights.map(f=>f.plat).concat(Object.keys(age)))].sort();
+ /* 集合 = 数据里出现过的渠道 ∪ 本用户配置过的渠道：勾了但近轮没扫的
+    渠道也要有 chip（带「无数据」角标），否则它在筛选区凭空消失，
+    读作「这个渠道不存在」。顺序走 SRX_PLAT_ORDER 统一。 */
+ const ps=[...new Set(u.flights.map(f=>f.plat)
+   .concat(Object.keys(age))
+   /* FLT.plats/f.plat 都用中文名：配置里的英文 id 必须先转名，
+      否则新加的 chip 选中后一行也筛不出来。 */
+   .concat((u.platforms||[]).map(p=>platCN(p))))]
+  .sort((a,b)=>{const ia=SRX_PLAT_ORDER.indexOf(srxPlatKey(a)),
+   ib=SRX_PLAT_ORDER.indexOf(srxPlatKey(b));
+   return (ia<0?99:ia)-(ib<0?99:ib)||String(a).localeCompare(String(b));});
  const keep=[...FLT.plats].filter(p=>ps.includes(p));
  /* 仅未初始化才回填全选——用户逐一取消到最后一片（空集=全部，
     筛选语义）曾被下次 10s 轮询 buildChips 判「未初始化」回填成全亮 */
@@ -13715,7 +13747,7 @@ function wsDrawChart(noHover){
  if(foot){
   let hit=0,near=0,miss=0,none=0,wait=0,pts=0,cov=0,covn=0,last='';
   wsRouteWatches().forEach(w=>{const q=wsQuote(w),t=wsTargetInfo(w,q);if(t.state==='hit')hit++;else if(t.state==='near')near++;else if(t.state==='miss')miss++;else if(t.state==='none')none++;else if(t.state==='wait')wait++;if(q){pts+=(WS.trends[w.id]&&WS.trends[w.id].points||[]).length;cov+=q.coverage||0;covn++;if(q.at>last)last=q.at}});
-  foot.innerHTML='<span>本航线 <b>'+wsRouteWatches().length+'</b> 班</span><span>达标 <b class="'+(hit?'ok':'')+'">'+hit+'</b></span><span>接近 <b>'+near+'</b></span><span>高于目标 <b>'+miss+'</b></span><span>仅观察 <b>'+none+'</b></span>'+(wait?'<span>等待 <b>'+wait+'</b></span>':'')+'<span class="sp"></span><span>覆盖 <b>'+((covn?cov/covn:0).toFixed(1))+'/5</b> 渠道</span><span>最近采集 <b>'+he(last?srxWatchAgo(last):'—')+'</b></span><span title="折线端点是最后落库的单渠道价；当前最低是跨渠道最低价">端点=最后落库单渠道价</span>';
+  foot.innerHTML='<span>本航线 <b>'+wsRouteWatches().length+'</b> 班</span><span>达标 <b class="'+(hit?'ok':'')+'">'+hit+'</b></span><span>接近 <b>'+near+'</b></span><span>高于目标 <b>'+miss+'</b></span><span>仅观察 <b>'+none+'</b></span>'+(wait?'<span>等待 <b>'+wait+'</b></span>':'')+'<span class="sp"></span><span>覆盖 <b>'+((covn?cov/covn:0).toFixed(1))+'/'+((typeof SRX_PLAT_KEYS!=='undefined')?SRX_PLAT_KEYS.length:Object.keys(SRX_PLATS||{}).length)+'</b> 渠道</span><span>最近采集 <b>'+he(last?srxWatchAgo(last):'—')+'</b></span><span title="折线端点是最后落库的单渠道价；当前最低是跨渠道最低价">端点=最后落库单渠道价</span>';
  }
  if(info.empty){c.parentElement&&c.parentElement.classList.add('is-empty');
   if(empty){empty.hidden=false;empty.innerHTML='<b>'+he(info.reason)+'</b><span>'+(WS.loading?'正在读取真实落库行…':'没有采集点就不画线；可到配置台检查航线/日期与渠道。')+'</span>'}return}
@@ -15120,6 +15152,26 @@ function srxToggleScNote(btn){
   btn.textContent=on?'收起说明':'展开说明';}
 }
 function channelAuthView(p){
+ /* App 渠道的会话在 /api/app-login/*（内嵌真机画面），不在浏览器槽位
+    payload 里。不并进来的话：健康页「去登录」永远不亮、导航红点漏报、
+    「渠道入口」把已保存的 App 会话画成红灯（2026-11-04 全链路审计）。 */
+ const _a=(typeof APP_LOGIN_STATE!=='undefined'&&APP_LOGIN_STATE)
+   ?APP_LOGIN_STATE[p]:null;
+ if(_a){
+  const _st=String(_a.status||'');
+  const status=_a.active?'active'
+   :((_a.needs_login||_st==='expired'||_st==='error')?'login_required'
+     :(_a.saved?'saved':'missing'));
+  const _aLabels={active:'登录窗口已打开',saved:'已有登录态，待采集验证',
+   login_required:'会话需重新登录',missing:'未保存登录态'};
+  return {status,label:_aLabels[status]||'状态待确认',
+   tone:status==='login_required'?'bad':'warn',
+   needsLogin:status==='login_required',
+   title:String(_a.detail||'')||(status==='saved'
+     ?'App 内登录快照已保存；仍需实际请求核验'
+     :status==='active'?'登录画面正在使用中'
+     :'未检测到保存的 App 登录快照')};
+ }
  const cs=CHANNEL_STATE||{},j=cs.payload,s=(j&&j.plats&&j.plats[p])||{};
  let status=s.status||(s.active?'active':s.pending?'pending':(s.needs_login||s.health_need_login||s.stale)?'login_required':s.saved?'saved':'missing');
  if(cs.error)status='read_error';else if(!j)status='loading';else if(j.demo)status='demo';
@@ -15162,10 +15214,16 @@ function renderNavAuthDot(){
    need=Object.keys(slots).filter(k=>{
     const s=slots[k]||{};return !!s.needs_login&&s.plat!=='demo';})
      .map(k=>(slots[k]||{}).name||k);
+   /* App 会话不在浏览器槽位里，但失效同样要亮红点。 */
+   Object.keys((typeof APP_PLAT_NAME!=='undefined'&&APP_PLAT_NAME)||{})
+     .forEach(p=>{try{if(channelAuthView(p).needsLogin)
+       need.push(APP_PLAT_NAME[p]);}catch(e){}});
   }else{
    need=['ctrip','qunar','fliggy','tongcheng','tuniu']
+     .concat(Object.keys((typeof APP_PLAT_NAME!=='undefined'&&APP_PLAT_NAME)||{}))
      .filter(p=>{try{return channelAuthView(p).needsLogin;}catch(e){return false;}})
-     .map(p=>(typeof LOGIN_CN!=='undefined'&&LOGIN_CN[p])||p);
+     .map(p=>(typeof LOGIN_CN!=='undefined'&&LOGIN_CN[p])
+       ||(typeof APP_PLAT_NAME!=='undefined'&&APP_PLAT_NAME[p])||p);
   }
   el.style.display=need.length?'':'none';
   el.title=need.length
@@ -15245,26 +15303,32 @@ function renderHealthLoginAction(){
    }
    return {key:k,label:lab,surface:sl,status:String(s.status||'')};
  }):null;
+ const appNeed=Object.keys((typeof APP_PLAT_NAME!=='undefined'&&APP_PLAT_NAME)||{})
+  .filter(p=>{try{return channelAuthView(p).needsLogin;}catch(e){return false;}})
+  .map(p=>({key:p,label:APP_PLAT_NAME[p],surface:'',status:'login_required'}));
+ const needAll=(needSlots||[]).concat(appNeed);
  const _needWord=(list)=>{
    const word=list.some(x=>x.status==='challenge')?'需验证 · 去验证':'需登录 · 去登录';
    return word;};
  if(needSlots){
-  ha.hidden=!needSlots.length;ha.dataset.p=needSlots.length?needSlots[0].key:'';
-  if(needSlots.length){
+  ha.hidden=!needAll.length;ha.dataset.p=needAll.length?needAll[0].key:'';
+  if(needAll.length){
    /* 按钮文字直接点名是哪一端（r513）：飞猪 PC 与 H5 是两套 cookie，
      只写「需处理 1 · 去登录」时读者根本不知道要核 PC 还是 H5，
      非要点开配置页才看得到——而这是**最高频**的一次判断。
      单槽位写全名；同厂多端按「飞猪 PC / H5」合写，避免按钮过长。 */
-   ha.textContent=needSlots.length===1
-     ?(needSlots[0].label+' '+_needWord(needSlots))
-     :(needSlots.length>1
+   ha.textContent=needAll.length===1
+     ?(needAll[0].label+' '+_needWord(needAll))
+     :(needAll.length>1
        ?(()=>{
           /* 按厂商归并：label 是「飞猪 PC」「飞猪 H5」这类自由文本。
              注意别用 `surface_label` 拼——label 里已经带端名，会渲染成
-             「飞猪 PC PC / H5」。这里只用键前缀分组，展示仍走 label。 */
+             「飞猪 PC PC / H5」。这里只用键前缀分组，展示仍走 label。
+             App 渠道（app_*）各自成组，不能按第一个下划线拆成「app」。 */
           const byPlat={};
-          needSlots.forEach(x=>{
-            const base=String(x.key||'').split('_')[0]||String(x.label||x.key);
+          needAll.forEach(x=>{
+            const k=String(x.key||'');
+            const base=k.indexOf('app_')===0?k:(k.split('_')[0]||String(x.label||k));
             (byPlat[base]=byPlat[base]||[]).push(x);});
           const parts=Object.keys(byPlat).map(b=>{
             const g=byPlat[b];
@@ -15277,18 +15341,21 @@ function renderHealthLoginAction(){
             const head=pre.replace(/\s+$/,'')||String(g[0].label||b);
             const tails=labs.map(t=>t.slice(pre.length).trim()||t);
             return tails.length>1?(head+' '+tails.join(' / ')):head;});
-          return parts.join('、')+' '+_needWord(needSlots);})()
+          return parts.join('、')+' '+_needWord(needAll);})()
        :'');
    ha.title='当前认证需要处理：'
-     +needSlots.map(x=>x.label+(x.status==='challenge'?'（需人机验证）':'')).join('、')
+     +needAll.map(x=>x.label+(x.status==='challenge'?'（需人机验证）':'')).join('、')
      +'；人机验证请打开该渠道窗口完成（完成后自动保存会话），'
      +'会话按端独立（飞猪 PC 与 H5 各一套）；历史健康记录保留原状';}
   return;
  }
- const need=['ctrip','qunar','fliggy','tongcheng','tuniu'].filter(p=>channelAuthView(p).needsLogin);
+ const need=['ctrip','qunar','fliggy','tongcheng','tuniu']
+  .concat(Object.keys((typeof APP_PLAT_NAME!=='undefined'&&APP_PLAT_NAME)||{}))
+  .filter(p=>channelAuthView(p).needsLogin);
  ha.hidden=!need.length;ha.dataset.p=need[0]||'';
  if(need.length){ha.textContent='需处理 '+need.length+' · 去登录';
-  ha.title='当前认证需要处理：'+need.map(p=>(typeof LOGIN_CN!=='undefined'&&LOGIN_CN[p])||p).join('、')+'；历史健康记录保留原状';}
+  ha.title='当前认证需要处理：'+need.map(p=>(typeof LOGIN_CN!=='undefined'&&LOGIN_CN[p])
+    ||(typeof APP_PLAT_NAME!=='undefined'&&APP_PLAT_NAME[p])||p).join('、')+'；历史健康记录保留原状';}
 }
 /* 账本级登录墙也要点亮顶部入口：会话槽位"已保存"不代表用起来没被拦——
    实测去哪儿国际 H5 24h 被 login 拦 13/17 次、0 出数，会话状态却仍是
@@ -15533,7 +15600,7 @@ function renderHealth(j){
  let h='';
  /* 渠道顺序单源：曾用 Object.keys().sort() 的字母序（ctrip→fliggy→qunar），
     与节流面板的 API key 序（qunar→fliggy→ctrip）各排一套，同屏两张表
-    渠道顺序不同。统一走 SRX_PLAT_ORDER（携程→去哪儿→飞猪→同程→途牛）。 */
+    渠道顺序不同。统一走 SRX_PLAT_ORDER（浏览器五家 + App 五家）。 */
  const plats=Object.keys(j.stats||{}).sort((a,b)=>{
   const ia=SRX_PLAT_ORDER.indexOf(a),ib=SRX_PLAT_ORDER.indexOf(b);
   return (ia<0?99:ia)-(ib<0?99:ib)||String(a).localeCompare(String(b));});
@@ -15699,11 +15766,16 @@ function renderHealth(j){
   const _seen=Object.keys(j.stats||{});
   const _miss=_cfgP.filter(p=>_seen.indexOf(p)<0);
   if(_miss.length&&_cfgP.length){
-   h+='<div class="hmiss" title="这些渠道已在「用户与航线」勾选，但近 24h '
-     +'日志里没有它们的扫描轮次——多半是本轮被并发上限/节奏挤掉，'
-     +'或采集进程根本没跑到它们">未扫描：'
-     +_miss.map(p=>esc(CN[p]||p)).join('、')
-     +'（已勾选，但近 24h 无扫描记录）</div>';}
+   /* 不再只留一行小字：每个「已勾选但未扫描」的渠道补一条完整行
+      （官方图标 + 名称 + 未扫描格带 + 状态徽标），否则它在健康卡里
+      等于不存在，用户看不出是「没跑」还是「没配」。 */
+   h+=_miss.map(p=>{
+    const _cells=j.rounds.map(r=>`<i class="hc none" title="${r.ts} 未扫描"></i>`).join('');
+    return `<div class="hrow hmissrow"><span class="hlab">${srxPlatIcon(p)}${CN[p]||p}</span>`
+      +`<span class="hcells">${_cells}</span>`
+      +`<span class="hbadge bad" title="已在「用户与航线」勾选，但近 24h 日志里没有扫描轮次——多半是被并发上限/节奏挤掉，或采集进程没跑到它">未扫描</span></div>`;
+   }).join('');
+  }
  }catch(e){}
  $('hbody').innerHTML=h;
  renderHealthLoginAction();renderHealthDiag();
@@ -16208,13 +16280,16 @@ function closeFltShow(){setFltOpen(false);
 let _spTs=0;
 function spDealList(deals){
  if(!deals.length)return '<span class="muted">还没有核实通过的特价——到「配置」用户卡开启「特价监控」（填出发地+心理价），系统发现新低并跨渠道核实后，这里与推送会同时出现。</span>';
- const SRCS={tuniu:'途牛榜',ctripbd:'主题榜',ctrip:'日历',fliggy:'飞猪榜'};
- const OPEN={tuniu:'途牛',ctripbd:'携程',ctrip:'携程',fliggy:'飞猪'};
+ const SRCS={tuniu:'途牛榜',tuniucal:'途牛日历',ctripbd:'主题榜',ctrip:'日历',
+  fliggy:'飞猪榜',qunar:'去哪儿日历',tongcheng:'同程日历',
+  app_qunar:'去哪儿App低价',app_zhixing:'智行特价',app_ctrip:'携程App日历',
+  app_tongcheng:'同程App日历'};
  return '<div style="display:flex;flex-direction:column;gap:6px">'+deals.map(d=>{
   const dd=(d.depart_date||'').slice(5);
   const src=SRCS[d.src]||d.src||'';
   const ret=(d.ret_date&&d.ret_price)?('｜返程 '+d.ret_date.slice(5)+' ¥'+Math.round(d.ret_price)):'';
-  const open=d.url?(' <a href="'+he(d.url)+'" target="_blank" rel="noopener noreferrer" onclick="return srxOpenChannel(this.href,event)">打开'+he(OPEN[d.src]||'渠道')+'</a>'):'';
+  const openName=(d.plat&&typeof platCN==='function')?platCN(d.plat):'渠道';
+  const open=d.url?(' <a href="'+he(d.url)+'" target="_blank" rel="noopener noreferrer" onclick="return srxOpenChannel(this.href,event)">打开'+he(openName)+'</a>'):'';
   return '<div>'+(d.plat?('<span class="p">'+srxPlatIcon(d.plat)+'</span> '):'')+'✅ <b>'+he(d.from_city)+'→'+he(d.to_city)+'</b> '+he(dd)
    +' <b style="color:var(--ok-txt)">¥'+Math.round(d.price)+'</b>'
    +'（'+he(src)+'源价¥'+Math.round(d.src_price)+'）'+ret
@@ -16261,6 +16336,23 @@ function srxRadarChips(sel){
 /* 监控态 users 是运行时摘要（不含配置扩展键），雷达条件须回 /api/config
    取用户卡原值；CFG 已载（配置页开过）时直接用，未载只拉一次并缓存 */
 const SRX_RADAR_CFG={users:null,busy:null};
+/* 雷达渠道能力（SPECIAL_CAPABILITY 单源）：勾选区就要说明每家有没有
+   发现源、边界是什么，不能等点了「查低价」才从 not_connected 得知。 */
+let SRX_RADAR_CAPS=null;
+function srxRadarCapsLoad(){
+ const el=$('spRadarCaps');if(!el)return;
+ const paint=()=>{
+  if(!SRX_RADAR_CAPS){el.textContent='';return}
+  el.innerHTML='<b>渠道能力</b> · '+Object.keys(SRX_RADAR_CAPS).map(p=>{
+   const c=SRX_RADAR_CAPS[p]||{};
+   const n=(c.sources||[]).length;
+   return he(srxRadarName(p))+'：'+(n?he(c.note||('发现源 '+n+' 个')):'未接入低价源');
+  }).join(' · ');
+ };
+ if(SRX_RADAR_CAPS){paint();return}
+ fetch('/api/specials',{cache:'no-store'}).then(r=>r.json())
+  .then(j=>{SRX_RADAR_CAPS=(j&&j.capabilities)||{};paint()}).catch(()=>{});
+}
 function srxRadarCfgUser(name){
  const hit=(CFG||[]).find(x=>x.name===name);
  if(hit)return Promise.resolve(hit);
@@ -16283,6 +16375,7 @@ async function srxRadarLoadFromUser(force){
  st.value=r.start||ds;en.value=r.end||de;
  $('spRadarNation').checked=!!r.nationwide;
  $('spRadarChannels').innerHTML=srxRadarChips(r.channels||srxRadarChannelKeys());
+ srxRadarCapsLoad();
  $('spRadarMeta').textContent=u.name+' · 按航线/日期范围查低价（日历/榜单只作发现）';
  $('spRadarStatus').textContent='';
  $('spRadarResults').innerHTML='';
@@ -16385,7 +16478,7 @@ function spMonRender(){
    const _dt=spMonDeltaTxt(low.prev_price,low.price);
    const _cs=j.channels_status||{};
    const _nCh=Object.keys(_cs).filter(x=>_cs[x]&&_cs[x].rows>0).length;
-   const _qCh=(q.channels||[]).length||5;
+   const _qCh=(q.channels||[]).length||Object.keys(SRX_PLATS||{}).length;
    sum.innerHTML='<span class="k">最低</span><b>¥'+he(String(low.price))+'</b>'
     +'<span>'+he(String(low.date||'').slice(5))+'</span><span class="sep">/</span>'
     +'<span>'+srxPlatIcon(low.channel)+he(_ch)+'</span>'
@@ -20208,6 +20301,11 @@ async function verifyNow(p){
  if(_vbtn){_vbtn.disabled=true;_vbtn.setAttribute('aria-busy','true');}
  try{
   const j=await (await fetch('/api/channel/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({platform:p})})).json();
+  if(j.app_login){
+   try{appLoginOpen(p)}catch(e){}
+   toast(j.err||('App 渠道请用内嵌真机画面登录：'+p));
+   return;
+  }
   toast(j.ok?('已打开 '+p+' 验证窗口：过完验证直接关窗')
     :(j.dup?String(j.err):('打开失败：'+(j.err||''))));
   if(j.ok&&j.scene&&j.scene.note)toast('现场：'+String(j.scene.note).slice(0,80));
@@ -21181,7 +21279,9 @@ function buildForm(){if(!CFG)return;let h='',gh='';
   +'<span class="no">'+no+'</span>'
   +'<span class="zh">'+zh+'</span>'+(en?'<span class="en">'+en+'</span>':'')
   +'<span class="gsum">'+(sum||'')+'</span><span class="chev open">▾</span></div>';
- const PLATS={qunar:'去哪儿',fliggy:'飞猪',tongcheng:'同程',tuniu:'途牛',ctrip:'携程'};
+ /* 与检索 chip / 健康行同一渠道序（SRX_PLAT_ORDER 的浏览器段）：
+    曾从去哪儿开头，同屏对比时用户要重新找行。 */
+ const PLATS={ctrip:'携程',qunar:'去哪儿',fliggy:'飞猪',tongcheng:'同程',tuniu:'途牛'};
  const glcell=(lab,id,onch,val,sub,type,unit,ph)=>'<div class="glcell"><div class="glab">'+lab+'</div>'
   +(type==='check'
     ?'<label style="display:block;margin-top:10px;font-size:13px;user-select:none;cursor:pointer">'
@@ -21263,7 +21363,7 @@ function buildForm(){if(!CFG)return;let h='',gh='';
   /* 按渠道绑出口（r600）：`crawler.proxy_map[渠道]` 原先只能改 config.yaml
      ——配置页连值都不显示，用户无法给单渠道换节点。它优先于上面的全局
      「采集代理」，一家被限流不牵连另一家。留空 = 跟随全局。 */
-  +['qunar','fliggy','ctrip','tongcheng','tuniu'].map(p=>
+  +Object.keys(PLATS).map(p=>
     glcell(({qunar:'去哪儿',fliggy:'飞猪',ctrip:'携程',tongcheng:'同程',tuniu:'途牛'}[p])+' 出口代理',
       'glbPm_'+p,
       'GLB.proxy_map=Object.assign({},GLB.proxy_map||{},{'+p+':(this.value||"").trim()})',
@@ -21655,7 +21755,7 @@ function buildForm(){if(!CFG)return;let h='',gh='';
   /* 每渠道独立节奏（cadence）：语义是「该渠道单独的最小采集间隔（分钟）」，
      0 = 跟随全局。后端按 `int()` 取整（core/pacing.py 里 min 0 / max 10080），
      所以控件也必须是整数分钟——写成「倍率/小数」会与解析结果对不上。 */
-  +['qunar','fliggy','ctrip','tongcheng','tuniu'].map(p=>
+  +Object.keys(PLATS).map(p=>
     glcell(({qunar:'去哪儿',fliggy:'飞猪',ctrip:'携程',tongcheng:'同程',tuniu:'途牛'}[p])+' 最小间隔',
       'glbCad_'+p,
       'GLB.cadence=Object.assign({},GLB.cadence||{},{'+p+':Math.max(0,Math.min(10080,parseInt(this.value)||0))})',
@@ -23744,8 +23844,11 @@ function cfgDirtyCount(){
 const SRX_PLATS={ctrip:['携程','var(--c-ctrip)'],qunar:['去哪儿','var(--c-qunar)'],fliggy:['飞猪','var(--c-fliggy)'],
  tongcheng:['同程','var(--c-tongcheng)'],tuniu:['途牛','var(--c-tuniu)'],
  app_zhixing:['智行 App','var(--c-app_zhixing)'],app_qunar:['去哪儿 App','var(--c-app_qunar)'],app_fliggy:['飞猪 App','var(--c-app_fliggy)'],app_ctrip:['携程 App','var(--c-app_ctrip)'],app_tongcheng:['同程 App','var(--c-app_tongcheng)']};
-/* 固定渠道优先级：仅影响展示/排障/取数资源顺序；价格与达标仍按真实数据计算 */
-const SRX_PLAT_ORDER=['ctrip','qunar','fliggy','tongcheng','tuniu'];
+/* 固定渠道优先级：仅影响展示/排障/取数资源顺序；价格与达标仍按真实数据计算。
+   浏览器五家在前、App 五家随后（与检索页 chip、登录卡同序），
+   新增渠道仍必须以 SRX_PLATS/数据集合为准，不能遍历本表取集合。 */
+const SRX_PLAT_ORDER=['ctrip','qunar','fliggy','tongcheng','tuniu',
+ 'app_zhixing','app_qunar','app_fliggy','app_ctrip','app_tongcheng'];
 const SRX_PLAT_KEYS=Object.keys(SRX_PLATS);
 /* 配置页 B 分区「N / M 渠道」的 M：按本页真正渲染出的 chip 数算（5 家
    浏览器渠道 + APP_PLAT_NAME 里每家 App）。写死 5 会让勾过 App 的用户
@@ -24006,11 +24109,24 @@ function srxGlyph(name){
 const SRX_INFO_GLYPH={出发:'takeoff',起飞:'takeoff',到达:'landing',到达机场:'pin',出发机场:'pin',时长:'clock',中转:'transfer',经停:'transfer',舱位:'seat',行李:'bag',餐食:'meal',准点:'clock',共享:'transfer',余票:'seat',采集:'clock',原始行:'terminal'};
 function srxInfoLabel(label){const g=SRX_INFO_GLYPH[label]||'';return (g?srxGlyph(g):'')+he(label)}
 /* 静态探针渠道 chips：DOM 已解析且品牌字典已就绪，一次性把色点换成官方图标。 */
+function srxPickHint(){
+ try{
+  const p=document.getElementById('srxPlatPick');if(!p)return;
+  const more=p.scrollWidth>p.clientWidth+2;
+  const atEnd=p.scrollLeft+p.clientWidth>=p.scrollWidth-2;
+  p.classList.toggle('hasmore',more&&!atEnd);
+ }catch(e){}
+}
 (function srxFillStaticChips(){
  try{document.querySelectorAll('.srx-pchip').forEach(l=>{
   const p=l.getAttribute('data-p'),dot=l.querySelector('.dot');
   if(p&&dot)dot.outerHTML=srxPlatIcon(p);
- });}catch(e){}
+ });
+ const pp=document.getElementById('srxPlatPick');
+ if(pp&&!pp.dataset.pickHooked){pp.dataset.pickHooked='1';pp.addEventListener('scroll',srxPickHint,{passive:true});}
+ srxPickHint();
+ window.addEventListener('resize',srxPickHint);
+ }catch(e){}
 })();
 
 const SRX_FIELD_SPECS=[
@@ -25077,7 +25193,7 @@ function srxRenderBrief(){
    +'<span class="srx-src-big">'+(real?real:(cal||stale||'—'))+'</span>'
    +'<span class="srx-src-sub" title="'+he(status)+' · 原页 '+views+' · raw '+raws+'">'+he(status)+' · 原页 '+views+' · raw '+raws+'</span>'
    +'<span class="srx-src-bar"><i style="width:'+Math.max(3,Math.round(rs.length/max*100))+'%"></i></span>'
-   +'<span class="srx-src-a">'+(link.url?'<a href="#" data-openlink="'+he(link.url)+'" onclick="event.stopPropagation();srxOpen(this.dataset.openlink);return false">打开原页</a>':'<span>本态不供落地页</span>')+'</span>'
+   +'<span class="srx-src-a">'+(link.url?'<a href="#" data-openlink="'+he(link.url)+'" onclick="event.stopPropagation();srxOpen(this.dataset.openlink);return false">打开原页</a>':(link.app?'<span title="'+he(link.note||'App 渠道走 Android 真机采集')+'">App 无网页落地页</span>':'<span>本态不供落地页</span>'))+'</span>'
    +'</div>';
  }).join('');
  el.classList.remove('srx-folded');
@@ -25129,7 +25245,7 @@ function srxRenderCapbar(){
  let html='<span class="caplead">本次渠道产物'+(SRX.date?(' · '+SRX.date):'')+'</span>';
  /* 渠道集合 = 数据行 ∪ **探针本次真要过的渠道**（服务端 want，单腿探针
     也下发），顺序仍按 SRX_PLAT_ORDER。r788 修的是「App 渠道即使有产出也
-    不出现」——集合不能再由 `SRX_PLAT_ORDER`（只有 5 家浏览器渠道）决定。
+    不出现」——集合不能由排序表决定（那时表里只有 5 家浏览器渠道）。
     非探针视图只有数据行是已知事实：不知道某渠道有没有被请求过，就不能
     替它写「本次无明细」，那等于编造一次它没做过的请求。 */
  const _reqPlats=(SRX.probe&&Array.isArray(SRX.probe.want))?SRX.probe.want:[];
@@ -25249,7 +25365,7 @@ function srxRenderOv(){
  const el=$('srxOvSum');if(!el)return;
  const srcs=[...document.querySelectorAll('#searchview .srx-src')];
  const src=srcs.filter(x=>{const c=(x.querySelector('.srx-src-big')||{}).textContent||'';return c.trim()&&c.trim()!=='—'}).length;
- const total=srcs.length||5;
+ const total=srcs.length||Object.keys(SRX_PLATS||{}).length;
  const ei=(typeof srxEmptyInfo==='function')?srxEmptyInfo():null;
  if(ei&&ei.kind==='fallback'){el.textContent=ei.title+'（展开概览看来源）';return}
  const kpis=[];
@@ -25515,7 +25631,7 @@ function srxRenderMobileSummary(){
  const plats=new Set(rows.map(f=>f.platKey).filter(Boolean)).size;
  const g=srxGroup(real).groups.filter(x=>new Set(x.rows.map(r=>r.platKey)).size>1).length;
  const _ei=(typeof srxEmptyInfo==='function')?srxEmptyInfo():null;
- el.textContent=(_ei&&_ei.kind==='fallback'?'无真实明细 · ':'')+rows.length+' 行 · 来源 '+plats+'/5 · '+g+' 同班';
+ el.textContent=(_ei&&_ei.kind==='fallback'?'无真实明细 · ':'')+rows.length+' 行 · 来源 '+plats+'/'+((typeof SRX_PLAT_KEYS!=='undefined')?SRX_PLAT_KEYS.length:Object.keys(SRX_PLATS||{}).length)+' · '+g+' 同班';
 }
 function srxCloseMobilePanels(){
  const v=$('searchview');if(!v)return false;let any=false;
@@ -26474,9 +26590,9 @@ function srxPathCN(st){const k=String(st||'');return SRX_PATH_CN[k]||k}
 function srxTaskPaths(lg){
  const segs=[];
  /* 渠道清单按**本轮真的有数据的**渠道派生（r661），不再写死 5 家浏览器
-    渠道：`SRX_PLAT_ORDER` 里没有 App 渠道，智行 App 的通路证据（
+    渠道：旧 `SRX_PLAT_ORDER` 里没有 App 渠道，智行 App 的通路证据（
     App 航班列表 / 模拟器运行时 …）在溯源里从不出现——看得见却查不到。
-    排序仍走 SRX_PLAT_ORDER，未知/App 渠道排在其后。 */
+    排序仍走 SRX_PLAT_ORDER，未知渠道排在其后。 */
  const _seen=Object.keys((lg&&lg.channels)||{});
  _seen.sort((a,b)=>{
   const ia=SRX_PLAT_ORDER.indexOf(a),ib=SRX_PLAT_ORDER.indexOf(b);
@@ -26655,8 +26771,8 @@ function srxTaskRender(j){
   legs.innerHTML=(j.legs||[]).map(lg=>{
    const stc=lg.status==='ok'?'ok':(lg.status==='empty'?'warn':(lg.status==='cancelled'?'warn':(lg.status==='running'||lg.status==='queued'?'':'bad')));
    const word=lg.status==='ok'?(lg.rows||0)+' 行':(lg.status==='empty'?'无结果':(lg.status==='queued'?'排队':(lg.status==='running'?'采集中':(lg.status==='cancelled'?'已取消':'失败'))));
-   /* 渠道集合以数据为准（App 渠道不在 SRX_PLAT_ORDER 里，过滤会把
-      它的实时进度整块吞掉）；顺序仍按 SRX_PLAT_ORDER。 */
+   /* 渠道集合以数据为准（排序表只用于排序，拿它过滤会把不在表里的
+      渠道整块吞掉）；顺序仍按 SRX_PLAT_ORDER。 */
    const chs=Object.keys(lg.channels||{})
     .sort((a,b)=>{const ia=SRX_PLAT_ORDER.indexOf(a),ib=SRX_PLAT_ORDER.indexOf(b);
      return (ia<0?99:ia)-(ib<0?99:ib);}).map(p=>{
@@ -26855,7 +26971,7 @@ function srxExitProbe(){
 
 /* ---------- actions ---------- */
 function srxOpenChLinks(){const p=$('srxProbe');if(p&&!p.classList.contains('open'))srxToggleProbe();const d=$('srxChLinks');if(d){d.open=true;try{d.scrollIntoView({block:'nearest'})}catch(e){}}}
-function srxToggleProbe(){const p=$('srxProbe');if(!p)return;const on=!p.classList.contains('open');p.classList.toggle('open',on);const b=$('srxProbeToggle');if(b){b.setAttribute('aria-expanded',on);const t=b.querySelector('.srx-tgl-txt');if(t)t.textContent=on?'收起探针':'展开探针';else b.textContent=on?'收起探针':'展开探针'}const tb=$('srxProbeTool');if(tb)tb.setAttribute('aria-expanded',on?'true':'false');try{localStorage.setItem('jpsrx_probeopen2',on?'1':'0')}catch(e){}srxRenderProbeMini()}
+function srxToggleProbe(){const p=$('srxProbe');if(!p)return;const on=!p.classList.contains('open');p.classList.toggle('open',on);const b=$('srxProbeToggle');if(b){b.setAttribute('aria-expanded',on);const t=b.querySelector('.srx-tgl-txt');if(t)t.textContent=on?'收起探针':'展开探针';else b.textContent=on?'收起探针':'展开探针'}const tb=$('srxProbeTool');if(tb)tb.setAttribute('aria-expanded',on?'true':'false');try{localStorage.setItem('jpsrx_probeopen2',on?'1':'0')}catch(e){}srxRenderProbeMini();srxPickHint()}
 function srxRenderProbeMini(j){
  const el=$('srxProbeMini'),p=$('srxProbe');if(!el)return;
  if(!p||p.classList.contains('open')){el.hidden=true;el.textContent='';return}
@@ -27989,6 +28105,9 @@ _LOGIN_PLATS = ("qunar", "ctrip", "tongcheng", "tuniu", "fliggy")
 # 按钮永远报「未知渠道」。
 from core.channels import APP_CHANNELS as _APP_CHANNELS  # noqa: E402
 _SELFCHECK_PLATS = tuple(_LOGIN_PLATS) + tuple(_APP_CHANNELS)
+# 可干预端点（解除/自检/验证/预热）必须与渠道全集同源：App 渠道也在
+# 节流表里出按钮，只按浏览器五家校验会直接 400「未知渠道」。
+_ALL_PLATS = tuple(PLATFORMS) + tuple(_APP_CHANNELS)
 # 登录槽位核验（H5 独立会话）：只记录真实页面分类结果，未核验不猜。
 _SLOT_VERIFY = {}
 _SLOT_VERIFY_LOCK = threading.Lock()
@@ -30147,16 +30266,22 @@ def _srx_links(frm, to, date):
     import re as _re
     if date and not _re.match(r"^\d{4}-\d{2}-\d{2}$", str(date)):
         raise ValueError("date must be YYYY-MM-DD")
+    # App 渠道没有网页落地页（真机内采集）：也占一行并带 app 标记，
+    # 前端才能说「App 无网页落地页」而不是笼统的「本态不供落地页」。
+    _apps = [{"key": p, "name": cn, "url": "", "ok": False, "app": True,
+              "note": "App 渠道走 Android 真机采集，没有网页落地页"}
+             for p, cn in _A.PLATFORM_CN_EXTRA.items()
+             if p in _APP_CHANNELS]
     if not date:
         return {"ok": True, "from": fc, "to": tc, "date": "",
                 "links": [{"key": p, "name": cn, "url": "", "ok": False}
-                          for p, cn in _A.PLATFORM_CN.items()]}
+                          for p, cn in _A.PLATFORM_CN.items()] + _apps}
     links = []
     for p, cn in _A.PLATFORM_CN.items():
         url = _view_url(rr, str(date or ""), p)
         links.append({"key": p, "name": cn, "url": url, "ok": bool(url)})
     return {"ok": True, "from": fc, "to": tc, "date": str(date or ""),
-            "links": links}
+            "links": links + _apps}
 
 
 def _srx_calendar_raw(frm, to, date, days=14, axis="both"):
@@ -33151,7 +33276,7 @@ def _radar_alert_dispatch(user, query, date, low, dec, channel, basis):
     if dec.prev_low is not None:
         lines.append("- **较上次低点**：￥%.0f（降 ￥%.0f）"
                      % (dec.prev_low, dec.prev_low - dec.price))
-    lines.append("- **渠道**：%s" % channel)
+    lines.append("- **渠道**：%s" % Alerter.plat_cn(channel))
     if fs:
         lines.append("- **该日真实明细**：")
         for f in fs:
@@ -34402,9 +34527,20 @@ class _Handler(BaseHTTPRequestHandler):
                         _r.get("src"), _r.get("from_city"),
                         _r.get("to_city"), _r.get("depart_date"),
                         _r.get("ret_date") or "")
-                    _r["plat"] = ("ctrip" if _r.get("src") in
-                                  ("ctrip", "ctripbd") else
-                                  _r.get("src") or "")
+                    # 源 id ≠ 渠道 id：tuniucal 是途牛渠道，其余 App 源就是
+                    # 渠道 id。直接回填 src 会让 tuniucal 在行首变成无图标
+                    # 裸 id（审计 P2）。
+                    _r["plat"] = {
+                        "tuniu": "tuniu", "tuniucal": "tuniu",
+                        "ctrip": "ctrip", "ctripbd": "ctrip",
+                        "fliggy": "fliggy", "qunar": "qunar",
+                        "tongcheng": "tongcheng",
+                        "app_qunar": "app_qunar",
+                        "app_zhixing": "app_zhixing",
+                        "app_ctrip": "app_ctrip",
+                        "app_tongcheng": "app_tongcheng",
+                    }.get(str(_r.get("src") or ""),
+                          str(_r.get("src") or ""))
                 self._json({"ok": True, "deals": rows,
                             "capabilities": SPECIAL_CAPABILITY})
             except Exception as e:
@@ -35994,7 +36130,7 @@ class _Handler(BaseHTTPRequestHandler):
                 if body is None:
                     return
                 plat = str(body.get("platform") or "").strip()
-                if plat not in PLATFORMS:
+                if plat not in _ALL_PLATS:
                     self._json({"ok": False, "err": "未知渠道"}, 400)
                     return
                 pac = getattr(_State, "pacing", None)
@@ -36082,7 +36218,7 @@ class _Handler(BaseHTTPRequestHandler):
                 if body is None:
                     return
                 plat = str(body.get("platform") or "").strip()
-                if plat not in PLATFORMS:
+                if plat not in _ALL_PLATS:
                     self._json({"ok": False, "err": "未知渠道"}, 400)
                     return
                 cb = getattr(_State, "probe_cb", None)
@@ -36132,8 +36268,14 @@ class _Handler(BaseHTTPRequestHandler):
                 if body is None:
                     return
                 plat = str(body.get("platform") or "").strip()
-                if plat not in PLATFORMS:
+                if plat not in _ALL_PLATS:
                     self._json({"ok": False, "err": "未知渠道"}, 400)
+                    return
+                if plat.startswith("app_"):
+                    self._json({"ok": False, "app_login": True,
+                                "platform": plat,
+                                "err": "App 渠道没有网页验证窗：请用「渠道登录」"
+                                       "的内嵌真机画面完成登录"})
                     return
                 cb = getattr(_State, "verify_cb", None)
                 if cb is None or not plat:
@@ -36149,7 +36291,7 @@ class _Handler(BaseHTTPRequestHandler):
                 if body is None:
                     return
                 plat = str(body.get("platform") or "").strip()
-                if plat not in PLATFORMS:
+                if plat not in _ALL_PLATS:
                     self._json({"ok": False, "err": "未知渠道"}, 400)
                     return
                 cb = getattr(_State, "warm_cb", None)

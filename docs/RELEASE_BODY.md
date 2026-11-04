@@ -4,7 +4,7 @@
 > 线上 Release 当前为 10 渠道初版正文（源码 `e35ce82`，只读核对
 > 2026-11-04）；本文件继续作为下一次发版的 canonical 模板，替换
 > `{{…}}` 占位符后原样发布，**产品叙事不要临时重写**。
-> 当前 main 已到 `f8bf142`：tracked **6673 passed / 0 skipped / 0 failed**、
+> 当前 main（r942 收口）：tracked **6684 passed / 0 skipped / 0 failed**、
 > UI **670/670**；下一次滚动刷新时 `{{TEST_COUNTS}}` 必须写 **0 skipped**，
 > 不得沿用 e35ce82 时代的「46 skipped」。资产/镜像未刷新前，正文里的
 > 源码戳与资产表仍以线上实物为准。

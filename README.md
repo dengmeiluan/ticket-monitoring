@@ -421,7 +421,7 @@ Windows 右下角弹窗通道在非 Windows 自动停用，其余通道全平台
 
 ```bash
 python tools/test_all.py        # 并发全量（默认 min(8, CPU)）：语法检查 + pytest（xdist 按文件）+ UI 自检（按 profile 分片）同跑
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/ -q   # 全量（已跟踪 6673 项；采集/解析/推送/契约/文档）：十渠道解析/通路单测（含占位守卫/透传透镜/聚合守卫等防呆钉）+ 推送链路演练 + 链接同源门禁 + 曲线-列表一致性 + 版本门禁 + 文档/代码契约
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/ -q   # 全量（已跟踪 6684 项；采集/解析/推送/契约/文档）：十渠道解析/通路单测（含占位守卫/透传透镜/聚合守卫等防呆钉）+ 推送链路演练 + 链接同源门禁 + 曲线-列表一致性 + 版本门禁 + 文档/代码契约
 python docs/uitest.py             # 全功能 UI 自检（670 断言，自动拉起演示控制台，零 JS 错硬门禁）
 python docs/screenshot.py         # README 截图再生成（先起演示服：python webui.py --demo --port 8799）
 python docs/demo_build.py         # 重烘在线演示站（docs/site）

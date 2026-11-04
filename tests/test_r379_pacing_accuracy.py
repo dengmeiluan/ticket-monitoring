@@ -257,7 +257,7 @@ def test_intervention_endpoints_are_guarded_and_whitelisted():
                         ("/api/channel/warmup", "预热")):
         block = src.split('self.path == "%s"' % path, 1)[1][:700]
         assert '_post_json("%s")' % label in block
-        assert "not in PLATFORMS" in block
+        assert "not in _ALL_PLATS" in block
 
 
 

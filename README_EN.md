@@ -378,7 +378,7 @@ while all other channels stay available. All assets attach to one Release and a
 
 ```bash
 python tools/test_all.py        # parallel full gate (default min(8, CPU)): syntax + pytest via xdist + UI self-check in profile-planned shards, side by side
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/ -q   # full suite: 6673 tests (tracked; untracked additions are not counted until committed) — ten-channel parsing and path units (placeholder guards / pass-through lenses / aggregation safeties) + push-pipeline dry runs + link-provenance gate + chart-vs-list consistency + version gate + docs/code contract
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/ -q   # full suite: 6684 tests (tracked; untracked additions are not counted until committed) — ten-channel parsing and path units (placeholder guards / pass-through lenses / aggregation safeties) + push-pipeline dry runs + link-provenance gate + chart-vs-list consistency + version gate + docs/code contract
 python docs/uitest.py             # full UI self-test (670 assertions, self-hosted demo, zero-JS-error hard gate)
 python docs/screenshot.py         # regenerate README screenshots (start the demo first: python webui.py --demo --port 8799)
 python docs/demo_build.py         # rebake the static demo site (docs/site)

@@ -97,8 +97,9 @@ def _render():
                     paths:{},by_scope:{},
                     enabled_platforms:['fliggy'].concat(appKeys),
                     push:{channels:{}}});
-                  const m=document.querySelector('#hbody .hmiss');
-                  return m?m.innerText:'';}""")
+                  const rows=[...document.querySelectorAll('#hbody .hmissrow')];
+                  return rows.map(r=>r.innerText+' '+
+                    ((r.querySelector('.hbadge')||{}).textContent||'')).join(' | ');}""")
                 return out
             finally:
                 b.close()

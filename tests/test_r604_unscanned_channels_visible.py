@@ -95,14 +95,16 @@ def test_render_shows_unscanned_channels():
                   detail_ok:1,cal_only:0,auth:0}},
                 by_scope:{}, paths:{}};
               renderHealth(j);
-              const e=document.querySelector('#healthcard .hmiss');
               /* 判据用 hbody 的实际内容：健康面板在未激活的 mon 子标签下
                  整块 display:none，量宽度/查祖先只能测出「视图没切过去」，
-                 测不到「提示有没有渲染」。渲染产物在 hbody 里就是可见性
-                 的证据（面板一显示就带着它）。 */
+                 测不到「行有没有渲染」。 */
               const body=document.getElementById('hbody');
+              const miss=[...document.querySelectorAll('#healthcard .hmissrow')]
+                .map(r=>({text:r.innerText,
+                          icon:!!r.querySelector('img.bic,span.bic'),
+                          badge:(r.querySelector('.hbadge')||{}).textContent||''}));
               return {n:document.querySelectorAll('#healthcard .hrow').length,
-                      miss:e?e.textContent:null,
+                      miss:miss,
                       inBody:!!body&&body.innerHTML.indexOf('未扫描')>=0,
                       bodyLen:body?body.innerHTML.length:0}}""")
             b.close()
@@ -113,12 +115,16 @@ def test_render_shows_unscanned_channels():
         except Exception:
             srv.kill()
 
-    assert got["n"] == 2, "行数不对（只应渲染出现过的 2 家）：%s" % got
-    assert got["miss"], "未扫描的渠道完全没有提示：%s" % got
+    assert got["n"] == 5, "2 家已扫描 + 3 家未扫描应各有完整一行：%s" % got
+    assert len(got["miss"]) == 3, "未扫描渠道没有各自成行：%s" % got
+    text = "".join(x["text"] for x in got["miss"])
     for name in ("去哪儿", "飞猪", "同程"):
-        assert name in got["miss"], "%s 没出现在未扫描清单：%s" % (name, got)
-    assert "已勾选" in got["miss"], "没有说明这些是「已勾选」的渠道"
-    assert got["inBody"], "提示没有进入健康面板的渲染产物：%s" % got
+        assert name in text, "%s 没出现在未扫描行：%s" % (name, got)
+    assert all(x["badge"].find("未扫描") >= 0 for x in got["miss"]), (
+        "未扫描行缺状态徽标：%s" % got)
+    assert all(x["icon"] for x in got["miss"]), (
+        "未扫描行缺官方图标：%s" % got)
+    assert got["inBody"], "未扫描行没有进入健康面板的渲染产物：%s" % got
 
 
 def test_render_omits_notice_when_all_channels_scanned():
@@ -167,7 +173,7 @@ def test_render_omits_notice_when_all_channels_scanned():
                   detail_ok:2,cal_only:0,auth:0}},
                 by_scope:{}, paths:{}};
               renderHealth(j);
-              return {has:!!document.querySelector('#healthcard .hmiss')}}""")
+              return {has:document.querySelectorAll('#healthcard .hmissrow').length>0}}""")
             b.close()
     finally:
         srv.terminate()
