@@ -184,7 +184,8 @@ def test_radar_form_declares_each_channel_capability(page):
                   "srxRadarLoadFromUser(true);}")
     page.wait_for_function(
         "()=>{const el=document.getElementById('spRadarCaps');"
-        "return el&&/渠道能力/.test(el.textContent||'');}", timeout=15000)
+        "return el&&/飞猪 App：未接入低价源/.test(el.textContent||'');}",
+        timeout=15000)
     text = page.evaluate(
         "()=>document.getElementById('spRadarCaps').textContent")
     assert "飞猪 App：未接入低价源" in text, (

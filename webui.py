@@ -34544,7 +34544,11 @@ class _Handler(BaseHTTPRequestHandler):
                 self._json({"ok": True, "deals": rows,
                             "capabilities": SPECIAL_CAPABILITY})
             except Exception as e:
-                self._json({"ok": False, "deals": [], "err": str(e)})
+                # 能力声明不依赖 special_deals 表是否已建/可读：库异常时
+                # 也要下发，否则雷达勾选区只剩「渠道能力 · 」空标题。
+                from core.specials import SPECIAL_CAPABILITY as _SC
+                self._json({"ok": False, "deals": [],
+                            "capabilities": _SC, "err": str(e)})
         elif self.path.startswith("/api/trend"):
             # 半年走势（r320b）：长窗日桶双系列懒加载（/api/state 不背
             # 半年体积）；days 白名单钳制在 _trend_payload 单源
