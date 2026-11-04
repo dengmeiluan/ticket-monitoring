@@ -65,39 +65,73 @@ def test_switch_bar_lists_every_app_channel():
 
 
 def test_render_switch_bar_titles(monkeypatch):
-    """真浏览器：点切换后标题与选中态都跟着换（服务不在就跳过）。"""
+    """真浏览器：点切换后标题与选中态都跟着换。
+
+    不再依赖本机 8765 是否在跑：没有 BASE 时自己拉起 --demo 服务。
+    旧写法在干净克隆/CI 里直接 skip，与「0 skipped」口径冲突。
+    """
+    import socket
+    import subprocess
+    import time
     import urllib.request
-    base = os.environ.get("BASE", "http://127.0.0.1:8765")
+
+    base = os.environ.get("BASE") or ""
+    srv = None
+    if not base:
+        s = socket.socket()
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+        s.close()
+        base = "http://127.0.0.1:%d" % port
+        env = dict(os.environ, PYTHONIOENCODING="utf-8")
+        srv = subprocess.Popen(
+            [sys.executable, "webui.py", "--demo", "--port", str(port)],
+            cwd=ROOT, stdout=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT, env=env)
+        op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        for _ in range(160):
+            try:
+                op.open(base + "/api/state", timeout=1)
+                break
+            except Exception:
+                time.sleep(0.25)
+        else:
+            srv.kill()
+            pytest.fail("demo 服务未在期限内起来")
     try:
-        urllib.request.urlopen(base + "/", timeout=3)
-    except Exception:
-        pytest.skip("本机服务未运行")
-    try:
-        from playwright.sync_api import sync_playwright
-    except Exception:
-        pytest.skip("playwright 不可用")
-    with sync_playwright() as p:
-        b = p.chromium.launch()
-        pg = b.new_page(viewport={"width": 1440, "height": 900})
-        pg.goto(base + "/#config", wait_until="domcontentloaded",
-                timeout=60000)
-        pg.wait_for_timeout(3000)
-        pg.evaluate("() => appLoginOpen('app_zhixing')")
-        pg.wait_for_timeout(1500)
-        t1 = pg.evaluate(
-            "() => document.querySelector('#lgModal .lgmodal-h b').textContent")
-        bars = pg.evaluate(
-            "() => [...document.querySelectorAll('#lgModal .appsw button')]"
-            ".map(b => b.textContent.trim())")
-        pg.evaluate("() => appLoginSwitch('app_qunar')")
-        pg.wait_for_timeout(1500)
-        t2 = pg.evaluate(
-            "() => document.querySelector('#lgModal .lgmodal-h b').textContent")
-        on = pg.evaluate(
-            "() => [...document.querySelectorAll('#lgModal .appsw button.on')]"
-            ".map(b => b.textContent.trim())")
-        b.close()
-    assert "智行" in t1, t1
-    assert len(bars) >= 2, bars
-    assert "去哪儿" in t2, t2
-    assert any("去哪儿" in t for t in on), on
+        try:
+            from playwright.sync_api import sync_playwright
+        except Exception:
+            pytest.skip("playwright 不可用")
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            pg = b.new_page(viewport={"width": 1440, "height": 900})
+            pg.goto(base + "/#config", wait_until="domcontentloaded",
+                    timeout=60000)
+            pg.wait_for_timeout(3000)
+            pg.evaluate("() => appLoginOpen('app_zhixing')")
+            pg.wait_for_timeout(1500)
+            t1 = pg.evaluate(
+                "() => document.querySelector('#lgModal .lgmodal-h b').textContent")
+            bars = pg.evaluate(
+                "() => [...document.querySelectorAll('#lgModal .appsw button')]"
+                ".map(b => b.textContent.trim())")
+            pg.evaluate("() => appLoginSwitch('app_qunar')")
+            pg.wait_for_timeout(1500)
+            t2 = pg.evaluate(
+                "() => document.querySelector('#lgModal .lgmodal-h b').textContent")
+            on = pg.evaluate(
+                "() => [...document.querySelectorAll('#lgModal .appsw button.on')]"
+                ".map(b => b.textContent.trim())")
+            b.close()
+        assert "智行" in t1, t1
+        assert len(bars) >= 2, bars
+        assert "去哪儿" in t2, t2
+        assert any("去哪儿" in t for t in on), on
+    finally:
+        if srv is not None:
+            srv.terminate()
+            try:
+                srv.wait(timeout=5)
+            except Exception:
+                srv.kill()
