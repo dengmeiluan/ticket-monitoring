@@ -26,18 +26,17 @@
 
 ## 1. 项目事实与当前状态（开工必核验）
 
-### 1.0 当前状态快照（2026-11-04 11:35，先核验再干活）
+### 1.0 当前状态快照（2026-11-04 12:25，先核验再干活）
 
-- **代码树**：代码 HEAD `0103b4f`（本批 r925–r934 + r959；r935 智行日期入口待入库）：
-  设备锁 owner/预算观测上健康页、`fetch_budget_s` 配置控件、qunar 城市档位自愈/
-  ¥ 价与中转航班号归一、`paced` 主动让位、App 等页面帧预算与弹层 BACK 重试。
-- **门禁**（2026-11-04 当时快照）：tracked collect **6612**；干净克隆 `d618528` 全量 **6566 passed / 45 skipped /
-  0 failed**（526.39s，6611 口径；45 skip 为无生产账本/真机样本），UI **670/670**；
-  CI 4 测试片 + 2 UI 片在 `0103b4f` 全绿（`ci-ok` success）；`channel_contract --strict`
-  10 家 × 11 轴无缺口；`release_align_check --local` 25/25；静态站戳
-  `code:f479ecf59efd` = 当前 `webui.py`。
-- **发布**：四平台 `release-build` 从最终文档提交重建；正文用 `docs/RELEASE_BODY.md`
-  初版式模板填充（多程仅 2 段、paced、设备锁观测）；tag `v1.0` 在资产/正文核验后最后重指。
+- **代码树**：HEAD `1c0b8c4`（r925–r939 + r959 已入库）：设备锁 owner/预算观测上健康页、
+  `fetch_budget_s` 配置控件、qunar 城市档位自愈/¥ 价与中转航班号归一、`paced` 主动让位、
+  App 帧预算/弹层 BACK 重试、智行日期入口兼容横线格式、失败现场落盘。
+- **门禁**（2026-11-04 当时快照）：tracked collect **6643**；干净克隆 `1c0b8c4` 全量 **6597 passed / 46 skipped /
+  0 failed**（488.26s，6643 口径；46 skip 为无生产账本/真机样本），UI **670/670**；
+  CI 4 测试片 + 2 UI 片在 `1c0b8c4` 上重跑；`channel_contract --strict` 10 家 × 11 轴无缺口；
+  `release_align_check --local` 25/25；静态站戳 `code:f479ecf59efd` = 当前 `webui.py`。
+- **发布**：Release 本轮从 `532072e` 再对齐到本次文档提交（代码 `1c0b8c4`）：四平台资产重建、
+  初版式正文更新、tag 最后重指；内容含 App 图标精修与 r935–r939 健壮性修复。
 - **多程开口程（2026-11-03 16:41 实测）**：profile 副本 + 临时库跑
   SHA→TYO 11-20 / OSA→SHA 11-26，页面「多程超低价」组合卡自报
   **「多程含税价 ¥2184」**（legs 9C8515 + MM079），`tripType=MC`、

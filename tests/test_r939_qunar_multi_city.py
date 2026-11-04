@@ -160,3 +160,26 @@ def test_source_covers_both_residues():
     body = src[i:i + 2600]
     assert "_ID_BACK_DATE_LL in" in body, "往返判据不见了"
     assert "第一程" in body and "第二程" in body, "没有覆盖多程档"
+
+
+def test_multi_layer_back_is_supported():
+    """多程结果页到表单**可能不止一层**，必须循环退（最多 3 层）。
+
+    现场只见过「结果页」这一层，但退栈路径不保证永远一层：
+    结果页 → 查询中间页 → 表单 也是可能的。只 BACK 一次就把
+    "退不干净"变成了新的 `no-list-page` 来源。
+    """
+    c = _crawler()
+    # 前两次 BACK 后仍是结果页，第 3 次才回到带「单程」的表单
+    d = Dev([MULTI, MULTI, MULTI_WITH_TAB, MULTI_WITH_TAB])
+    c._switch_to_single(d, MULTI)
+    assert d.backs >= 1, "没有退栈"
+    assert d.taps, "退栈后没找到「单程」并点击"
+
+
+def test_back_is_bounded():
+    """退栈次数有上限，不能无限按 BACK。"""
+    c = _crawler()
+    d = Dev([MULTI])          # 永远是结果页，退不出去
+    c._switch_to_single(d, MULTI)
+    assert d.backs <= 3, "退栈没有上限：%d 次" % d.backs

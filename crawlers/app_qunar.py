@@ -807,18 +807,31 @@ class AppQunarCrawler(AppCrawler):
             seg = _find_text(xml, "单程")
         if seg is None:
             # 多程结果页上可能没有档位切换控件（那是列表/空态页，不是表单）。
-            # 这种情况按 BACK 退回首页表单再找，别在原地打转。
+            # 这种情况按 BACK 退回表单再找——**可能不止一层**（结果页 → 表单
+            # 或 结果页 → 查询中间页 → 表单），所以循环退，最多 3 层。
             if is_multi and not is_round:
-                dev.keyevent("KEYCODE_BACK")
-                _sleep(2)
-                back = dev.dump() or ""
-                seg = _find_id(back, _ID_SINGLE_ONLY_SWITCH) \
-                    or _find_text(back, "单程")
+                page = xml
+                for _ in range(3):
+                    dev.keyevent("KEYCODE_BACK")
+                    _sleep(2)
+                    page = dev.dump() or page
+                    seg = (_find_id(page, _ID_SINGLE_ONLY_SWITCH)
+                           or _find_text(page, "单程"))
+                    if seg is not None:
+                        break
+                    # 已经退回机票首页表单（有城市位）却没看到单程：
+                    # 多半是渲染未完成，再给一帧；仍没有就放弃退栈。
+                    if _ID_DEP_CITY in page:
+                        _sleep(2)
+                        page = dev.dump() or page
+                        seg = (_find_id(page, _ID_SINGLE_ONLY_SWITCH)
+                               or _find_text(page, "单程"))
+                        break
                 if seg is None:
-                    return back
+                    return page
                 dev.tap(*_center(seg))
                 _sleep(3)
-                return dev.dump() or back
+                return dev.dump() or page
             return xml
         dev.tap(*_center(seg))
         _sleep(3)
