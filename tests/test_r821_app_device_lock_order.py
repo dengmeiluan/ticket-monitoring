@@ -44,7 +44,9 @@ class _Runtime:
     def device(self):
         return object()
 
-    def device_lock(self):
+    def device_lock(self, timeout=600.0, owner=""):
+        # 与真实 AndroidRuntime.device_lock 同签名（2026-11-04 起多了 owner，
+        # 用于「谁占着锁」的观测）——假实现要跟上，否则渠道侧传参会 TypeError。
         return _Lock(self.events)
 
 

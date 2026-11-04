@@ -105,7 +105,8 @@ def test_calendar_reads_ocr_and_records_app_calendar(monkeypatch):
         def device(self):
             return dev
 
-        def device_lock(self):
+        def device_lock(self, timeout=600.0, owner=""):
+            # 同真实签名（含 owner，2026-11-04 起用于锁持有者观测）
             return contextlib.nullcontext()
 
     calendar_xml = _xml('<node text="选择出发日期" bounds="[0,0][10,10]" />'
