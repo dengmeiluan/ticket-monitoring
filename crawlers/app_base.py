@@ -36,6 +36,48 @@ else:
         os.path.dirname(os.path.abspath(__file__)))
 
 
+def wait_ready(dev, marker: str, *, exclude=(), frames: int = 14,
+               interval: float = 2.5, base_s: float = 90,
+               slow_s: float = 150, slow_frame_s: float = 6.0,
+               stable: int = 2) -> tuple:
+    """等页面就绪：**按帧数预算 + 自适应放宽**，返回 ``(ok, xml, why)``。
+
+    为什么不能只用固定秒数（2026-11-03 实测，14 次「首页未就绪」全是这个）：
+
+    * 空载时一帧 ``uiautomator dump`` ≈2–3s，60s 能取 20 帧；
+    * **整机跑着 5 个浏览器渠道时单帧能到 ~20s**，60s 只够 3 帧；
+    * 而"连续两帧都是首页"最少要 6 帧（中间任一帧是残留弹层就重置计数）。
+
+    于是慢机上"必然失败"，日志看起来却像"App 打不开"。改成帧数预算后，
+    慢机只是等得久一点，不会判错。
+
+    ``marker`` 是就绪标志文案（如「机票查询」）；``exclude`` 里的文案出现
+    则视为**未就绪**（如残留的日历弹层标题）。
+    """
+    ex = tuple(x for x in (exclude or ()) if x)
+    deadline = time.time() + float(base_s)
+    t0 = time.time()
+    hit = 0
+    xml = ""
+    for i in range(max(2, int(frames))):
+        time.sleep(float(interval))
+        xml = dev.dump() or ""
+        if i == 0 and (time.time() - t0) > float(slow_frame_s):
+            # 首帧就慢 → 整机被拖住，放宽总时长（仍然受帧数上限约束）
+            deadline = time.time() + float(slow_s)
+        ready = (str(marker) in xml) and not any(e in xml for e in ex)
+        if ready:
+            hit += 1
+            if hit >= max(1, int(stable)):
+                return True, xml, "ok"
+        else:
+            hit = 0
+        if time.time() > deadline:
+            break
+    return False, xml, ("未就绪：%d 帧 / 约 %ds 内没等到「%s」"
+                        % (i + 1, int(time.time() - t0), marker))
+
+
 class AppCrawler:
     """Android App 渠道基类（单设备串行采集）。"""
 
@@ -46,7 +88,10 @@ class AppCrawler:
     # 它们必须能独立入账——把"被挡住"记成 empty 或 error，等于让账本说谎。
     PATH_STATUS = ("ok", "empty", "login", "blocked", "timeout",
                    "error", "parse_error", "unsupported", "calendar",
-                   "soft_reject", "ad", "captcha", "face")
+                   "soft_reject", "ad", "captcha", "face",
+                   # `paced` = 我方主动不发请求（配额让位/节流跳过），
+                   # 与浏览器基类同一语义：不算被拒绝，不进爬取率分母
+                   "paced")
     # 会话是否可疑（webui 登录卡分层用），实例级每轮复位
     login_suspect: bool = False
 
@@ -547,12 +592,16 @@ class AppCrawler:
 
     def _note_round_yield(self) -> dict:
         try:
-            from core.yield_stats import default_ledger, statuses_ok
+            from core.yield_stats import default_ledger, statuses_ok, is_paced
             cfg = getattr(self, "config", None) or {}
             root = str(cfg.get("user_data_dir") or "user_data") \
                 if isinstance(cfg, dict) else "user_data"
             profile = str(getattr(self, "profile_name", "") or self.name)
             led = default_ledger(os.path.join(_REPO_ROOT, root), profile)
+            # 主动让位（配额/节流）**不算样本**：既不是成功也不是失败。
+            # 记进去会把"我方克制"读成"渠道不行"。
+            if is_paced(self.paths):
+                return {"ok": None, "rows": 0, "path": "paced", "skipped": True}
             ok, rows, path = statuses_ok(self.paths)
             if not ok and getattr(self, "_last_round_ok", False):
                 ok, rows = True, rows or 1

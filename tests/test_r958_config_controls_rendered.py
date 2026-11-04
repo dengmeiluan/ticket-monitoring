@@ -16,6 +16,7 @@ IDS = {
     "glbAndReboot": "重启方式",
     "glbAndForce": "非模拟器也强制",
     "glbAndHideDev": "隐藏开发者选项",
+    "glbAndFetchBudgetS": "单次采集预算",
     "glbAndKeep": "复用前台 App",
     "glbVendorApply": "应用 MuMu 官方设置",
     "glbCapArithmetic": "算数验证码",
@@ -53,3 +54,10 @@ def test_stealth_identity_controls_are_rendered(page):
     assert after is (not before), "vendor.apply 勾选没有写回 GLB（%r→%r）" % (
         before, after)
     page.click("#glbVendorApply")
+    # 预算控件：360 要写进 GLB，0 必须保留为 0（不能用 `||默认` 吞掉）
+    for inp, want in (("360", 360), ("0", 0), ("540", 540)):
+        page.fill("#glbAndFetchBudgetS", inp)
+        page.evaluate("()=>document.getElementById('glbAndFetchBudgetS')"
+                      ".dispatchEvent(new Event('change',{bubbles:true}))")
+        got = page.evaluate("()=>GLB.android.fetch_budget_s")
+        assert got == want, "预算输入 %s 写回 %r" % (inp, got)

@@ -110,6 +110,7 @@ android:
   vm_index: 0                      # 多开时选第几个实例
   boot_timeout_s: 180              # 冷启动实测 24–36s，留足余量
   action_timeout_s: 60
+  fetch_budget_s: 540              # 单次采集总预算；到点 worker 主动放弃并释放设备锁（0=不限）
   snapshot: true                   # 登录态快照：网页登录一次后自动保存/恢复
 
 users:

@@ -257,6 +257,23 @@ def default_ledger(user_data_dir: str = "user_data",
     return YieldLedger(os.path.join(base, FILE_NAME))
 
 
+def is_paced(paths) -> bool:
+    """这一轮是不是**我方主动没发请求**（配额让位/节流跳过）。
+
+    判据：所有路径状态都是 ``paced``（一条都没真发）。只要有一条真跑过
+    （哪怕是 timeout/soft_reject），这一轮就是真实样本。
+
+    为什么要有这个概念（2026-11-04）：qunar 国际航线有"配额让位"——
+    软空一次就 900s 不再查其它国际线。让位原先被记成 ``soft_reject``，
+    于是"我方主动让步"被算成"渠道失败"，账面成功率只剩 50%，
+    让人误以为去哪儿被风控了，实际它只是在守配额。
+    """
+    recs = [r for r in (paths or []) if isinstance(r, dict)]
+    if not recs:
+        return False
+    return all(str(r.get("status") or "") == "paced" for r in recs)
+
+
 def statuses_ok(paths) -> tuple:
     """从一轮 `path_note` 记录判断「这轮算不算取到数」。
 

@@ -462,7 +462,11 @@ class QunarCrawler(BaseCrawler):
                 _left, self._intl_quiet_reason or "渠道限流保护",
                 from_city, to_city)
             self.path_note(
-                "QUERY", "soft_reject",
+                # 记 ``paced`` 而不是 ``soft_reject``：让位是**我方主动不发
+                # 请求**（守国际列表配额），不是"被地方拒绝"。记成软拒会把
+                # 主动让步算成渠道失败——qunar 账面成功率只剩 50%，看着像
+                # 被风控，实际是在守配额（2026-11-04 复盘）。
+                "QUERY", "paced",
                 detail="国际查询让位：%s"
                        % (self._intl_quiet_reason or "渠道限流保护"))
             return []

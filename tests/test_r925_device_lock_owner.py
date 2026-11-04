@@ -26,6 +26,8 @@ import logging
 import os
 import sys
 import threading
+
+import pytest
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -34,6 +36,15 @@ sys.path.insert(0, ROOT)
 from core.android import runtime as rt  # noqa: E402
 
 _LOG = logging.getLogger("test_r925")
+
+
+@pytest.fixture(autouse=True)
+def _isolated_lock(monkeypatch):
+    """换成本文件专用锁：同进程若有别的采集线程持着模块锁，默认
+    ``timeout=600`` 会把用例真的拖满 10 分钟（不是产品坏，是抢真锁）。"""
+    monkeypatch.setattr(rt, "_DEVICE_LOCK", threading.Lock())
+    monkeypatch.setattr(rt, "_LOCK_STATE", {"owner": "", "since": 0.0})
+    yield
 
 
 def _runtime():
@@ -57,7 +68,10 @@ def test_owner_cleared_after_release():
     r = _runtime()
     with r.device_lock(owner="app_ctrip"):
         pass
-    assert r.lock_state() == {"owner": "", "since": 0.0}
+    st = r.lock_state()
+    # lock_state 还会带 budget_left/deadline_hits 等观测字段，这里只钉
+    # 「持有者与起始时刻已清空」这一条契约，别把附加上下文当成契约本身。
+    assert st["owner"] == "" and st["since"] == 0.0, st
 
 
 def test_owner_cleared_even_on_exception():

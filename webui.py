@@ -15402,14 +15402,25 @@ async function health(){srcAccessState(false);try{const r=await fetch('/api/heal
   const _he=$('healthEmpty');
   if(_he&&$('healthcard').style.display==='none'){_he.style.display='';
    _he.innerHTML='⚠ 健康数据读取失败（详见服务日志）';}}}
+function healthLockMeta(j){
+ const d=j&&j.device_lock;if(!d||!d.enabled)return '';
+ if(d.unavailable)return ' · 设备锁不可读（'+d.unavailable+'）';
+ if(d.owner)return ' · 设备锁 '+d.owner+' 持有 '+d.held_s+'s'
+  +(d.deadline_hits?('，预算耗尽 '+d.deadline_hits+' 次'):'');
+ return ' · 设备锁空闲';
+}
 function renderHealthDiag(){
  const box=$('healthDiagBody');if(!box)return;
  let j=null;try{j=HL?JSON.parse(HL):null}catch(e){}
+ const _lm=healthLockMeta(j);
  if(!j||!j.diag||!j.diag.length){
-  box.innerHTML='<span class="muted">诊断数据未到（不猜测；等下一轮健康数据）</span>';return;
+  box.innerHTML='<span class="muted">诊断数据未到（不猜测；等下一轮健康数据）</span>';
+  const _m0=$('healthDiagMeta');
+  if(_m0)_m0.textContent='按最近一轮证据区分登录/验证码/IP 风控/超时'+_lm;
+  return;
  }
  const meta=$('healthDiagMeta');
- if(meta)meta.textContent='最近一轮 '+(j.diag_at||'—')+' · 按轮次/Cookie 证据分型';
+ if(meta)meta.textContent='最近一轮 '+(j.diag_at||'—')+' · 按轮次/Cookie 证据分型'+_lm;
  const cn={available:'明细成功',login_required:'需重新登录',pending:'保存待验证',saved:'已保存待验证',stale:'Cookie 已过期',page_ok:'页面可访问待明细',challenge:'需验证',missing:'未保存'};
  const ck={expired:'已过期',missing:'无本地会话',unverified:'待验证'};
  const st={ok:'成功',part:'部分成功',fail:'失败',maint:'维护',empty:'空结果',none:'无本轮记录'};
@@ -21255,6 +21266,7 @@ function buildForm(){if(!CFG)return;let h='',gh='';
   +glcell('多开实例序号','glbAndVm','GLB.android=Object.assign({},GLB.android||{},{vm_index:Math.max(0,Math.min(64,parseInt(this.value)||0))})',esc((GLB.android||{}).vm_index||0),'MuMu 多开管理器的实例编号（0 起）；多开时对应不同 App 登录态','number',null,'0')
   +glcell('冷启动超时','glbAndBoot','GLB.android=Object.assign({},GLB.android||{},{boot_timeout_s:Math.max(10,Math.min(600,parseInt(this.value)||180))})',esc((GLB.android||{}).boot_timeout_s||180),'10–600 · 模拟器冷启动到可操作的上限；实测 24–36 秒','number',null,'180')
   +glcell('单命令超时','glbAndAct','GLB.android=Object.assign({},GLB.android||{},{action_timeout_s:Math.max(5,Math.min(900,parseInt(this.value)||60))})',esc((GLB.android||{}).action_timeout_s||60),'5–900 · 单条 adb 命令的超时上限','number',null,'60')
+  +glcell('单次采集预算','glbAndFetchBudgetS','GLB.android=Object.assign({},GLB.android||{},{fetch_budget_s:(function(v){v=parseInt(v,10);return isNaN(v)?540:Math.max(0,Math.min(3600,v))})(this.value)})',esc(((GLB.android||{}).fetch_budget_s===undefined)?540:(GLB.android||{}).fetch_budget_s),'0–3600 · 0=不限制；默认 540s（须小于路由级 900s）。到点 worker 会在下一个 adb 调用处主动放弃并释放设备锁','number',null,'540')
   +glcell('登录态快照','glbAndSnap','GLB.android=Object.assign({},GLB.android||{},{snapshot:this.checked})',(GLB.android||{}).snapshot!==false,'预留：保存/恢复登录态快照，减少重复扫码','check')
   +glsec('设备身份 / 痕迹隐藏（r910）')
   +glcell('设备身份指纹','glbAndIdEn','GLB.android=Object.assign({},GLB.android||{},{identity:Object.assign({},(GLB.android||{}).identity||{},{enabled:this.checked})})',((GLB.android||{}).identity||{}).enabled!==false,'稳定设备 ID（android_id/序列号/Build 字段），跨重启不变','check')
@@ -23330,7 +23342,8 @@ const GLB_RANGES=[
  {id:'glbNearD',min:0,max:30,label:'邻近天数须为 0-30'},
  {id:'glbAndVm',min:0,max:64,label:'多开实例序号须为 0-64'},
  {id:'glbAndBoot',min:10,max:600,label:'冷启动超时须为 10-600 秒'},
- {id:'glbAndAct',min:5,max:900,label:'单命令超时须为 5-900 秒'}];
+ {id:'glbAndAct',min:5,max:900,label:'单命令超时须为 5-900 秒'},
+ {id:'glbAndFetchBudgetS',min:0,max:3600,label:'单次采集预算须为 0-3600 秒（0 = 不限）'}];
 /* 输入即校验：越界标红边+行内提示（verr），改对即清；returnMsg=true
    返回错误消息供 saveCfg 复用（不打 UI）。空串不标红——onchange 的
    钳位兜底接管；错峰「自/至」互为联动键，一方改对时姊妹键同步重判 */
@@ -26432,8 +26445,9 @@ function srxTaskProbe(j,rows,forceBatch){
    empty 才是「无结果」；未知码如实显示原码，不编名字。 */
 const SRX_PATH_CN={ok:'明细',calendar:'仅日历',calendar_only:'仅日历',
  login:'登录拒绝',blocked:'人机验证',timeout:'超时',error:'失败',
- parse_error:'解析失败',soft_reject:'软拒',unsupported:'渠道不支持',
- empty:'无票',stale:'数据陈旧',cancelled:'已取消',partial:'部分成功'};
+ parse_error:'解析失败',soft_reject:'软拒',paced:'主动让位',
+ unsupported:'渠道不支持',empty:'无票',stale:'数据陈旧',
+ cancelled:'已取消',partial:'部分成功'};
 function srxPathCN(st){const k=String(st||'');return SRX_PATH_CN[k]||k}
 function srxTaskPaths(lg){
  const segs=[];
@@ -32961,6 +32975,35 @@ def _enabled_platforms():
     return out
 
 
+def _device_lock_view(cfg: dict) -> dict:
+    """设备锁持有者快照（r925 的观测面）：谁占着、多久、预算还剩多少。
+
+    只读模块级状态，不碰 adb；Android 关时直接返回 enabled=False。
+    2026-11-04 事故里「卡死 10 小时查不出是谁占着锁」，日志之外必须
+    在健康页也能一眼看到，否则同一个洞还会再踩。
+    """
+    and_cfg = (cfg or {}).get("android") if isinstance(cfg, dict) else None
+    enabled = bool((and_cfg or {}).get("enabled"))
+    out = {"enabled": enabled, "owner": "", "held_s": 0,
+           "budget_left": 0.0, "deadline_hits": 0, "unavailable": ""}
+    if not enabled:
+        return out
+    try:
+        from core.android.runtime import get_runtime
+        rt = get_runtime(cfg, getattr(_State, "logger", None))
+        st = rt.lock_state()
+        since = float(st.get("since") or 0)
+        out.update({
+            "owner": str(st.get("owner") or ""),
+            "held_s": int(max(0.0, time.time() - since)) if since > 0 else 0,
+            "budget_left": round(float(st.get("budget_left") or 0), 1),
+            "deadline_hits": int(st.get("deadline_hits") or 0),
+        })
+    except Exception as e:
+        out["unavailable"] = str(e)[:120]
+    return out
+
+
 def _health_state(hours: int = 24) -> dict:
     """渠道健康时间线：解析 monitor.log（尾部 2MB 封顶，防长日志拖慢）。
 
@@ -33862,6 +33905,7 @@ class _Handler(BaseHTTPRequestHandler):
                                 pass
                         else:
                             _IN_HEALTH_DECORATE_TID.ident = _prevd_tid
+                    out["device_lock"] = _device_lock_view({})
                     self._json(out)
                 else:
                     _hp = _health_state()
@@ -33885,6 +33929,7 @@ class _Handler(BaseHTTPRequestHandler):
                     except Exception:
                         _hp["last_seen_at"] = ""
                     _hp["enabled_platforms"] = _enabled_platforms()
+                    _hp["device_lock"] = _device_lock_view(_State.cfg or {})
                     self._json(_hp)
             except Exception as e:
                 self._json({"err": str(e)}, 500)
@@ -34988,7 +35033,8 @@ class _Handler(BaseHTTPRequestHandler):
                         for _ak, _alo, _ahi, _ad in (
                                 ("vm_index", 0, 64, 0),
                                 ("boot_timeout_s", 10, 600, 180),
-                                ("action_timeout_s", 5, 900, 60)):
+                                ("action_timeout_s", 5, 900, 60),
+                                ("fetch_budget_s", 0, 3600, 540)):
                             if _and.get(_ak) is not None:
                                 try:
                                     _av = int(_and[_ak])

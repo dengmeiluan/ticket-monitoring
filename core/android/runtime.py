@@ -244,17 +244,21 @@ class AndroidRuntime:
             self.log("info", "设备锁等待 %.0fs 后取得（上一持有者=%s）",
                      waited, _LOCK_STATE.get("owner") or "?")
         _LOCK_STATE.update({"owner": str(owner or "?"), "since": _t.time()})
-        # **arm 协作式截止时间**：拿到锁就同时给设备一个预算，超时后 worker
-        # 会在下一个 adb 调用处主动放弃 → 真正释放锁。
-        # 这是"路由级超时"治不了的那个洞的正解（详见 device.set_deadline）。
-        budget = self._fetch_budget_s()
-        dev = self._device
-        if dev is not None and budget > 0:
-            try:
-                dev.set_deadline(budget)
-            except Exception:
-                pass
+        # 拿锁成功后的任何异常都不能把模块锁留在持有态（r667 用 __new__ 造桩
+        # 时就没有 _device 属性）；预算 arm 与 yield 一起放进 try/finally。
+        budget = 0.0
+        dev = None
         try:
+            # **arm 协作式截止时间**：拿到锁就同时给设备一个预算，超时后
+            # worker 会在下一个 adb 调用处主动放弃 → 真正释放锁。
+            # 这是"路由级超时"治不了的那个洞的正解（详见 device.set_deadline）。
+            budget = self._fetch_budget_s()
+            dev = getattr(self, "_device", None)
+            if dev is not None and budget > 0:
+                try:
+                    dev.set_deadline(budget)
+                except Exception:
+                    pass
             yield
         finally:
             if dev is not None:
@@ -308,10 +312,11 @@ class AndroidRuntime:
         return st
 
     def log(self, level: str, msg: str, *args):
-        if self.logger is None:
+        logger = getattr(self, "logger", None)
+        if logger is None:
             return
         try:
-            getattr(self.logger, level)("[android] " + str(msg), *args)
+            getattr(logger, level)("[android] " + str(msg), *args)
         except Exception:
             pass
 

@@ -90,6 +90,12 @@ def parse_flight_rows(xml: str) -> List[dict]:
     # 节点顺序：¥ → 下单可减 → ¥35 → 3305）。按「¥ + 紧邻数字」一条都
     # 取不到，整份国际列表 5 行全 price=None。按 desc 直接取，值域与
     # 国内同一条规则（纯 2–5 位数字），并与已有价格按「值 + 同一行」去重。
+    #
+    # **text 可能自带 `¥`**（2026-11-04 现场，`QunarFlightInterRoundMixList`）：
+    #     | ¥5465 | flight_search_rn|QunarFlightInterRoundMixList|ItemPrice
+    #     | ¥8418 | flight_search_rn|QunarFlightInterRoundMixList|ItemPrice
+    # 原来只认纯数字（`\d{2,5}`），带符号的直接被丢掉 → 中转混合列表整页
+    # 「有航班行、带价 0 行」。两次现场（09:51 / 10:33 SHA→BKK）都是这个。
     for m in _NODE_RE.finditer(xml or ""):
         seg = m.group(1)
         if "|ItemPrice" not in seg:
@@ -99,12 +105,22 @@ def parse_flight_rows(xml: str) -> List[dict]:
         if not (t and b):
             continue
         val = (t.group(1) or "").strip()
-        if not re.fullmatch(r"\d{2,5}", val):
+        # 价格归一走统一实现（`core.price.parse_price`）：剥 `¥`/千分位、
+        # 拒遮罩 `4??`、拒 1 位与 6 位。**不要在这里另写一套正则**——
+        # 2026-11-04 就是这里只认 `\d{2,5}` 而把六个 `¥5711` 全丢了。
+        try:
+            from core.price import parse_price
+            _v = parse_price(val)
+        except Exception:
+            _v = None
+        if _v is None:
             continue
+        if isinstance(_v, float):
+            _v = int(round(_v))
         x1, cy = int(b.group(1)), (int(b.group(2)) + int(b.group(4))) // 2
-        if any(v == int(val) and abs(c - cy) <= 4 for v, _x, c in prices):
+        if any(v == _v and abs(c - cy) <= 4 for v, _x, c in prices):
             continue
-        prices.append((int(val), x1, cy))
+        prices.append((_v, x1, cy))
 
     # 卡片切分：以「左半屏(x1<200)的时刻」为锚，配同排右侧时刻为到达。
     # 实测纵坐标：时刻 y=363/589/746，卡片内航班号在其下 ~73px，

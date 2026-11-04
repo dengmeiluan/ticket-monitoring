@@ -61,6 +61,83 @@ _RT_CALENDAR_MARK = "q_flight_calendarDayItem#"
 # 城市页里**不该点**的分区标题：其下方的同名城市是「历史选择」，点它
 # 不生效（页面不关、城市不变），却会让调用方以为选好了。
 _CITY_HISTORY_MARK = "历史选择"
+# 城市页顶部的「国内/港澳台 | 国际」档位（同一 id，两行文案）。
+# 2026-11-04 现场实证（`setcity-timeout-arr` 快照）：上一轮跑完国际航线后，
+# 城市页**停在「国际」档**（左侧列东南亚/日韩/欧洲…），下一轮国内航线选
+# "海口"时在**国际列表**里永远找不到——直接导致 `app_qunar` 成功率只有 26%
+# （最近三天 170 轮里 125 轮零结果，几乎全是 `设到达城市失败`）。
+# 代码里原先假定"不需要碰档位"，实测不成立：档位会跨轮残留。
+_ID_CITY_TAB = "atom_flight_tab_item_tv"
+_TAB_DOMESTIC = "国内"
+_TAB_INTL = "国际"
+
+
+def _find_city_tab(xml: str, want: str):
+    """城市页顶部档位按钮里文案含 ``want`` 的那个节点（找不到返回 None）。"""
+    want = str(want or "")
+    if not want:
+        return None
+    for n in _nodes(xml or ""):
+        rid = str(n.get("resource_id") or n.get("id") or "")
+        if _ID_CITY_TAB not in rid:
+            continue
+        if want in str(n.get("text") or ""):
+            return n
+    return None
+
+
+def _looks_intl_city(city: str) -> bool:
+    """这个城市名属于国际档还是国内档（用于决定切哪个 tab）。
+
+    判据走 ``core.citydata`` 的国内城市表：**在表里 = 国内**，否则按国际。
+    机场码（PEK/NRT）先经 ``airport_city_code`` 归一——真机里城市位显示
+    中文名，直接拿码去查表会一律判成国际。
+    """
+    s = str(city or "").strip()
+    if not s:
+        return False
+    try:
+        from core.citydata import CODE_NAME
+    except Exception:
+        return False
+    try:
+        from core.intl import airport_city_code  # type: ignore
+        code = airport_city_code(s) or s
+    except Exception:
+        code = s
+    return not (code in CODE_NAME or s in CODE_NAME
+                or s in set(CODE_NAME.values()))
+
+
+def _tab_is_selected(xml: str, want: str) -> bool:
+    """档位是否已选中。
+
+    **不能只看 `_nodes()`**：那个解析器只保留 text/id/desc/bounds，
+    ``selected`` 属性被丢掉了（2026-11-04 实测）。所以在原始 XML 上按
+    「含档位 id + 含目标文案 + selected=true」三者同节点判断。
+
+    退化判据：看 ``atom_flight_tab_item_line`` 下划线是否落在目标按钮的
+    水平范围内——两种表达任一成立就算已选中，避免无谓点击把页面搅乱。
+    """
+    want = str(want or "")
+    raw = str(xml or "")
+    if not want or not raw:
+        return False
+    for m in re.finditer(r"<node[^>]*>", raw):
+        tag = m.group(0)
+        if _ID_CITY_TAB not in tag or want not in tag:
+            continue
+        if re.search(r'selected="(true|1)"', tag):
+            return True
+        b = re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', tag)
+        if not b:
+            continue
+        cx = (int(b.group(1)) + int(b.group(3))) // 2
+        for ln in re.finditer(r"<node[^>]*atom_flight_tab_item_line[^>]*>", raw):
+            lb = re.search(r'bounds="\[(\d+),\d+\]\[(\d+),\d+\]"', ln.group(0))
+            if lb and abs((int(lb.group(1)) + int(lb.group(2))) // 2 - cx) <= 80:
+                return True
+    return False
 
 
 def _pick_city_row(xml: str, city: str):
@@ -1088,6 +1165,7 @@ class AppQunarCrawler(AppCrawler):
         frames = 0
         _t_first = time.time()
         typed = False
+        _tab_tried = False       # 档位自愈只做一次（避免来回切）
         retaps = 0
         last_tap = time.time()
         # 每帧落在哪个分支（home/city/other/empty）：失败时一次打出来，
@@ -1203,6 +1281,31 @@ class AppQunarCrawler(AppCrawler):
             # 搜索命中的是城市聚合行；机场行（浦东/虹桥）是它的子项，
             # 点机场行也能用，但城市行语义更稳。
             hit = _search_result_row(page, city)
+            if hit is None and typed and not _tab_tried:
+                # **搜了但没结果 → 很可能是档位残留**（2026-11-04 现场）。
+                #
+                # 上面那段注释是对的：**无条件**点档位有害（会把整页换掉）。
+                # 但"完全不碰档位"在一种情况下会死循环——上一轮跑完国际航线，
+                # 城市页停在「国际」档，这一轮国内航线搜"海口"时国际列表里
+                # 根本没有它，于是等满 45s/12 帧记 `setcity-timeout-arr`。
+                # 实测代价：`app_qunar` 最近三天 170 轮里 125 轮零结果
+                # （成功率 26%），失败现场清一色是这个。
+                #
+                # 所以改成**有条件**切：只在"已经输入过、却一条结果都没有"
+                # 时切一次档位，切完重新搜。这样既不动正常的搜索成功路径，
+                # 又给出了一条自愈通路。
+                _tab_tried = True
+                want = _TAB_INTL if _looks_intl_city(city) else _TAB_DOMESTIC
+                tab = _find_city_tab(page, want)
+                if tab is not None and not _tab_is_selected(page, want):
+                    self.logger.info(
+                        "[%s] set-city(%s) 搜「%s」无结果，切到「%s」档重试",
+                        self.name, side, city, want)
+                    dev.tap(*_center(tab))
+                    _sleep(2)
+                    typed = False          # 允许重新输入
+                    time.sleep(1)
+                    continue
             if hit is not None and dev.tap(*_center(hit)):
                 for _ in range(3):
                     _sleep(1)

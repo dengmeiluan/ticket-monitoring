@@ -25,7 +25,10 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest \
 import logging
 import os
 import sys
+import threading
 import time
+
+import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -34,6 +37,20 @@ from core.android import runtime as rt  # noqa: E402
 from core.android.device import AdbDevice  # noqa: E402
 
 _LOG = logging.getLogger("test_r927")
+
+
+@pytest.fixture(autouse=True)
+def _isolated_lock(monkeypatch):
+    """把模块级设备锁换成**测试专用**的一把。
+
+    为什么必须隔离：同一测试进程里可能还有采集线程（或前序用例遗留的
+    后台线程）持着**同一把**模块级 ``_DEVICE_LOCK``。测试若用真锁去抢，
+    默认 ``timeout=600`` 就会真的等 10 分钟——2026-11-04 实测把一批单测
+    拖到超时（不是代码坏，是抢真锁）。换掉锁之后各用例互不影响。
+    """
+    monkeypatch.setattr(rt, "_DEVICE_LOCK", threading.Lock())
+    monkeypatch.setattr(rt, "_LOCK_STATE", {"owner": "", "since": 0.0})
+    yield
 
 
 class FakeDev:

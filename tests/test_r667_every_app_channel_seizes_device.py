@@ -16,11 +16,22 @@ import io
 import os
 import re
 import sys
+import threading
 
 import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+
+
+@pytest.fixture(autouse=True)
+def _isolated_lock(monkeypatch):
+    """换成本文件专用锁：同进程若有别的采集线程持着模块锁，这里会真的
+    等满 600s（或把 ``take`` 的超时判成失败），隔离后互不影响。"""
+    from core.android import runtime as rt_mod
+    monkeypatch.setattr(rt_mod, "_DEVICE_LOCK", threading.Lock())
+    monkeypatch.setattr(rt_mod, "_LOCK_STATE", {"owner": "", "since": 0.0})
+    yield
 
 
 def _app_channels():

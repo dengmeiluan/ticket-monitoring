@@ -227,10 +227,12 @@ def test_intl_success_quiets_following_intl_but_not_domestic(
 
     assert len(q.fetch("SHA", "BKK", ["2026-11-16"])) == 1
     assert q._intl_quiet_until > time.time()
-    # 同一轮的下一条国际线让位：不发请求，按软拒入账
+    # 同一轮的下一条国际线让位：不发请求，按「主动让位」入账
+    # （r929：让位不是我方被拒，记 soft_reject 会把成功率读低）
     assert q.fetch("SHA", "LHR", ["2026-11-16"]) == []
     assert len(calls) == 1
-    assert any(p.get("status") == "soft_reject" for p in q.paths)
+    assert any(p.get("status") == "paced" for p in q.paths)
+    assert not any(p.get("status") == "soft_reject" for p in q.paths)
     # 国内列表另有配额，不受国际让位影响
     assert len(q.fetch("SHA", "HAK", ["2027-01-29"])) == 1
     assert len(calls) == 2

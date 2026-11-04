@@ -248,17 +248,29 @@ def set_flight_route(dev, from_name: str, to_name: str, date_ymd: str,
     if not dev.app_start("cn.suanya.zhixing"):
         return False, "启动 App 失败"
 
-    # 轮询等首页，而不是固定 sleep。实测两个坑：
+    # 轮询等首页，而不是固定 sleep。实测三个坑：
     #   ① 冷启动到首页可交互在 10–20s 波动（固定 8s 必失败）；
     #   ② 启动后**第一帧是上次残留的弹层**（124KB 日历层），
     #      第二帧才回到首页（63KB）——所以必须连续两帧都是首页
     #      才算稳定，否则会把残留弹层当成首页继续操作。
+    #   ③ **整机被浏览器渠道拖慢时单帧 dump 能到 ~20s**（2026-11-03 实测：
+    #      `app_qunar`/`app_zhixing` 同秒起跑，6 条航线并行，5 个浏览器
+    #      渠道同时占 CPU）。60s 只够 3 帧，而"连续两帧首页"最少要 6 帧 →
+    #      必然判失败。日志里 14 次「首页未就绪」全是这个形态。
+    #
+    # 所以预算改成**按帧数 + 自适应放宽**（与 qunar 城市页同一套办法）：
+    # 最少 12 帧；若首帧耗时 >6s（说明整机很慢），总时长放宽到 150s。
     xml = ""
-    deadline = time.time() + 60
+    deadline = time.time() + 90
+    frames = 0
+    _t_first = time.time()
     stable = 0
-    while time.time() < deadline:
+    while time.time() < deadline and frames < 14:
+        frames += 1
         time.sleep(2.5)
         xml = dev.dump()
+        if frames == 1 and (time.time() - _t_first) > 6:
+            deadline = time.time() + 150      # 整机被拖慢：放宽总时长
         if "机票查询" in xml and "Search_Calendar_Dialog_Title" not in xml:
             stable += 1
             if stable >= 2:
@@ -268,14 +280,16 @@ def set_flight_route(dev, from_name: str, to_name: str, date_ymd: str,
     if stable < 2:
         # App 会恢复到上次停留的弹层/子页（实测：卡在「选择日期」透明
         # Activity）。按返回键退出去比反复重启有效——实测一次返回即可。
-        for _ in range(4):
+        # 退到 6 级：重载弹层可能是两层（日历 + 城市），4 级会差一步。
+        for _ in range(6):
             dev.keyevent("KEYCODE_BACK")
             time.sleep(2)
             xml = dev.dump()
             if "机票查询" in xml:
                 break
         else:
-            return False, "首页未就绪（等待 60s 并回退 4 级仍找不到「机票查询」）"
+            return False, ("首页未就绪（等 %d 帧 / 约 %ds 并回退 6 级仍找不到"
+                           "「机票查询」）" % (frames, int(time.time() - _t_first)))
 
     # 国际/国内是两个不同的表单：不切档就设国际城市，输入框里搜得到但
     # 首页城市位与结果页仍是国内那套，整轮白跑。切档放在设城市之前。

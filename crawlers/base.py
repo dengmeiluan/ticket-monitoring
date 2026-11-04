@@ -493,7 +493,12 @@ class BaseCrawler:
     # 只记代码真实走过的尝试，不按结果反推路径；探针面板与渠道状态共用。
     PATH_STATUS = ("ok", "empty", "login", "blocked", "timeout",
                    "error", "parse_error", "unsupported", "calendar",
-                   "soft_reject")
+                   "soft_reject",
+                   # `paced` = **我方主动不发请求**（配额让位/节流跳过）。
+                   # 它不是「被对方拒绝」，不该算进爬取率分母——否则
+                   # 「主动让步」会被读成「渠道不行」（qunar 国际航线就是因为
+                   # 让位被记成 soft_reject，成功率看起来只有 50%）。
+                   "paced")
 
     def path_reset(self):
         self.paths = []
@@ -1597,7 +1602,13 @@ class BaseCrawler:
             led = self._yield_ledger()
             if led is None:
                 return {}
-            from core.yield_stats import statuses_ok
+            from core.yield_stats import statuses_ok, is_paced
+            # 主动让位（配额/节流）**不算样本**：既不是成功也不是失败。
+            # qunar 国际航线的配额让位原先被记成 soft_reject，账面成功率
+            # 只有 50%，看起来像被风控，实际是在守配额（2026-11-04）。
+            if is_paced(self.paths):
+                return {"minutes": int(self.config.get("interval_minutes", 30)
+                                       or 30), "factor": 1.0, "paced": True}
             ok, rows, path = statuses_ok(self.paths)
             if not ok and results:
                 # 路径账本没标 ok 但确实拿到行：仍算成功，路径归到 last_path
