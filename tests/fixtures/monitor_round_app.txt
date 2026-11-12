@@ -1,0 +1,19 @@
+2026-11-04 12:38:53 [INFO] ticket-monitor: ===== 开始一轮扫描（1 用户 / 6 航线） =====
+2026-11-04 12:43:19 [INFO] ticket-monitor: [app_qunar] 开始抓取 SHA->LHR 日期=['2026-11-16']
+2026-11-04 12:43:36 [INFO] ticket-monitor: [app_qunar] 设备上已登录，跳过快照恢复
+2026-11-04 12:45:42 [INFO] ticket-monitor: [app_qunar] 2026-11-16 列表页未出现（16654 字，命中：列表页），已落现场 nolist
+2026-11-04 12:45:42 [INFO] ticket-monitor: [app_qunar] 抓取完成，得到 0 条记录
+2026-11-04 12:45:42 [INFO] ticket-monitor: [app_zhixing] 开始抓取 SHA->LHR 日期=['2026-11-16']
+2026-11-04 12:45:51 [INFO] ticket-monitor: [app_zhixing] 设备上已登录，跳过快照恢复
+2026-11-04 12:47:25 [INFO] ticket-monitor: [app_zhixing] 抓取完成，得到 1 条记录
+2026-11-04 12:50:24 [INFO] ticket-monitor: [app_zhixing] 开始抓取 SHA->NRT 日期=['2026-11-16']
+2026-11-04 12:51:48 [INFO] ticket-monitor: [app_zhixing] 抓取完成，得到 1 条记录
+2026-11-04 12:57:22 [INFO] ticket-monitor: [app_zhixing] 开始抓取 SHA->SIN 日期=['2026-11-16']
+2026-11-04 12:58:46 [INFO] ticket-monitor: [app_zhixing] 抓取完成，得到 1 条记录
+2026-11-04 13:08:10 [INFO] ticket-monitor: [app_qunar] 开始抓取 HAK->SHA 日期=['2027-02-14']
+2026-11-04 13:08:10 [INFO] ticket-monitor: [app_zhixing] 开始抓取 HAK->SHA 日期=['2027-02-14']
+2026-11-04 13:09:57 [INFO] ticket-monitor: [app_zhixing] 抓取完成，得到 1 条记录
+2026-11-04 13:09:57 [WARNING] ticket-monitor: [app_qunar] 前台是 cn.suanya.zhixing，先切回 com.Qunar（上一渠道未退出）
+2026-11-04 13:12:39 [INFO] ticket-monitor: [app_qunar] 2027-02-14 列表页未出现（29652 字，命中：列表页），已落现场 nolist
+2026-11-04 13:12:39 [INFO] ticket-monitor: [app_qunar] 抓取完成，得到 0 条记录
+2026-11-04 13:12:59 [INFO] ticket-monitor: ===== 本轮扫描结束 =====

@@ -1,0 +1,58 @@
+{
+  "_comment": "r1387：tuniu listFlight 响应的**最小真实形状**样本（结构照抄 debug/tuniu_raw_*.json，值已裁剪）。debug/ 不入库，所以门禁必须用这份静态样本，否则 CI 上没有样本会假红。",
+  "errorCode": 0,
+  "msg": "success",
+  "success": true,
+  "data": {
+    "fareList": [
+      {
+        "airLinePriceShow": 1,
+        "filtered": {
+          "aPortIataCode": "NRT",
+          "dPortIataCode": "SHA",
+          "airlineIataCode": "MU",
+          "cabinType": "1",
+          "planeModel": "波音737-800",
+          "departureTime": "08:05",
+          "arrivalTime": "12:05",
+          "direct": "1"
+        },
+        "flightPriceList": [
+          {"flightNo": "MU523", "price": 1850, "tax": 380}
+        ]
+      },
+      {
+        "airLinePriceShow": 1,
+        "filtered": {
+          "aPortIataCode": "NRT",
+          "dPortIataCode": "SHA",
+          "airlineIataCode": "NH",
+          "cabinType": "1",
+          "planeModel": "空客A320",
+          "departureTime": "13:00",
+          "arrivalTime": "17:10",
+          "direct": "1"
+        },
+        "flightPriceList": [
+          {"flightNo": "NH960", "price": 1990, "tax": 410}
+        ]
+      },
+      {
+        "airLinePriceShow": 1,
+        "filtered": {
+          "aPortIataCode": "NRT",
+          "dPortIataCode": "SHA",
+          "airlineIataCode": "HO",
+          "cabinType": "1",
+          "planeModel": "",
+          "departureTime": "19:30",
+          "arrivalTime": "23:40",
+          "direct": "0"
+        },
+        "flightPriceList": [
+          {"flightNo": "HO1381", "price": 1620, "tax": 380}
+        ]
+      }
+    ]
+  }
+}

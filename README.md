@@ -1,0 +1,661 @@
+# ✈️ ticket-monitoring 机票监控
+
+<p align="center">
+  <img src="docs/assets/banner-zh.svg" alt="ticket-monitoring：自托管多渠道机票价格监控，10 渠道 / 7 维度 / 11 条质量轴，数据留在本机" width="100%">
+</p>
+
+> 自托管的多渠道机票价格监控：航班明细采集 → 钉钉图文推送 → 达标四层强提醒。
+> 国内航线与国际航线（五洲目的地）同一套采集-判定-推送链路。
+> 数据留在本机，配置全在网页，开源免费。
+
+[![在线演示](https://img.shields.io/badge/🎪_在线演示-点开即玩-brightgreen)](https://dengmeiluan.github.io/ticket-monitoring/site/)
+[![Release](https://img.shields.io/github/v/release/dengmeiluan/ticket-monitoring?display_name=release)](https://github.com/dengmeiluan/ticket-monitoring/releases)
+[![CI](https://github.com/dengmeiluan/ticket-monitoring/actions/workflows/ci.yml/badge.svg)](https://github.com/dengmeiluan/ticket-monitoring/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org)
+[![Platform](https://img.shields.io/badge/Platform-Windows_%7C_Linux_%7C_macOS-0078D6)](https://github.com/dengmeiluan/ticket-monitoring/releases)
+[![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+
+## 🚀 快速开始
+
+先选一条安装路径，再照对应系统的命令跑：
+
+| 方式 | 适合 | Windows | macOS | Linux |
+| --- | --- | --- | --- | --- |
+| **发行包**（免 Python） | 只想运行 | `…-win64.zip` → `TicketMonitor.exe` | `…-macos-arm64.zip`（Apple 芯片）/ `…-macos-x64.zip` | `…-linux-x64.zip` |
+| **源码**（Python 3.11+） | 想改代码 / 接自己的环境 | `powershell -ExecutionPolicy Bypass -File .\setup.ps1` | `bash setup.sh` | `bash setup.sh` |
+| **Docker / NAS** | 服务器常驻 | ✅（仅网页渠道） | ✅ | ✅ |
+
+系统版本：Windows 10/11 x64、macOS 12+（Intel / Apple 芯片）、主流 x64 Linux（glibc ≥ 2.31）。
+
+> **平台边界**：网页渠道三平台都可用；**App 渠道（5 家 Android App）仅 Windows + MuMu 模拟器**，macOS/Linux 上不适用，界面也不会显示设备入口。完整前提见 [Android 模拟器（App 渠道，可选）](#android-模拟器app-渠道可选)。
+
+### Windows（源码，PowerShell）
+
+```powershell
+git clone https://github.com/dengmeiluan/ticket-monitoring.git
+cd ticket-monitoring
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+.\.venv\Scripts\Activate.ps1
+python -m core.setup_check
+python main.py          # 前台；后台：.\start.ps1（停止：.\stop.ps1）
+```
+
+- 直接 `.\setup.ps1` 被「禁止运行脚本」拦住时，用上面这条 `-ExecutionPolicy Bypass`——只对本次进程生效，不改系统策略。
+- 安装 Python 时勾选 **Add python.exe to PATH**；`python --version` 应为 3.11 或更高。
+
+### macOS / Linux（源码）
+
+```bash
+git clone https://github.com/dengmeiluan/ticket-monitoring.git
+cd ticket-monitoring
+bash setup.sh
+source .venv/bin/activate
+python -m core.setup_check
+python main.py         # 前台；后台：bash start.sh（停止：bash stop.sh）
+```
+
+- **macOS**：系统自带 Python 可能过旧，建议 `brew install python@3.11`；发行包首次打开被 Gatekeeper 拦住时，右键 →「打开」，或运行 `xattr -dr com.apple.quarantine TicketMonitor`。
+- **Linux 无头服务器**：Chromium 需要系统库，先 `python3 -m playwright install-deps chromium`（Debian/Ubuntu 需 sudo）；或直接用 Docker 方式。
+
+### 装完先体检
+
+```bash
+python -m core.setup_check       # 已激活 .venv；Windows/macOS/Linux 同一条
+```
+
+第一行「运行平台」会写清本机可用能力；其余行逐条列出「还差什么、怎么补」。
+缺依赖 / 浏览器内核 / 配置时，`python -m core.bootstrap --fix` 可自动补齐；它只修「机器能不能跑」，**绝不碰你的账号、登录、策略与订阅**。
+
+跑起来后想知道现在最该做什么：`python -m core.advise`（只读诊断）；App 登录态与设备实况对账：`python -m core.app_check --fix`。
+
+**[🎪 点开即玩的在线演示](https://dengmeiluan.github.io/ticket-monitoring/site/)** · [English README](README_EN.md) · [下载发行包（Windows / Linux / macOS）](https://github.com/dengmeiluan/ticket-monitoring/releases)
+
+> 窄屏提示：下方推送样例是等宽代码块，手机端可在块内左右滑动查看完整行。
+
+```
+❌ 全部未达标｜最近 上→乌 09/25 直飞差￥120
+├─ #### ✈️ 上海→乌鲁木齐 11/05
+│    > ⏱ 16:12 🎯真达标 🟩破线 🟨擦边 超线
+│    直飞 **￥2470**　线￥1900　差￥570（30%）
+│    东航MU5678 12:30→17:05
+│    > 经西安 停2:15 ｜ 经济舱
+│    🟦🟦🟦⬜⬜
+│    > 💡 直飞超线 30%，继续观望
+│    > 📉 近7天 直飞 ↓8% ｜ 中转 ↓3%
+│    [价格走势折线图：●深绿=真达标 ○细绿=行情破线 ○琥珀=擦边 ▼红=达标回落]
+├─ #### ✈️ 乌鲁木齐→上海 11/14（17:00 后出发）
+│    （第二航线起依次同构：KPI 语义三行 + 趋势 + 建议）
+└─ [多航线合并明细总表：价格标绿=达标 · 同班跨渠道比价（整链不截断）]
+```
+
+> 文案全行经手机行宽估宽守卫（≤20 全角，超宽逐级降级恒保价格/航班/判据）；
+> 标题全 `####` 档、语义点分档主次分明（🎯真达标 🟩破线 🟨擦边，超线为默认态
+> 不占语义点）；达标明细行附「打开渠道」一键跳转。达标时：标题变 🚨、
+> 群里 @你的手机号、风暴连推、（可选）ntfy 手机弹窗+铃声穿透免打扰、
+> （可选）阿里云电话/短信。
+
+## 功能一览
+
+- **采集**：5 家浏览器渠道（携程 / 飞猪 / 同程 / 途牛 + 去哪儿；**去哪儿 PC/H5 网页版已停服，数据走 app_qunar**）+ 5 家 App 渠道（智行 / 去哪儿 / 飞猪 / 同程 / 携程 App）共 **10 家**，采集航班明细（价格、航班号、时刻、中转、时长、航站楼、舱位、机型、准点、行李），各走最稳路径；App 渠道默认关闭（需本机 MuMu + Android），启用后与浏览器渠道同表、同筛选、同导出。每次全航线采集同时把每个航班写入 `flight_daily`，不依赖是否关注。
+- **采集端形态**：这里的 H5 就是移动 Web（390×844 视口 + 移动 UA + 触控指纹），浏览器这几家的主路径本就跑在移动端。
+![能力对照：10 家渠道（5 浏览器 + 5 App）× 7 个维度的支持三态，App 缺口单列](docs/screenshots/console-dims.png)
+- **能力对照（配置页 · 渠道登录）**：10 家渠道（5 浏览器 + 5 App）× 7 个维度（国内 / 国际 / 日历 / 明细 / 往返 / 多程 / 低价机票）的**一张矩阵直接看**，每格三态——支持 / 不支持 / 未验证（未验证不当作支持）；App 渠道相对浏览器端还差哪些维度单列在下方（基准＝任一浏览器渠道已具备该维度，不是某一家友商）。矩阵与采集代码同源，不是另写一份说明；App 渠道默认关闭，状态与真机证据见 `docs/APP_CHANNELS.md`。
+- **App 渠道（可选，默认关闭）**：没有 Web 面的渠道（智行只有 App）现在可以经 Android 模拟器 + adb 采集；同程 App（WebView 结果经 u2 读取）冷启后连续两次 + 双日期复验通过，国内/国际价格日历均已接通（国际 SHA→NRT 14 天连续两次 ¥882–1495），国际单程明细也已跑通（6 条、最低 ¥875），国际往返也跑通（去程行「含税总价」= 页面往返总价，上海⇌东京 11-16/19 7 条去程、最低 ¥2209；端到端 11-17/22 9 条、最低 ¥2420，返程 MM877 +¥0，20.9s），但登录态会过期、失效时结果页要求登录，需重新登录；待随下次统一重启启用。携程 App 国内单程已连续两次各 32/33 行（11-18 ¥480 / 11-19 ¥490），国内/国际价格日历 OCR 真机通过（国际 SHA→NRT 连续两次 54/53 天 ¥864–1530，两月视野）；国际/国内往返均已跑通（去/返双栏，去程卡价即页面「往返总价」，国际 SHA→NRT 8 条 ¥2146、国内 SHA→PEK 5 条 ¥760），国际单程明细也已跑通（38 条、最低 ¥935）；飞猪 App 固定竖屏 + OCR 已接入国内当月单程明细、国内当月往返（2026-11-06 真机 SHA→PEK 11-16/11-19 往返总价 ¥747、去程起价 ¥682）与价格日历低价（45 天 35 行、最低 ¥338）；连续自动化会触发访问拒绝，需人工恢复一次；需本机装 MuMu（约 15 GB，Windows，需 VT）。**不启用时框架完全不碰它**——不 import、不检测设备、界面不显示。用 `python main.py --app-status` 可随时体检（五步引导清单，「验证可采集」只认真的落过库）。
+  产出**真实航班明细**（含航班号/起降时刻/价格，实测 5–7 条/日），日期超出首页 8 天线时自动开跨月日历选日再查询；拿不到明细才回落到**日历价**（每日最低，无航班号）。账本里两条通路分开记。
+  登录：配置页「渠道登录 → 智行 App」打开的就是真机实时画面，点几下登完即可；程序会把登录态打包成快照，**下次采集前自动恢复**——换机/重装/清数据后仍是登录态。设备上已有更新的登录态时不会覆盖。
+  美团触发的是人脸活体核验，没有可自动化路径，暂不接入。细节见 `docs/APP_CHANNELS.md`。
+- **去哪儿网页版停服适配（2026-10/11）**：去哪儿的 PC 机票查询/预订页已于 2026-10-10 停服，H5 机票查询服务也已于 2026-11 停服；网页通路（PC/H5）不再采集、不再引导登录，数据统一由独立的 **去哪儿 App（app_qunar）** 真机通路承担。App 专属价与自动下单不在采集范围，其余渠道不受影响。
+- **监控**：多用户、多航线、多日期（区间/指定日）、直飞/中转独立心理线、航司白名单、行李/时段/衔接/直挂/跨天/价格上限/最长时长等门禁；每条航线可暂停而不删除；关注航班是配置关注航线+日期明细集合中的指定航班子集，可对已采集航班单独编排渠道、目标、提醒与备注；航线与日期必须在关注航线中已配置。
+- **推送**：每轮聚合一条钉钉图文，达标置顶、语义分档、7 天趋势与操作建议；达标可叠加钉钉 @、Windows 弹窗、ntfy、Bark、阿里云电话/短信；支持免打扰时段、预览与发送历史。
+- **观测与配置**：真实检索台（价带/五源/筛选/矩阵/镜像/三重对齐/单条与组合探针，探针阶段/渠道进度/增量结果/取消重试可观察/CSV）、走势与 K 线、价格日历、渠道健康与运行脉冲；配置页独立完成全部设置，热加载与启动级差量提示，网页登录，演示模式与静态在线演示。
+
+## 控制台一览
+
+飞行签派风格的控制台设计语言：数字即主角（mono 等宽）、分区编号标签、hairline 分区。
+主页是**子视图工作台**（概览 / 特价雷达 / 航线走势 / 航班走势 / 航班明细 / 渠道健康，一屏一会话），
+配置页是**面板式设置台**（左侧分区切换，同屏只显一个分区，没有长滚动）。
+
+**关注航班台**是六个监控 tab 之一：关注航班是配置关注航线+日期明细集合中的指定航班子集；全宽折线/K线只回放该航线的真实采集点
+（48h/7天/30天/90天/半年），聚焦条显示目标差、渠道覆盖与来源新鲜度。同一航线轨驱动
+可筛选航班名册（状态/目标/航司/直飞中转/出发时段/舱位/渠道/价格）。每次常规航线扫描都会
+把看到的航班写入航班维度日 OHLC，任何检索行都能试看真实历史，无需先关注；目标达标由
+扫描链路推送并去重。全部关注设置（城市联想、日期、实时候选航班、渠道、目标、提醒开关、
+备注）在「配置 → 用户卡 → 关注航班」内联编排。迷你曲线与概览卡按自然日聚合、目标线统一红色；关注航线/关注航班走势逐点折线，航线图提供「极值」开关（默认隐藏 IQR 离群价并在图注说明）。
+
+![概览工作台（亮色）](docs/screenshots/console-light.png)
+
+![走势与日历（暗色）](docs/screenshots/console-dark.png)
+
+![关注航班台（演示合成数据，非真实报价）：真实采集点、目标线与渠道覆盖同屏](docs/screenshots/console-watch-studio.png)
+
+![特价监控（演示合成数据）：逐日低价日历、监控走势与低价日真实航班同屏](docs/screenshots/console-specials.png)
+
+<details>
+<summary>更多截图：配置台 / 用户卡关注航班 / 日期模式 / 全局配置 / 重启迁移 / 航班明细 / K线 / 关注台K线 / 推送预览 / 渠道诊断 / 检索首屏 / 移动端</summary>
+
+![渠道健康：矩阵、节流、推送与诊断在同一张卡内分段；诊断按最近一轮证据区分登录失效、验证码、IP/频率风控与超时。](docs/screenshots/console-health.png)
+
+![健康详情：分域、通路、会话与自检在所属渠道行下方整宽展开，不占用侧边抽屉。](docs/screenshots/console-health-inline.png)
+
+![渠道诊断：逐渠道最近一轮状态、登录态与下一步动作](docs/screenshots/console-health-diag.png)
+
+![节流溯源：逐渠道判定、近 24h 证据与行内展开的最近尝试/干预（演示合成数据）](docs/screenshots/console-health-trace.png)
+
+![检索首屏：说明、价带、五源、镜像均可折叠，扁平层次不靠厚边框。](docs/screenshots/console-search.png)
+
+![检索渠道入口：10 家渠道与各家登录要求](docs/screenshots/console-search-channel.png)
+
+![检索组合探针：多段行程一次提交](docs/screenshots/console-search-combo.png)
+
+![检索共同筛选：宽面板、分组 chip 与固定头尾](docs/screenshots/console-search-filter.png)
+
+筛选与渠道入口统一为底部弹层（宽档 560 居中、窄档满宽、最高 80vh，带遮罩），不在侧边开口。
+
+![配置台：10 渠道可勾选；App 渠道已勾选但「Android 真机通道」未开时，行内给出可见前置提示，与保存条同屏。](docs/screenshots/console-config.png)
+
+![配置台用户卡 D 区「关注航班」：在已配置关注航线/日期下添加/编辑关注，渠道、目标、提醒与备注同屏。](docs/screenshots/console-config-watch.png)
+
+![日期模式条：按区间与按指定日切换，双草稿保留。](docs/screenshots/console-date-modes.png)
+
+![全局配置中心](docs/screenshots/console-globals.png)
+
+![重启与迁移中心](docs/screenshots/console-restart.png)
+
+![航班明细](docs/screenshots/console-details.png)
+
+![K线走势](docs/screenshots/console-kline.png)
+
+![关注台K线：真实采集点、目标线与渠道覆盖同屏。](docs/screenshots/console-watch-kline.png)
+
+![推送预览](docs/screenshots/console-preview.png)
+
+<img src="docs/screenshots/console-mobile.png" width="380" alt="移动端航班明细">
+<img src="docs/screenshots/console-mobile-filter.png" width="380" alt="移动筛选与查看结果 CTA">
+<img src="docs/screenshots/console-watch-mobile.png" width="380" alt="移动端关注航班台">
+
+</details>
+
+### 实时检索（真实采集数据）
+
+顶部导航「检索」是独立的真实数据工作台，不读 mock 数据：直接消费 `/api/state` 的真实采集行，
+并把「价带 → 五源现势 → 筛选 → 列表/矩阵 → 原页镜像 → 三重对齐详情 → 签核/导出」收成一条链。
+
+![实时检索：解析列表 ⇄ 各渠道原页镜像（真实采集数据）](docs/screenshots/console-probe.png)
+
+<details><summary>实时检索移动端：解析列表 / 原页镜像 / 三重对齐</summary>
+
+<img src="docs/screenshots/console-probe-mobile.png" width="300" alt="实时检索移动端解析列表">
+<img src="docs/screenshots/console-probe-mobile-mirror.png" width="300" alt="实时检索移动端原页镜像">
+<img src="docs/screenshots/console-probe-mobile-detail.png" width="300" alt="实时检索移动端三重对齐">
+
+</details>
+
+![主动探针：出发/到达城市联想、渠道选择与实时探针（不入库、不推送）](docs/screenshots/console-probe-probe.png)
+
+![探针城市联想：中文 / 拼音 / 三字码，方向键选择，右侧箭头打开完整国内/国际城市面板](docs/screenshots/console-probe-city.png)
+
+<details><summary>演示控制台实拍（合成数据，页面带 DEMO 标识）：概览 / 检索 / 列表镜像 / 校准册 / 探针 / 共同筛选</summary>
+
+<img src="docs/screenshots/console-probe-overview.png" width="300" alt="演示控制台概览（合成数据）">
+<img src="docs/screenshots/console-probe-monitor.png" width="300" alt="演示检索台暗色（合成数据）">
+<img src="docs/screenshots/console-probe-workbench.png" width="300" alt="演示解析列表与原页镜像（合成数据）">
+<img src="docs/screenshots/console-probe-health.png" width="300" alt="演示渠道校准册（合成数据）">
+<img src="docs/screenshots/console-probe-probe-overview.png" width="300" alt="演示主动探针单行表单与组合（合成数据）">
+<img src="docs/screenshots/console-probe-probe-workbench.png" width="300" alt="演示检索共同筛选：共同筛选 / 加工与历史 / 检索特有（合成数据）">
+
+</details>
+
+- **14 日出发价带 + 五源现势**：出发日轴只在 DB 有真实 `depart_date` 行时出点，缺失保持
+  「未采」；采集日轴单独标注，不把采集日当出发日。五源卡显示实时/日历/补位/未供、原页与
+  raw 可得数。没有数据的渠道保持「未供」，不补样例。
+- **共同筛选 + 加工与历史 + 检索特有**：共同组（直飞/中转、舱位、航司、出发/到达机场、共享/经停/
+  风险、起降时段、价格带、行李/餐食/廉航/跨天/隐藏日历价）与明细表同名同义；加工组（中转/飞行
+  时长、准点、机龄、托运、机型、大型机、儿童、少班）对历史同源字段过滤；检索特有种（有原页/
+  有 raw/仅缺失/字段齐全/隐藏补位/仅达标）。检索结果是明细筛选的超集，「清除共同筛选」保留检索
+  特有条件；航司/机场/舱位/机型支持多选与分面计数，起降支持 00-06 时段与精确到分钟，另有直飞含行李/白天出行/省心出行/只看达标预设；面板实时显示命中数与活动条件，手机端底部吸底，筛选持久化、空态可一键放宽。
+- **解析列表 ⇄ 航班×渠道矩阵**：13 格字段刻度、风险徽标（限龄/政策/值机/诱饵/黑卡/退改）、
+  行内快览、同班聚合、加载更多；矩阵行=真实同班、列=各渠道，缺失格=未供，点击格直达详情。
+- **原页镜像**：各渠道 tab、列表/详情/四源；镜像值从**同一条 raw** 投影，缺键显示未供；
+  页面明示「结构重绘、非原站截图/iframe」，原站以「打开原页」新窗口为准。
+- **三重对齐详情**：解析 ⇄ 镜像(raw) ⇄ RAW 路径，四态 `一致/未供/未采/不一致`；价格/机场/
+  舱位等派生字段标「口径差」；字段点击定位 raw 键；另含 30 天走势、双轴日历、同班 5 格价梯、
+  结论/备注/复核、上一处/下一处（J/K）、证据 JSON 与快照。
+
+![三重对齐 + 同班价梯 + 字段证据](docs/screenshots/console-probe-detail.png)
+
+![航班 × 渠道矩阵：真实同班最低价与缺口](docs/screenshots/console-probe-matrix.png)
+
+![渠道校准册：各渠道 × 4 视图 + 四源同屏](docs/screenshots/console-probe-gallery.png)
+
+- **渠道校准册**：各渠道 × 列表/详情/日历/对照 + 四源同屏；空态不补教学样例。
+- **主动探针**：出发/到达支持中文 / 拼音 / 三字码联想与配置页同款国内/国际城市面板；任意 OD/日期并发真实渠道采集（按所选渠道；浏览器 5 家默认勾选，智行 App / 去哪儿 App 为可选、默认不勾，勾选后走真机通道），可把最多 4 条航线/日期加入组合一次采集并逐腿回执行数/状态（跨国内/国际混排），结果**不入库、不推送**；逐渠道回执行数/本态未供/失败，会话本机留存；未配置心理线时明确标「探针未评估」。在线演示为静态站，探针入口禁用并说明原因；本机运行可真跑。
+- **证据导出**：CSV（解析价/raw 原页价/时刻/舱位/机型/行李/餐食/准点/余票/税费/退改/对齐/
+  采集/原始行/证据指纹/落地页/结论/备注，BOM+RFC4180）、证据 JSON（raw + provenance）、
+  单行证据 JSON 复制；状态串 `probe://srx` 可复制/粘贴还原，快照最多 12 条。
+- **真实边界**：页面按本轮真实结果标注「航班级 / 日历 / 补位 / 未供 / 需登录」，不把某一轮
+  快照写成固定覆盖；渠道路径与登录要求以当轮页面标注为准。日历薄行无航班号/时刻，
+  **永不判达标、不参与同班价梯**；14 日价带只画真实出发日，其余「未采」。
+  宁缺勿错，不用日因子/样例补价。
+
+### 键盘快捷键
+
+| 键 | 作用 |
+|---|---|
+| `1` / `2` | 监控台 / 配置台 切换 |
+| `S` | 切到实时检索台（真实数据视图） |
+| `M`（检索台） | 列表 / 航班×渠道矩阵切换 |
+| `J` / `K`（检索详情） | 下一处 / 上一处差异或未采 |
+| `↑` / `↓`（检索列表） | 逐行移动并同步右侧解析/原始行证据 |
+| `3` / `4` / `5` / `6` / `7` | 直达 概览 / 航线走势 / 航班明细 / 渠道健康 / 航班走势 子视图 |
+| `Ctrl/⌘ + S` | 配置页保存并热生效 |
+| `R` | 立即扫描一轮（3 秒内再按一次确认，防手滑） |
+| `/` | 聚焦检索台或明细搜索框 |
+| `Esc` | 关闭弹层 / 收起同班比价展开行 |
+
+## 特性矩阵
+
+能力全景按「采集 → 推送 → 可视化 → 配置」四层组织，每层一张短表——
+细节文档见各节与在线演示。
+
+### 采集与监控
+
+| 能力 | 说明 |
+|---|---|
+| **浏览器五渠道明细** | 去哪儿/飞猪/携程/同程/途牛统一 schema（价格/航班号/时刻/中转/跨天/时长）；按渠道形态走最优路径（去哪儿网页版 PC/H5 均已停服（数据走 app_qunar），携程国际 PC 列表/国内 H5、同程 H5，飞猪 SSR，途牛 HTTP，会话型渠道按需浏览器）；限购资格价/高风险政策价/诱饵价 ⚠ 徽标透明化 |
+| **多日期监控** | 一条航线盯多个出发日期：日期采用**「按区间 / 按指定日」模式条**——一次只展开一种编辑器，切换保留两份草稿；未来 7/30 天、起止区间（含首尾）或单日加入后自动**合并去重**，一键清空；各日期独立采集、独立推送小节、独立走势；**航线快速复制**一键克隆全部配置 |
+| **往返多返程日** | 「🔁 往返」开关一键切往返：可配**多个返程日期**（去程起 7/8 天快速选锚定最早出发日，或区间/逐日添加），采集按返程日逐对跑，**价格只取渠道自己算出的往返总价，不用两段单程相加**。**按渠道如实**：携程（国内/国际：国际页「往返含税价」、国内页「往返总价」）、飞猪（仅国际）、同程（国内：`book1/roundtrips` 组合总价；国际：登录后 PC RT 页 `ts/list` 的 `tp` 含税总价，2026-11-03 实测 SHA→HKG 41 条、最低 ¥1463，SHA→NRT 77 条、最低 ¥2393）、途牛（国内：两段 `listFlight` 返回价即往返总价；国际：H5 `queryFlight` 两段 `productList.avgTotalPrice`，2026-11-03 SHA→NRT 35 条、最低 ¥3010）、智行 App（真机往返双列，总价取去程侧、返程加价不冒充票价）、去哪儿 App（仅国内：单程/往返/多程三档，结果页读页脚「往返价格」）、携程 App（国内/国际：去/返双栏，去程卡价即页脚「往返总价」，返程小卡是差价不相加；国际 SHA→NRT 8 条 ¥2146、国内 SHA→PEK 5 条 ¥760）、同程 App（仅国际：去程行「含税总价」即页面往返总价，返程栏 `+¥N` 是加价不相加；上海⇌东京 11-16/19 7 条去程最低 ¥2209，端到端 11-17/22 9 条最低 ¥2420）、飞猪 App（仅国内、当月：2026-11-06 SHA→PEK 11-16/19 往返总价 ¥747、去程起价 ¥682）支持；未接的航线/端落「不支持」而不是编造单程价（界面按渠道标「本端不支持」，不编造数据） |
+| **多程整单（2 段）** | 携程 PC 多程 2 段已生产验证（¥1476，IJ004+MM304）：配置卡可编 2–4 段，但**仅 2 段有「多程超低价」组合卡**；整单总价只取页面自报「多程含税价」，**绝不把两段单程相加**。概览整单卡、来源页链接、整单提醒、历史 sparkline、CSV 导出齐全；**2 段缺口程同样实测有整单（¥2184，9C8515+MM079）**；3+ 段实测无组合卡、其余九家未接，矩阵仅 ctrip 2 段记 ✓ |
+| **航线启停** | 每条航线一个启用/停用开关：停用保留全部配置、调度/推送/明细全链路豁免——**暂停监控不再靠删除** |
+| **达标判定** | 直飞/中转独立阈值（「只要直飞」一键关中转）；**航线级多门筛选**：航司白名单（**三写法等价：二字码/全称/简称**——`MU`/`东方航空`/`东航` 任写，简称自动归一到码，输入即时解析预览；`!` 前缀=排除如 `!9C,!春秋`）/排除廉航/排除经停/排除共享/免费托运 ≥N kg/仅大型机/**价格上限 ≤¥N**/**最长飞行时长 ≤N 小时**（含中转全程，0.5h 步进）/**排除跨天**/出发与到达时段窗口（均支持跨零点环形窗）/中转最短-最长衔接/联运直挂/中转最晚到达；不满足班次全链路豁免；只认当轮实时数据 |
+| **出发时段挡位** | 不限/凌晨/上午/下午/晚间五挡一点即填，也可手输精确窗口；与明细页筛选同一套挡位语义 |
+| **中转衔接与直挂** | 可配**中转最短衔接分钟**（需托运建议 ≥90）与**仅认两段含免费托运的直挂班次**；不合规中转全链路豁免；推送总表衔接时长着色+「直挂」徽标 |
+| **多租户** | 多用户各自航线/阈值/钉钉群；同航线去重采集、查询错峰防限流 |
+
+### 特价与国际
+
+| 能力 | 说明 |
+|---|---|
+| **特价机票监控** | 按出发地/目的地/日期范围查**九源官方特价（4 个网页端 + 5 个 App）**：携程低价日历+全国榜、飞猪 cheapestCalendar（软拒回退国内出发榜）、同程低价日历、途牛国内 H5 日历、智行 App「特价」（逐天最低价）、去哪儿 App「低价机票」（14 天窗口）、携程 App 价格日历、同程 App 原生价格弹层（国内/国际）；逐日价标注是否含税；系统按用户设置的航线/日期范围持续记录逐日价并展示监控走势，低价日可查看已采集的真实航班或一键发起该日明细探针；概览「特价雷达」卡实时呈现 |
+| **国际航班监控** | 仍只填三字码：任一端在大陆城市集外即**自动切国际端点**（五洲目的地零配置）；价格恒**含税总价**口径+税费拆分小字；跨天档放宽 0-7 天、**时区修正时长真值**；城市面板「🌐 国际」页签按地区分组 272 城（33 热门）/三路搜索；毒价守卫按国际量程分档 |
+
+### 推送与提醒
+
+| 能力 | 说明 |
+|---|---|
+| **聚合推送** | 多航线一轮一消息；达标小节自动置顶；**KPI 三行制**+**语义点分档**（🎯真达标 🟩破线 🟨擦边）+💡 操作建议+📉 7 天趋势；全行手机行宽估宽守卫，恒保价格/航班/判据；通道故障文末自曝 |
+| **强提醒** | 钉钉 @手机号+风暴连推+**Windows 右下角弹窗（点击直达单条详情页）**+ntfy 弹窗铃声+**Bark iOS 推送**（自托管服务器可配）+阿里云电话短信；2h/再降￥50 去抖 |
+| **免打扰时段** | 跨零点窗口（如 23:00–07:00）内省略行情心跳/风暴连推/电话短信，**达标主推与 ntfy 照发** |
+| **同班比价** | 同一航班各渠道最低价并排，按「最大可省」排序 |
+| **推送预览与历史** | 👁 本地近似渲染钉钉效果，改格式不等自然轮；📨 每次发送自动存档（含失败），控制台随时回看 |
+
+### 可视化与交互
+
+| 能力 | 说明 |
+|---|---|
+| **走势图** | 折线+渐变面积/**K 线双模**（涨红跌绿、OHLC 悬停）；48h/7 天/30 天/90 天/半年回看；最低点「哪天几点」标注 |
+| **关注航班台** | 按航线切换指定航班；全宽真实走势（折线/K线 × 48h/7/30/90/半年）、目标跑道、渠道覆盖、状态/目标/航司/直飞中转/时段筛选；总览同步挂关注卡（7 天迷你走势、覆盖、30 天跳转）；配置页在已配置关注航线/日期下编排（实时候选、渠道/目标/提醒/备注）；任意航班可从检索列表试看历史，无需先关注 |
+| **官方品牌语义层** | 10 渠道（5 浏览器 + 5 App）与 87 家航司使用本地内嵌官方 App/官网图标：渠道为方形 App tile、航司为圆形承运人头像，覆盖检索/镜像/详情/矩阵/关注台/配置候选与渠道开关；**App 渠道另叠独立 squircle 质感层（顶高光/底收影），智行字标已去原图促销横幅**；未收录/无可靠官方图标的承运人（W1、LT）退回 IATA 圆形码，零运行时外链 |
+| **航班维度历史** | 每次航线全量采集都把**每个被采到的航班**写入 `flight_daily` 日桶（平台/舱位 × 日 OHLC），不依赖关注配置；raw 明细清理后长窗仍可回放；`/api/srx/flight/trend` 任意航班可查 |
+| **达标点四档环** | ●深绿真达标/○细绿破线/○琥珀擦边/▼红回落——与推送文案、明细 🔥、日历色面四方同语言 |
+| **页内跳转图谱** | 点击数据点直达该轮明细（自动锁定航线与日期）；明细行 📈 与日历格点击双向闭环 |
+| **价格日历** | 近 14 天逐日最低热力卡（最低日绿框「★ 最低」，其余日 +￥差价）+**近 7 天洞察** |
+| **明细表** | 筛选 20+ 维+行属性族（航司/舱位多选、余票紧张、排除经停共享廉航、托运 ≥N kg、仅大型机、准点率/机龄、中转时长区间、隐藏限购高风险价）/CSV 导出/每行直达下单页；行尾 📈 一键跳该航线走势 |
+| **渠道健康** | 近 24h 逐小时成功/降级/失败条纹（每 4 小时一段，点段看该段最近一轮日志）+成功率，健康度分三层看：**厂商总分** → **国内/国际分域**（同一家渠道两端入口与登录墙不同，混成一个数会掩盖"哪一端坏了"）→ **分通路**（PC/H5/日历/窗历）；成功率徽标与采集节奏建议都按**在用通路口径**评估——已退役但仍有历史失败的旧通路不会拖低评估；路径行仍按原口径逐条展示（它要告诉你的就是每条路自己），原口径保留可对照；推送通道同区呈现（各通道成功率/连败/最近成功） |
+| **运行脉冲** | 每轮每渠道行数/耗时环形缓冲（**落盘持久化**）：4 格 mono 大数字+近 40 轮堆叠脉冲柱 |
+| **子视图工作台** | 主页六子视图（概览/特价雷达/航线走势/航班走势/航班明细/渠道健康）一屏一会话，记忆上次所在视图；切换零 DOM 插拔（翻译/比价扩展免疫） |
+| **可视化对齐** | 网页走势与推送图同一信息密度；推送图浮动标签**矩形级相互避让**；推送总表圆角白卡+比价两行式行卡（整链零截断） |
+| **浏览器通知** | 🔔 达标桌面通知+提示音（按价去重） |
+
+### 配置与可靠性
+
+| 能力 | 说明 |
+|---|---|
+| **面板式配置台** | 左侧四分区（渠道登录/用户与航线/渠道节流/全局参数）同屏一区**告别长滚动**；关注航班在用户卡 D 区内联、由关注台「编辑」跳入；航线卡**高频区前置**（日期快速选/只要直飞/心理价大输入）、低频约束收进「筛选与时段约束」折叠默认即用；设置行「说明居左控件居右」范式+分区头实时摘要 |
+| **全局配置中心** | 调度/采集参数**全量热载**；启动级路径（数据库/日志/登录态/浏览器内核目录）**可编辑+📂 打开所在文件夹**，改路径后旧库/登录态**自动搬迁**；非法路径/四路径同址/不可写/非法监听地址在保存前拦截；每通道一个「测试」按钮实测 |
+| **配置全热加载** | 航线/阈值/推送/周期/**端口原地切换**/无头/超时/错峰/日报时刻/图床——保存即生效；数据库/日志/登录态/内核目录/监听地址/启动即扫为启动级，保存后显示**旧→新差量**并提示重启 |
+| **配置搜索与导入导出** | 🔍 字段级搜索；📤 导出/📥 导入 JSON（凭据本机自管）；保存前**脏改动计数**+校验；`Ctrl/⌘+S` 保存 |
+| **网页登录** | 🔐 一键弹出各渠道登录窗口，点「我已登录完成」即生效，**免命令行** |
+| **演示模式** | `python webui.py --demo` 零配置体验；在线演示站=同一渲染链的静态烘焙页 |
+| **数据窗口** | 自动清理 8 天前明细（`PriceStorage.RAW_RETAIN_DAYS`；日粒度聚合桶另存 400 天）；走势回看 48h~半年 |
+| **可靠性** | 单实例互斥锁、钉钉 -1 单发零重试、渠道失败可见、启动首轮节流；**跳转链接与爬虫主路径同源 CI 门禁**；**图挂文本兜底**（信息不随图消失） |
+
+## 安装细节：发行包 / 源码 / Docker
+
+### 发行包（免 Python）
+
+到 [Releases](https://github.com/dengmeiluan/ticket-monitoring/releases) 下载对应平台包（当前约 127–250 MB）：
+
+| 系统 | 下载 | 运行 |
+| --- | --- | --- |
+| Windows 10/11 x64 | `ticket-monitoring-win64.zip` | 解压 → 双击 `TicketMonitor.exe` |
+| macOS Apple 芯片 | `ticket-monitoring-macos-arm64.zip` | 解压 → 右键「打开」`TicketMonitor` |
+| macOS Intel | `ticket-monitoring-macos-x64.zip` | 同上 |
+| Linux x64 | `ticket-monitoring-linux-x64.zip` | `chmod +x TicketMonitor && ./TicketMonitor` |
+
+- **macOS Gatekeeper**：未签名包首次打开会提示「无法验证开发者」——右键 →「打开」，或运行 `xattr -dr com.apple.quarantine TicketMonitor`。
+- **Linux 无桌面**：缺少 Chromium 系统库时优先用 Docker；有桌面时 `./TicketMonitor` 会自己打开浏览器。
+- 运行后打开 `http://127.0.0.1:8765` → ⚙️ 配置：航线、心理价、钉钉 Webhook + 加签密钥（[创建方法](#钉钉机器人配置)），点「🔔 测试推送」即验；保存即热重载，监控开始。
+
+### Android 模拟器（App 渠道，可选）
+
+**先确认平台**：App 渠道只支持 **Windows 10/11 + MuMu 模拟器**。macOS/Linux 没有受支持的 MuMu 运行时，App 渠道不可用（网页渠道不受影响）。
+
+| 前置项 | 要求 | 怎么确认 |
+| --- | --- | --- |
+| 宿主系统 | Windows 10/11 x64 | `python -m core.setup_check` 第一行「运行平台」 |
+| 模拟器 | MuMu 12（Android 15） | MuMu 能正常启动；记下安装目录 |
+| 虚拟化 | BIOS 开启 VT；MuMu 与 Hyper-V/VBS 可共存 | MuMu 设置 → 性能 → 虚拟化状态 |
+| 磁盘 | 引擎约 5 GB 起；装 5 个 App 后实例约 15 GB | 预留 ≥20 GB |
+| 权限 | 首次部署需一次管理员确认（装 Magisk 模块） | UAC 弹窗 |
+| APK | 5 家 App 安装包**自备**（仓库不分发） | 放到 `packages/apks/*.apk` 可自动安装 |
+
+**按顺序跑三段体检，每段都只看「还差什么」**：
+
+```powershell
+# 1) PC 侧：Python/依赖/Chromium/配置 + App 通路与设备环境
+python -m core.setup_check
+
+# 2) 设备侧：只读体检（不改设备）；确认无误后再真装
+python scripts/setup_device.py
+python scripts/setup_device.py --apply --reboot
+python scripts/setup_device.py --apply --enable-app-channels   # 顺带把 App 渠道写进 config.yaml
+
+# 3) 运行态：五阶段引导（检测 → 安装 → 启动 → 装 App → 验证可采集）
+python main.py --app-status
+```
+
+**预期结果**：
+
+- 第 1 段最后应出现 `✅ App 通路`：`已连到设备（序列号）；App：智行 …/去哪儿 …`；若显示 `未启用`，是 `android.enabled` 还没开（配置页「Android 真机通道」总开关）。
+- 第 2 段装完自动跑 **12 项体检**：机型、ABI、`/proc/cpuinfo`、SELinux、电话层 RIL/运营商/网络类型、包名暴露面、Zygisk 注入、模块齐全、隐藏名单、有害模块状态、`mumu_cloak` 启用——全绿才算准备好。
+- 开机后设备伪装需 **2–3 分钟**生效；`--reboot` 会轮询等待，不要用固定 sleep。
+- 第 3 段的「验证可采集」只认**真的落过库**，不拿「已登录」冒充。
+
+> 外部依赖的地址与 SHA256 集中在 [`docs/DEVICE_PACKAGES.md`](docs/DEVICE_PACKAGES.md)（模块包、Magisk、Android NDK、MuMu、App 包名）；命令行可查 `python scripts/fetch_packages.py --list`。
+>
+> 为什么部署时会「自动停用模块」：HMA / Zygisk-Assistant / Vector(LSPosed) / Hide-My-Goldfish 会把 MuMu 的 houdini 翻译层一起遮掉，导致**所有 arm64 App 秒崩**（`libmmkv.so is for EM_AARCH64 instead of EM_X86_64`），症状完全联想不到是它们。细节见 `docs/DEVICE_IDENTITY_PLAYBOOK.md`。
+
+<details>
+<summary>设备侧脚本具体做哪四件事</summary>
+
+1. **取包**：下载 NeoZygisk（v2.4）与 Shamiko（v1.2.5），版本与 SHA256 钉死在实测组合上，并构建本项目的 `mumu_cloak`（隐藏 MuMu 属性/文件特征）；
+2. **生成配置**：`config.yaml` 不存在时从 `config.example.yaml` 生成（统一 LF）；
+3. **落地设备**：关闭 MuMu 自带 root → 自动停用会破坏 ARM 翻译层的模块 → 部署身份开机模块（机型 / CPU / SELinux / 电话层 / 包名清理）→ 安装并补齐 x86_64 库 → 配置 5 个 App 的隐藏名单；
+4. **装 App**：`packages/apks/*.apk` 里有的自动安装（APK 自备）。
+
+</details>
+
+**常见失败**：
+
+| 现象 | 原因 | 处理 |
+| --- | --- | --- |
+| `App 通路` 显示 `找不到模拟器` | MuMu 未启动 / `android.install_dir` 不对 | 启动 MuMu；或把 `install_dir` 指向安装目录，`python -m core.setup_check --fix` 可自动拉起 |
+| `adb 状态是 offline` | adb 会话断了 | `python -m core.setup_check --fix` 会自动重启并等就绪；或 `adb kill-server` 后重试 |
+| 装完 App 秒崩 | 有害模块遮住了 ARM 翻译层 | 跑 `python scripts/setup_device.py` 看「有害模块状态」 |
+| 登录后仍 0 条 | 账号/环境风控，与设备伪装是两件事 | 看 `python main.py --app-status` 的阶段说明；强人机验证不自动绕过 |
+
+### 渠道登录要求（全部渠道）
+
+**全部渠道都必须登录**（2026-10-27 定；App 渠道接入后同样适用）：入口页大多能匿名浏览，但**出价与明细都要登录后才有**——不再用「建议登录」这种模糊说法。控制台「⚙️ 配置 → 🔐 渠道登录」一键弹窗保存，也可启动时加 `--login <渠道>`。各渠道的差异在会话槽位，不在「要不要登」：
+
+> - **携程**：PC 与 H5 都要登录后才出价；
+> - **去哪儿**：PC 与 H5 网页版均已停服（PC 2026-10-10、H5 2026-11），网页通路不再采集；数据走去哪儿 App（app_qunar）；
+> - **飞猪**：PC 与 H5 是**两个域**（fliggy.com / taobao.com），会话不共享，需分别登录（双槽）；
+> - **同程**：`ly.com` 父域 cookie 覆盖 www/m/tiflight，**单槽即可**，国际不用二次登录；
+> - **途牛**：国内列表必须登录；采集端国际可匿名，但入口页点开会要求登录。
+> - **智行 App / 去哪儿 App / 飞猪 App / 携程 App / 同程 App**：登录在「渠道登录」的内嵌真机画面里完成，登录态由程序打包成快照、采集前自动恢复；快照过期时配置页标「登录态失效」，不装正常。内嵌画面默认**近全屏工作台**（可专注、缩小为可拖动浮窗）：支持画面内点按/拖动/长按/滚轮、内联文字输入、返回/桌面/最近/退格；只读 `/api/app-login/info` 提供分辨率与前台 App 状态。
+
+### Docker / NAS 部署
+
+```bash
+cp config.example.yaml config.yaml   # 首次：建配置（网页里配也行）
+docker compose pull                  # 有预构建镜像时先拉（发布轮推 ghcr）
+docker compose up -d                 # 没有镜像则本地构建（build: .）
+```
+
+浏览器打开 `http://NAS_IP:8765` 即用。配置、价格库（`data/`）、浏览器会话档案（`user_data/`）、日志全部落本地卷，容器升级/重建不丢数据；镜像内置 chromium 与中文字体（约 1.5GB，首启免下载内核）。Windows 右下角弹窗通道在容器内自动停用，钉钉/邮件推送不受影响。无 Docker 的 NAS 也可下载 `…-linux-x64.zip` 直接跑。
+
+镜像由 `release-build` 工作流的 `push_image` 开关在发行轮推送 `ghcr.io/dengmeiluan/ticket-monitoring:latest`（另有 `sha-<短哈希>` 供溯源），已设为**公开**，可直接匿名拉取；日常手动跑工作流只构建冒烟、不推送。判断拉取失败的原因时注意：GitHub 对「镜像不存在」和「无权限」返回同一张 denied 回执，先分清是没跑过推送（标签不存在）还是 package 又变回 private。镜像目前只出 `linux/amd64`；ARM（树莓派等）请用 `…-linux-x64.zip` 或本地 `build: .`。
+
+## 升级（不用卸载重装）
+
+面板底部有一行 `版本 vX · 检查更新`：查到新版会变成 `✦ 有新构建 … 立即升级`，
+点一下即完成（下载 → 备份 → 覆盖 → 自动重启）。也可以命令行：
+
+```bash
+python -m core.update --check      # 查最新发布（结果缓存 6 小时）
+python -m core.update --download   # 只下载，不动现有文件
+python -m core.update --apply      # 备份后覆盖，失败自动回滚；随后重启程序
+```
+
+升级**不会覆盖**你的东西：`config.yaml`（航线/心理线/钉钉）、`user_data/`（登录态）、
+`data/`（价格库）、`logs/`。万一出问题，`user_data/update/backup_<时间>/` 里是按原路径
+保存的旧文件，拷回去即可恢复。
+
+## 特价机票监控
+
+不想盯死航线？特价监控只填**出发城市 + 心理价位**两个参数，自动发现全网特价：
+
+- **九源发现（4 个网页端 + 5 个 App）**：携程低价日历+全国榜、飞猪 cheapestCalendar（页面自身签名，使用
+  已保存会话读取真实响应）、飞猪 cheapestCalendar（含税，7 天窗；软拒回退国内出发
+  榜并冷却）、同程 queryCalendarLowestPrice（免登录/免签名，国际 90 天/国内 180 天）、
+  途牛国内 H5 同源逐日日历（裸价不含税；国际无官方日历时如实为空）、智行 App「特价」
+  （逐天最低价）、去哪儿 App「低价机票」（14 天窗口）、携程 App 价格日历、同程 App
+  原生价格弹层（国内/国际）
+- **口径如实**：每个价位标注含税/裸价与缓存/回退原因；混合口径最低价明确标「跨口径」，
+  不冒充同口径最低，也不把日历价当航班明细成功
+- **监控走势**：每次官方日历/榜单查询写入本地监控快照，后台自动刷新（启动后约 90 秒首采，之后每 2 小时）；特价雷达页展示逐日低价日历、时间轴走势、低价日与上次价差，以及该日真实航班（无明细时明确提示，不拿日历价冒充航班）
+- **直达深链**：每条特价附官方购买链接，钉钉/邮件/弹窗全通道直达
+- **防刷屏**：同一特价只推一次，降价 ≥ 阈值才再推；每轮最多核实 3 条，免打扰时段顺延
+
+配置页 ⚙️ → 用户卡 →「🎯 特价监控」填三项保存即生效；config.yaml 等价写法：
+
+```yaml
+users:
+- name: 你的名字
+  specials:
+  - from: SHA
+    from_name: 上海
+    max_price: 400        # 心理价位
+    days: 30              # 只认未来 30 天内出发
+```
+
+> 途牛榜单的出发地跟随本机出口 IP 城市（接口限制），与本机同城才出榜；携程低价日历的
+> 出发地可任意指定。两者互补：常驻城市看途牛榜，任意出发地看携程日历。
+>
+> 支持可配置**采集代理**（`crawler.proxy`，如本机 Clash `http://127.0.0.1:7897`）：
+> 全渠道浏览器与特价发现层的出口统一走它，出口 IP 可变（IP 级限流绕行，配置页
+> 🌐 采集卡可填，保存热生效）；途牛榜城市随出口 IP 变化。注意：常见的「规则分流」
+> 代理会把国内站点直连（出口不变），对国内机票端点零增益——需代理绕限流时请选
+> 国内直落节点或负载均衡组，境外出口会抬高风控风险。
+
+## 国际航班监控
+
+想盯东京/曼谷/伦敦？国际航线**零额外配置**：三字码照填（SHA→NRT），
+任一端在大陆城市集外即**自动切国际端点**——五洲目的地直接开盯：
+
+- **浏览器五渠道国际采集**：去哪儿/飞猪/携程/同程/途牛各走国际面（国际列表页/
+  含税日历）；智行/去哪儿/携程/同程 App 也跑国际面（能力矩阵同记支持；
+  飞猪 App 当前受「访问被拒绝」安全页停采，矩阵如实记未验证），达标判定/
+  聚合推送/明细链路零特判，同航线国内国际混排监控
+- **税费透明**：国际行价格恒**含税总价**口径（跨渠道比价永不混口径），
+  税费拆分小字随明细展示（「含税￥415」），推送达标行标「含税」；
+  飞猪按渠道原价参与判定，不再加税垫；国际行恒为含税总价口径
+- **时区校正**：起降时刻是双端本地钟面——时长真值 = 朴素差 − 时区差
+  （SHA→NRT 钟面 02:20→06:20 读 4 小时，真飞 3 小时）；跨天档放宽 0-7 天，
+  长衔接国际行程不再误杀；中转最晚到达按「到达当地时刻」判
+- **城市面板**：「🌐 国际」页签按地区分组（港澳台→日韩→东南亚→南亚→
+  中东→欧洲→美洲→大洋洲→非洲）272 城点选（33 热门），中文名/拼音/三字码三路搜索
+  （"dongjing"/"成田"/NRT 皆可达东京成田），航线行头自动「🌐 国际」紫标
+- **毒价守卫分档**：国际价格量程独立上界，长途经济舱全档+高档舱低价窗
+  照常入池，页面污染价照拦
+
+配置零新增字段：航线卡照填城市对即可；`config.yaml` 等价写法与国内完全
+同形（from/to 填国际三字码即国际航线）。
+
+## 从源码运行（Python 3.11+）
+
+> 需要 Python **3.11+**（自检脚本、Dockerfile 与 CI 同一口径）；建议用 venv，避免污染系统 Python。
+
+**Windows PowerShell**
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m playwright install chromium
+python -m core.setup_check --fix
+python main.py            # 无 config.yaml 时生成空骨架并引导网页配置
+```
+
+`Activate.ps1` 被策略拦住时，先 `Set-ExecutionPolicy -Scope Process Bypass`（只对当前窗口生效）。
+
+**macOS / Linux**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m playwright install chromium
+python -m core.setup_check --fix
+python main.py            # 无 config.yaml 时生成空骨架并引导网页配置
+```
+
+Linux 无头服务器先装系统库：`python -m playwright install-deps chromium`（Debian/Ubuntu 需 sudo）。
+
+本地控制台同样在 `http://127.0.0.1:8765`；偏好命令行问答式配置可跑中文向导 `python main.py --setup`；零配置体验演示数据：`python webui.py --demo`。
+
+## 架构
+
+```
+main.py            编排：航线去重 → 渠道线程池并发采集 → 多用户聚合分发 → 四层强提醒
+crawlers/          十家渠道（5 浏览器 + 5 App）：
+                   qunar(H5主路径+PC复活探测默认关闭) / ctrip / tongcheng(XHR拦截)
+                   / fliggy(PC SSR直读) / tuniu(httpx逆向)
+                   / app_base + app_zhixing / app_qunar / app_fliggy / app_tongcheng / app_ctrip
+                   （App 走 Android 模拟器 + adb；默认关闭，状态见 docs/APP_CHANNELS.md）
+core/alerter.py    一轮一消息聚合推送；_digest_payload 纯构建器（控制台预览复用）
+core/intl.py       国际城市字典/IANA 时区偏移/航线 scope 判定（大陆码集单源）
+core/pulse.py      扫描脉冲记录器：每轮每渠道 行数/耗时 环形缓冲 → /api/pulse
+core/health.py     渠道健康时间线（monitor.log 解析，维护态锁存）
+core/demo.py       演示数据（真实 schema 临时库，确定性种子）
+webui.py           内嵌单页控制台（纯标准库；子视图工作台+面板式配置；配置全热加载）
+report.py          走势图/明细总表 PNG（Pillow）→ 图床
+docs/              uitest 全功能自检 / screenshot 截图 / demo_build 静态站烘焙 / LESSONS
+```
+
+## 钉钉机器人配置
+
+1. 钉钉群 → 群设置 → 智能群助手 → 添加机器人 → **自定义**（Webhook 接入）
+2. 安全设置选 **加签**，复制密钥（SEC 开头）
+3. 复制 Webhook 地址，填入配置页对应输入框，点「🔔 测试推送」验证
+
+## 配置说明
+
+全部配置在网页 ⚙️ 配置页完成，**保存即热生效（零重启）**：航线/阈值/出发时段、钉钉/Server酱微信/ntfy/Bark/阿里云通知/邮件（163/QQ 免费邮箱授权码，整页截图+推送图表全内嵌正文——收件端零外链加载，可配多通道与钉钉并联）、扫描周期与扰动、控制台端口（原地切换）、无头浏览器、采集超时/错峰间隔、每日日报时刻、图床、**日期快速选与区间选/只要直飞/往返多返程日/航司白名单（三写法等价+`!` 排除+输入即时解析预览）/排除廉航/托运下限/仅大型机/价格上限/最长飞行时长/排除跨天/到达时段窗口**。`config.yaml` 只是落盘格式；**启动级路径四件（数据库/日志/登录态/内核目录）全部可编辑**：每件显示解析后**绝对路径**+📂 一键打开所在文件夹，数据库/登录态改路径后**旧档自动迁移**；改后出「需重启」横幅+🔄 一键自重启（见 `config.example.yaml`）。
+
+## 常驻运行
+
+仓库根自带三个 PowerShell 脚本：
+
+```powershell
+.\start.ps1    # 后台启动监控（PID 落 .monitor.pid，日志在 logs/）
+.\status.ps1   # 查看进程/端口/最近一轮状态
+.\stop.ps1     # 停止监控
+```
+
+开机自启：任务计划程序 → 创建基本任务 → 触发器选「登录时」→ 操作选启动 `start.ps1`（或 `schtasks /create /tn TicketMonitor /sc onlogon /tr "powershell -File D:\path\start.ps1"`）。
+
+Linux/macOS 用源码常驻：`nohup python main.py >/dev/null 2>&1 &`
+（systemd/launchd 按标准服务模板包一层即可）；单实例互斥锁三平台
+原生（Windows msvcrt / POSIX flock），重复启动自动退出。
+
+## 打包可执行文件
+
+```bash
+pip install pyinstaller
+pyinstaller TicketMonitor.spec --noconfirm
+# dist/TicketMonitor/ 即完整分发包（含 Playwright 运行时）
+```
+
+四资产（三平台）同构：spec 无 Windows 专属面，Windows/Linux x64/macOS Apple
+Silicon/Intel 芯片 Mac 在各自平台上执行同一条命令即得本机包（CI 矩阵
+release-build.yml 即此四岗；chromium 不入包，应用首启自装内核；
+Windows 右下角弹窗通道在非 Windows 自动停用，其余通道全平台可用）。
+发行包三平台资产挂同一 Release，`SHA256SUMS.txt` 聚合校验文件随构建存档。
+
+## 开发
+
+```bash
+python tools/test_all.py        # 并发全量（默认 min(8, CPU)）：语法检查 + pytest（xdist 按文件）+ UI 自检（按 profile 分片）同跑
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/ -q   # 全量（已跟踪 9011 项；采集/解析/推送/契约/文档）：十渠道解析/通路单测（含占位守卫/透传透镜/聚合守卫等防呆钉）+ 推送链路演练 + 链接同源门禁 + 曲线-列表一致性 + 版本门禁 + 文档/代码契约
+python docs/uitest.py             # 全功能 UI 自检（690 断言，自动拉起演示控制台，零 JS 错硬门禁）
+python docs/screenshot.py         # README 截图再生成（先起演示服：python webui.py --demo --port 8799）
+python docs/demo_build.py         # 重烘在线演示站（docs/site）
+```
+
+CI 把全量 pytest 按 `tests/ci_durations.json` 的历史耗时拆到 **4 台 runner 并行**
+（`tools/ci_shard.py`；跑测前先 `--stats 4` 自检分片并集=全部测试文件，新增文件
+自动进组；`ci-ok` 聚合 pytest 与 UI 两条泳道）。UI 自检按 `docs/uitest.py`
+的段号拆到 **2 台 runner 并行**（0–24 / 25–49；`tools/ui_shard.py --stats 2`
+自检并集=全部段且与 workflow 一致，新增段自动进片）。
+
+踩坑与解法沉淀见 [docs/LESSONS.md](docs/LESSONS.md)；界面统一的做法与验收判据见 [docs/UI_UNIFICATION_PLAYBOOK.md](docs/UI_UNIFICATION_PLAYBOOK.md)；提交贡献前请读 [CONTRIBUTING.md](CONTRIBUTING.md)（TDD 纪律与发版流程）。安全相关问题请走 [SECURITY.md](SECURITY.md) 的私密通道。
+
+## FAQ
+
+**Q：浏览器打开 `127.0.0.1:8765` 提示「无法连接服务器」？**
+A：那是**浏览器连不上服务**，不是网页坏了。按顺序看三件事：
+① 启动它的那个窗口还在吗——发行包双击运行时若启动失败，窗口会自动停住并打印
+原因（缺 `config.yaml`、端口被占用、依赖缺失），照着那行改；
+② 端口：`config.yaml` 的 `web.port`（默认 8765）与浏览器地址要一致，
+反代/容器映射时用映射后的端口；
+③ 服务只监听 `127.0.0.1` 时，**只能本机访问**——换另一台机器/手机请把
+`web.host` 改成 `0.0.0.0` 并重启（启动级项）。日志在 `logs/monitor.log`。
+
+**Q：点「弹窗登录」没有反应 / 没有窗口？**
+A：登录窗口是**服务端**打开的有头浏览器，需要图形界面。
+Docker、无桌面的 Linux、以及把服务装在另一台机器上的情况都弹不出来——
+现在会直接提示「这台服务没有图形界面」而不是假装已弹出。
+做法：在桌面环境登录一次，把整个 `user_data/` 目录拷到服务那边复用；
+或在该机器上执行 `python main.py --login <渠道>`。
+
+**Q：`docker pull ghcr.io/...` 报 denied？**
+A：两种原因，回执一样（GitHub 对「不存在/无权限」不区分）：
+① 该次提交还没在发行轮跑过带 `push_image` 的工作流——镜像尚不存在；
+② 镜像已推送、但 package 可见性还是 private。
+先用 `docker compose up -d`（没有本地镜像时走 `build: .` 本地构建）把服务跑起来；
+想用预构建镜像，先确认 package 已设为 public，再 `docker compose pull && docker compose up -d`。
+
+**Q：页面一直开着会很耗吗？**
+A：轮询带签名缓存 + ETag/304——数据没变时服务端零重算、浏览器零下载；页面隐藏自动暂停轮询，切回立即补一次。
+
+**Q：推送报 -1「系统繁忙」？**
+A：钉钉网关的"幽灵送达"——报错但消息常已入群。策略为单发零重试，丢失由下轮心跳自然补（达标场景电话通道独立兜底）。
+
+**Q：飞猪价格为什么比别家低几十到一百？**
+A：飞猪 PC 端历史列表曾展示不含税裸价；当前判定按**渠道原价**参与，不再加税垫。国际行恒为**含税总价**口径；若页面口径异常，会在明细与推送中保留渠道原始标注，便于核对。
+
+**Q：想用中文问答生成第一份配置？**
+A：`python main.py --setup`（发行包 `TicketMonitor.exe --setup`）。无 config.yaml 时直接启动会生成空骨架并引导到网页配置页，网页与向导二选一。
+
+**Q：携程提示「本轮无数据渠道」？**
+A：登录态过期，重跑一次 `--login ctrip` 扫码即可。
+
+**Q：国际航线怎么配？**
+A：照填三字码即可（如 SHA→NRT、SHA→LHR）。任一端在大陆城市集外即自动走
+国际端点：价格恒含税总价、时长经时区校正、跨天档放宽 0-7 天，无需任何开关。
+
+**Q：改配置要重启吗？**
+A：常规设置不用。航线/阈值/通知/扫描周期/扰动/端口/无头/超时/错峰/日报时刻/图床全部保存即热生效；**启动级项**（数据库/日志/登录态/内核目录/监听地址/启动即扫）改后需重启——保存后横幅与重启中心显示旧→新差量，点 🔄 立即重启：先拉新实例再退旧进程，中断数十秒后页面自动恢复。
+
+**Q：会泄露我的配置吗？**
+A：价格库与配置只存本机（`config.yaml`/`data/` 均被 gitignore 拦截）；外发仅限你主动配置的推送通道与图床。演示模式/在线站均为合成数据，配置页不回读真实凭据。
+
+## License
+
+Apache-2.0（见 [LICENSE](LICENSE)）。请遵守各平台服务条款；商用/分发请自行评估合规性。
+
+## 友情链接
+
+- [LINUX DO 社区](https://linux.do)

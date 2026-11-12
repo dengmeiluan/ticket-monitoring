@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="420" viewBox="0 0 1600 420" role="img" aria-labelledby="tmTitle tmDesc">
+  <title id="tmTitle">ticket-monitoring 机票监控台</title>
+  <desc id="tmDesc">自托管多渠道机票价格监控：10 个渠道、7 个维度、11 条质量轴，数据、配置与登录态只留在本机。</desc>
+  <rect width="1600" height="420" fill="#0d3b32"/>
+  <rect width="1600" height="6" fill="#34c08a"/>
+  <path d="M700 386 C 800 356, 884 340, 968 306" fill="none" stroke="#1f6a58" stroke-width="2" stroke-dasharray="6 10"/>
+  <path d="M960 302 l26 -9 -11 19 z" fill="#34c08a"/>
+
+  <g font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif">
+    <text x="80" y="76" fill="#8fe3c0" font-size="17" letter-spacing="3">SELF-HOSTED FLIGHT FARE MONITORING</text>
+    <text x="78" y="164" fill="#ffffff" font-size="62" font-weight="700">ticket-monitoring</text>
+    <text x="80" y="212" fill="#d7f5e8" font-size="29">机票监控台 · 自托管多渠道票价监控</text>
+    <text x="80" y="258" fill="#a8cfc0" font-size="21">采集真实航班明细，按心理价判定，达标时四层强提醒。</text>
+
+    <g font-size="18" fill="#e8fbf2">
+      <rect x="80" y="304" width="112" height="46" rx="23" fill="#124c41" stroke="#1f6a58"/>
+      <text x="136" y="333" text-anchor="middle">采集</text>
+      <path d="M204 327 h14" stroke="#34c08a" stroke-width="2"/>
+      <path d="M218 327 l-7 -5 v10 z" fill="#34c08a"/>
+      <rect x="230" y="304" width="112" height="46" rx="23" fill="#124c41" stroke="#1f6a58"/>
+      <text x="286" y="333" text-anchor="middle">判定</text>
+      <path d="M354 327 h14" stroke="#34c08a" stroke-width="2"/>
+      <path d="M368 327 l-7 -5 v10 z" fill="#34c08a"/>
+      <rect x="380" y="304" width="112" height="46" rx="23" fill="#124c41" stroke="#1f6a58"/>
+      <text x="436" y="333" text-anchor="middle">推送</text>
+      <path d="M504 327 h14" stroke="#34c08a" stroke-width="2"/>
+      <path d="M518 327 l-7 -5 v10 z" fill="#34c08a"/>
+      <rect x="530" y="304" width="128" height="46" rx="23" fill="#124c41" stroke="#1f6a58"/>
+      <text x="594" y="333" text-anchor="middle">强提醒</text>
+    </g>
+    <text x="80" y="392" fill="#7fae9f" font-size="17">数据、配置与登录态只留在本机 · 开源免费</text>
+
+    <rect x="980" y="56" width="540" height="312" rx="20" fill="#10463b" stroke="#1f6a58"/>
+    <text x="1014" y="104" fill="#ffffff" font-size="22" font-weight="600">10 渠道 · 7 维度 · 11 条质量轴</text>
+
+    <text x="1014" y="148" fill="#8fe3c0" font-size="15">浏览器 5</text>
+    <g font-size="15" fill="#d7f5e8" text-anchor="middle">
+      <rect x="1014" y="162" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1060" y="186">携程</text>
+      <rect x="1114" y="162" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1160" y="186">去哪儿</text>
+      <rect x="1214" y="162" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1260" y="186">飞猪</text>
+      <rect x="1314" y="162" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1360" y="186">同程</text>
+      <rect x="1414" y="162" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1460" y="186">途牛</text>
+    </g>
+
+    <text x="1014" y="228" fill="#8fe3c0" font-size="15">App 5</text>
+    <g font-size="14" fill="#d7f5e8" text-anchor="middle">
+      <rect x="1014" y="242" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1060" y="266">智行</text>
+      <rect x="1114" y="242" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1160" y="266">去哪儿App</text>
+      <rect x="1214" y="242" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1260" y="266">飞猪App</text>
+      <rect x="1314" y="242" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1360" y="266">携程App</text>
+      <rect x="1414" y="242" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1460" y="266">同程App</text>
+    </g>
+
+    <text x="1014" y="318" fill="#8fe3c0" font-size="16">每格三态：支持 / 无此能力 / 未验证</text>
+    <text x="1014" y="344" fill="#7fae9f" font-size="15">能力矩阵与采集器读同一份声明</text>
+  </g>
+</svg>

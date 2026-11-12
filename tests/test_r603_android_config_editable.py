@@ -1,0 +1,98 @@
+# -*- coding: utf-8 -*-
+"""r603：Android 真机通道的配置项必须能在配置页改。
+
+并行会话新增了 `core/android/config.py`（智行/美团 App 只能走真机，没有
+可用 Web 入口），字段齐全且每项都做了钳制，但**配置页一个控件都没有**——
+用户只能去手改 config.yaml。r601 的通用不变式门禁当场抓到了这 5 个键：
+
+    android.install_dir / vm_index / boot_timeout_s / action_timeout_s / snapshot
+
+（`enabled`/`provider` 因为键名与别处重名，当时被宽口径匹配漏过去了；
+本轮 7 个字段全部补齐并逐个断言。）
+
+取值范围必须与 `core/android/config.py` 的钳制逐项一致，否则界面能填出
+后端会悄悄改掉的值——那本身就是「配了不生效」：
+    vm_index        0..64
+    boot_timeout_s  10..600
+    action_timeout_s 5..900
+"""
+import io
+import os
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+IDS = {"enabled": "glbAndEn", "provider": "glbAndPv",
+       "install_dir": "glbAndDir", "vm_index": "glbAndVm",
+       "boot_timeout_s": "glbAndBoot", "action_timeout_s": "glbAndAct",
+       "fetch_budget_s": "glbAndFetchBudgetS", "snapshot": "glbAndSnap"}
+
+
+def _w():
+    return io.open(os.path.join(ROOT, "webui.py"), encoding="utf-8",
+                   newline="").read()
+
+
+def test_readback_exposes_android_block():
+    w = _w()
+    i = w.index('elif self.path == "/api/config":')
+    # 按**真实分支**定位（r628）：原先固定取 9000 字符窗口，被 demo 分支的
+    # 注释撑爆后会误判成「没回读」。这里跳到 demo 分支配偶之后再看。
+    j = w.index('self._json(_demo_config_payload())', i)
+    # r1595：**按分支边界取面**，不再用固定字符窗口。
+    # 这份回读段每加一个配置键就变长（今天加「登录墙冷却封顶」又顶到边界），
+    # 固定窗口只会一次次假红。判据不变：必须是 `/api/config` 真实分支里的
+    # 字面量，不是全文件搜索。
+    _end = w.find('elif self.path', j)
+    seg = w[j:_end] if _end > j else w[j:]
+    assert '"android": dict(cfg.get("android") or {})' in seg, (
+        "GET /api/config 没有回读 android 段，控件只能显示空")
+
+
+def test_every_android_field_has_a_control():
+    w = _w()
+    for field, cid in IDS.items():
+        assert "'%s'" % cid in w, "缺少 %s 的控件（%s）" % (field, cid)
+    i = w.index("Android 真机通道")
+    seg = w[i:i + 3000]
+    for field in IDS:
+        assert field in seg, "Android 配置区没有写回 %s" % field
+
+
+def test_control_ranges_match_backend_clamps():
+    """控件范围必须与后端钳制一致，否则「填了等于没填」。"""
+    w = _w()
+    i = w.index("Android 真机通道")
+    seg = w[i:i + 3000]
+    assert "Math.min(64" in seg, "vm_index 上限与后端 64 不一致"
+    assert "Math.min(600,parseInt(this.value)||180)" in seg, (
+        "boot_timeout_s 未按后端 10..600 / 默认 180 钳制")
+    assert "Math.min(900,parseInt(this.value)||60)" in seg, (
+        "action_timeout_s 未按后端 5..900 / 默认 60 钳制")
+    assert "Math.min(3600" in seg and "isNaN(v)?540" in seg, (
+        "fetch_budget_s 未按后端 0..3600 / 默认 540 钳制（0 必须保留=不限制）")
+
+
+def test_post_persists_android_block():
+    w = _w()
+    i = w.index('if isinstance(glb.get("android"), dict):')
+    # 按符号收口，不再用固定字符窗口：每加一个嵌套字段窗口就得跟着放宽。
+    seg = w[i:w.index('cfg["android"] = _a0', i)]
+    assert 'cfg["android"] = _a0' in w[i:], "POST 没有写回 cfg['android']"
+    for field in ("enabled", "provider", "install_dir", "vm_index",
+                  "boot_timeout_s", "action_timeout_s", "fetch_budget_s",
+                  "snapshot"):
+        assert '"%s"' % field in seg, "POST 没有落 %s" % field
+    # 与后端同界：越界要钳回，不能把脏值写进文件
+    assert "max(_alo, min(_ahi, _av))" in seg, "数值没有按后端区间钳制"
+
+
+def test_vendor_apply_has_control_and_merges_into_file_values():
+    """vendor.apply 有控件；保存时只合并 apply，不能整体覆盖文件里的
+    brand/model（那会让用户手写的官方键被静默清空）。"""
+    w = _w()
+    assert "'glbVendorApply'" in w, "android.vendor.apply 没有控件"
+    i = w.index('if isinstance(glb.get("android"), dict):')
+    seg = w[i:w.index('cfg["android"] = _a0', i)]
+    assert '_and.get("vendor")' in seg
+    assert '_a0.get("vendor") or {}' in seg
+    assert '_v0["apply"] = bool(_avd["apply"])' in seg

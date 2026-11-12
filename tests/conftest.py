@@ -1,0 +1,191 @@
+# -*- coding: utf-8 -*-
+"""合成数据隔离（根治层，r234/r235 两案同律）：send 触达与哨兵
+落盘类测试漏设隔离时，合成数据按模块默认路径写进生产文件。
+
+- PUSH_HISTORY_FILE（r234）：_append_push_history 按 CWD 落 logs/
+  生产账本——20 条合成记录曾混入生产 push_history（控制台推送
+  记录可见假推送）。
+- _SENT_PATH + _SENT_LAST/_SENT_CNT/_SENT_SUPPLIED（r235，r316 补
+  供给基线族）：哨兵告警链把模块级
+  内存态全量落盘 data/sentinel_state.json——漏补丁用例曾把合成
+  告警写进生产哨兵文件（真断链首日虚标「连续2日」、次日提前降
+  INFO）；内存态跨测试残留还会让后续用例的保存把前序合成态
+  一并带进生产文件。
+- TM_RENDER_DIR（r240）：图表渲染写点按相对路径落 data/——
+  触达渲染链路的用例把测试图表落进生产 data/（租户段 t 的
+  flights_table_*.png 多轮残留）。
+- 近期明细补位链（r252）：storage=None 时补位读默认 data/prices.db
+  近 6h 真实行——夹具不完整的用例曾把生产数据面拼进合成池
+  （URC→SHA 夜间 tongcheng 7840 中转行抬高三渠道锚，合成
+  fliggy/ctrip 1600 tie 组被孤低价守卫双杀，v15133 钉白天绿、
+  入夜红，随生产数据面漂移）。测试默认补位=空池（池=夹具行）；
+  显式 mock 补位源或传真 storage 的用例按 LIFO 自覆。
+
+autouse 重定向到每测试独立路径；显式 setenv/setattr 的用例照常
+自覆（monkeypatch LIFO），「默认路径行为不变」类钉须模拟生产
+形态显式恢复，语义担保不丢。"""
+import os
+
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _isolate_push_history(tmp_path, monkeypatch):
+    monkeypatch.setenv("PUSH_HISTORY_FILE",
+                       str(tmp_path / "push_history.jsonl"))
+
+
+@pytest.fixture(autouse=True)
+def _isolate_report_state(tmp_path, monkeypatch):
+    """日报防重发状态重定向（r317 P2-1，与 PUSH_HISTORY_FILE 同构）：
+    防重发落账测试直调 maybe_daily_report 时按模块默认锚写生产
+    data/report_state.json——合成键「日报演练」曾覆盖生产今日落账态
+    （实跑实录：RED 测试两度把 {"邓美銮": 今日} 顶掉，生产差一点
+    重推日报）。环境变量锚 _report_state_path 同批复测。"""
+    monkeypatch.setenv("REPORT_STATE_FILE",
+                       str(tmp_path / "report_state.json"))
+
+
+@pytest.fixture(autouse=True)
+def _isolate_recent_flights(monkeypatch):
+    import report as _rep
+    # 真身暂存模块属性：直调型测试（v193 SQL 时间窗钉）显式取回
+    # _recent_platform_flights_raw 测函数本体，不经隔离面
+    if not hasattr(_rep, "_recent_platform_flights_raw"):
+        _rep._recent_platform_flights_raw = _rep.recent_platform_flights
+    monkeypatch.setattr(_rep, "recent_platform_flights",
+                        lambda *a, **k: {})
+
+
+@pytest.fixture(autouse=True)
+def _isolate_render_dir(tmp_path, monkeypatch):
+    d = tmp_path / "render"
+    d.mkdir()   # 渲染函数无 makedirs——夹具预建目录防测试踩空
+    monkeypatch.setenv("TM_RENDER_DIR", str(d))
+
+
+@pytest.fixture(autouse=True)
+def _isolate_scene_dir(tmp_path, monkeypatch):
+    """失败现场快照重定向（r805ay，与 TM_RENDER_DIR 同构）。
+
+    `crawlers.app_qunar._save_fail_scene` 按 CWD 写 `debug/scene/`；
+    补了「失败即落现场」之后，替身设备的失败用例会把合成现场
+    （坐标 60,320,300,380 的「北京」）写进生产调试目录——实测
+    2026-11-01 17:36 落了一份假现场，差点当成真机证据。
+    """
+    monkeypatch.setenv("TICKET_SCENE_DIR", str(tmp_path / "scene"))
+
+
+@pytest.fixture(autouse=True)
+def _isolate_sentinel_state(tmp_path, monkeypatch):
+    import main as _m
+    # r320 写入面生产资格门同轮双锚：环境变量（helper 首选支）与
+    # _SENT_PATH 模块属性（test_r235 等直引用兼容面）同值重定向，
+    # 防读写劈叉
+    _sent = os.path.join(str(tmp_path), "sentinel_state.json")
+    monkeypatch.setenv("SENTINEL_STATE_FILE", _sent)
+    monkeypatch.setattr(_m, "_SENT_PATH", _sent)
+    monkeypatch.setattr(_m, "_SENT_LAST", {})
+    monkeypatch.setattr(_m, "_SENT_CNT", {})
+    monkeypatch.setattr(_m, "_SENT_SUPPLIED", {})
+
+
+@pytest.fixture(autouse=True)
+def _allow_test_webhook(monkeypatch):
+    """钉钉发送资格门的会话级放行（与 PUSH_HISTORY_FILE 同构根治层）：
+    单测大量持真实域名字符串 webhook + httpx.post 打桩，逐用例补
+    setenv 注定漏；旁路 python 直跑脚本不在 pytest 入口、无此放行，
+    被资格门拦住真实发送（r254 发送端生产资格门）。需验门本体的
+    用例显式 delenv/setenv 自覆（monkeypatch LIFO）。"""
+    monkeypatch.setenv("DING_WEBHOOK_ALLOW", "1")
+
+
+@pytest.fixture(autouse=True)
+def _isolate_user_data(tmp_path, monkeypatch):
+    """账本根目录重定向（r972，与 PUSH_HISTORY_FILE / TM_RENDER_DIR 同律）。
+
+    **同类第三次**才做集中隔离，前两次都是逐用例打补丁：
+      * r963 `user_data_dir=""` → user_data/app_demo/slider_ledger.json
+        （报表里"试 63 / 过 63 命中 100%"）；
+      * `tests/test_intl_rt.py` 的假渠道 `name="probe"` →
+        user_data/probe/yield_stats.json（76 样本 / 0 成功）；
+      * `tests/test_app_crawler_base.py` 的 `name="app_dummy"` →
+        user_data/app_dummy/yield_stats.json（178 样本）。
+
+    脏文件只是表面：`scripts/yield_report.py` 会把它们当**真渠道**渲染，
+    显示 0% 成功率并给"建议间隔 75 分钟"——**污染的是爬取率那张决策表**。
+
+    生产代码走 `core.yield_stats.user_data_root()`：
+    config 显式值 > `TM_USER_DATA_DIR` > "user_data"。
+    生产 `main.py` 总是显式传绝对 session_root，所以这里对环境变量
+    的设置在运行时无影响；显式传 tmp 的既有用例也不受改写（config 优先）。
+    """
+    d = tmp_path / "user_data"
+    d.mkdir()
+    monkeypatch.setenv("TM_USER_DATA_DIR", str(d))
+
+
+@pytest.fixture(autouse=True)
+def _isolate_webui_probe_auth(monkeypatch):
+    """webui 的进程级「本轮探针证据」缓存逐用例归零（r481 并发假红根因）。
+
+    `webui._PROBE_AUTH` 记的是本轮探针的即时明细/拒绝证据；并发全量下
+    同一 worker 会先后跑多个文件，上一文件留下的明细会把下一文件的
+    登录态推成 available（r367 实测：期望 saved 得到 available）。
+    `_IN_HEALTH_DECORATE` 是健康装饰层的重入标志，残留 True 会让
+    `_login_state_view` 绕过可注入的 `_health_state` 去解析真实日志。
+    webui 尚未导入的用例没有可泄漏状态，跳过以免强制加载 4MB 模块。"""
+    import sys as _sys
+    if "webui" not in _sys.modules:
+        return
+    import webui as _w
+    monkeypatch.setattr(_w, "_PROBE_AUTH", {}, raising=False)
+    monkeypatch.setattr(_w, "_IN_HEALTH_DECORATE", False, raising=False)
+    # r805cf：登录状态现在也读 `fetch_paths` 的滑块/登录门。测试默认不读
+    # 生产账本——否则生产里今天真有一条 tuniu PC blocked，所有用旧 saved_at
+    # 的用例都会被推成 challenge。要验账本行为的用例显式覆写该函数。
+    monkeypatch.setattr(_w, "_recent_path_rows", lambda hours=24: {},
+                        raising=False)
+    monkeypatch.setattr(_w, "_SLOT_VERIFY", {}, raising=False)
+
+
+@pytest.fixture(autouse=True)
+def _neutralize_host_proxy_env(monkeypatch):
+    """测试不得依赖本机代理配置（r433）：本机 `NO_PROXY` 含 `[::1]` 时，
+    httpx 解析该条目会抛 `InvalidURL: Invalid port: ':1]'`——
+    `test_net_post` / `test_tuniu_saved_cookies` 三条在开发机上红、
+    在 CI 上绿，红绿取决于跑测机器而不是代码。三条单跑加
+    `NO_PROXY=localhost,127.0.0.1,::1` 即 7/7 全绿，据此确认。
+
+    归一成「不带方括号」的写法（方括号是 IPv6 字面量的 URL 语法，
+    在 NO_PROXY 列表里 httpx 不当它是 host），并清掉代理指向——
+    需要验代理行为的用例显式 setenv 自覆（monkeypatch LIFO）。"""
+    proxy_vars = ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY",
+                  "http_proxy", "https_proxy", "all_proxy")
+    for var in proxy_vars:
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("NO_PROXY", "localhost,127.0.0.1,::1")
+    monkeypatch.setenv("no_proxy", "localhost,127.0.0.1,::1")
+
+
+@pytest.fixture(autouse=True)
+def _pretend_graphical(monkeypatch):
+    """登录窗口类用例与「跑测机有没有 X」解耦（r675 收口到 conftest）。
+
+    `_start_login` 在 `_no_graphical_env()` 为真时短路回 `kind=no_gui`，
+    这是真机（Docker/无 X 的 Linux）需要的保护；但它会让 CI 上所有
+    「窗口能不能真的开」的用例一条都测不到——本地 Windows 恒有桌面，
+    这类红只在 CI 出现（test_channel_status 三条、r620 四条）。
+    默认按「有图形环境」跑，窗口逻辑本身由用例的 _login_window 替身
+    校验；要专门验 no_gui 分支的用例在自身内部 setattr 回 True 即可
+    （monkeypatch LIFO，后设者胜）。
+    """
+    import sys as _sys
+    if "webui" not in _sys.modules:
+        return
+    import webui as _w
+    # 保存真实判据：专门验 no_gui 分支的用例（r1063/r1107）需要取回它，
+    # 不能只看到桩函数。
+    monkeypatch.setattr(_w, "_real_no_graphical_env",
+                        getattr(_w, "_no_graphical_env", None), raising=False)
+    monkeypatch.setattr(_w, "_no_graphical_env", lambda: False, raising=False)

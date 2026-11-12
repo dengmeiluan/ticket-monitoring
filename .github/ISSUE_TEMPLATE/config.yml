@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 使用疑问 / 交流
+    url: https://github.com/dengmeiluan/ticket-monitoring/discussions
+    about: 不确定是 bug 还是用法问题时，先到这里聊
