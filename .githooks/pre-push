@@ -1,0 +1,40 @@
+#!/bin/sh
+# 推 main 前拦一道：公开历史必须是**单一 root commit**。
+#
+# 为什么：Release 页会写「N commit to main since this release」，Deployments 也会
+# 一次 push 一条；历史一叠起来，对外三处入口就互相矛盾（2026-11-16 实例：
+# 6 笔提交 + 7 条部署 + Release 停在旧 SHA）。CI 只跑测试、不看发布形态，
+# 所以这道拦截放在推送这一步，比事后对齐便宜得多。
+#
+# 启用（一次性）：
+#     git config core.hooksPath .githooks
+#
+# 没有绕过开关（维护者 2026-11-16 决定）：多提交就**不能**推 main，
+# 先 `python tools/converge_history.py --yes` 收敛成单一 root commit 再推。
+
+ref=$(git rev-parse --symbolic-full-name HEAD 2>/dev/null)
+remote="$1"
+
+# 只关心推到 main 的情况
+if [ "$ref" != "refs/heads/main" ]; then
+    exit 0
+fi
+
+count=$(git rev-list --count HEAD)
+root=$(git rev-list --max-parents=0 HEAD)
+head=$(git rev-parse HEAD)
+
+if [ "$count" -gt 1 ] || [ "$root" != "$head" ]; then
+    echo ""
+    echo "[pre-push] 拒绝推送：main 的公开历史必须是单一 root commit。"
+    echo "           当前提交数 $count，root ${root%"${root#???????}"}…，HEAD ${head%"${head#???????}"}…"
+    echo ""
+    echo "  收敛（保留文件树，只压历史）后再推，没有绕过开关："
+    echo "      python tools/converge_history.py --yes"
+    echo "      git push --force origin main"
+    echo ""
+    echo "  背景见 docs/RELEASE_PROCESS.md「发版漂移自检与收敛」。"
+    exit 1
+fi
+
+exit 0

@@ -1,0 +1,95 @@
+# -*- coding: utf-8 -*-
+"""由轮号钉归并生成的模块（tests/ 归并工程，映射见 _scratch/w2a_mapping.json）。
+
+本文件按主题收拢下列源文件，测试函数名与原实现逐字保留：
+- tests/test_r1028_login_compact_status.py
+- tests/test_r624_login_wait_is_visible.py
+- tests/test_r805aj_login_wait_progress.py
+
+合并约定：import 区去重合并；每个源文件的模块级语句、辅助函数、
+fixture 以 `# ---- merged from ... ----` 分段原样保留；
+`if __name__ == "__main__"` 块移至文件尾。
+"""
+from support_webui_src import webui_full_src
+
+import io
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+import urllib.request
+
+
+# ---- merged from tests/test_r1028_login_compact_status.py ----
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def test_static_tight_status_map_and_full_title():
+    with io.StringIO(webui_full_src()) as f:
+        src = f.read()
+    i = src.index("r1028：双端半格只有 113px")
+    block = src[i:i + 900]
+    assert "页面可达·明细待验" in block
+    assert "会话有效·明细可用" in block
+    assert "const _subTxt=tight?" in block
+    j = src.index('class="lgsub" title=')
+    assert "_stText" in src[j:j + 260], "短句替换后完整状态没有进 title"
+
+
+def _free_port():
+    s = socket.socket()
+    s.bind(("127.0.0.1", 0))
+    p = s.getsockname()[1]
+    s.close()
+    return p
+
+
+def _payload():
+    def slot(key, plat, status):
+        return {"slot": key, "plat": plat, "status": status, "saved": True,
+                "needs_login": False, "active": False, "saving": False,
+                "pending": False, "account": "淘宝账号" if plat == "fliggy" else "",
+                "requirement": "必须登录"}
+    plats = {k: slot(k, k, "saved") for k in
+             ("ctrip", "qunar", "tongcheng", "tuniu")}
+    plats["fliggy"] = slot("fliggy", "fliggy", "page_ok")
+    return {"ok": True, "plats": plats, "slots": {
+        "ctrip": slot("ctrip", "ctrip", "saved"),
+        "qunar": slot("qunar", "qunar", "saved"),
+        "fliggy": slot("fliggy", "fliggy", "page_ok"),
+        "fliggy_h5": slot("fliggy_h5", "fliggy", "page_ok"),
+        "tongcheng": slot("tongcheng", "tongcheng", "saved"),
+        "tuniu": slot("tuniu", "tuniu", "saved"),
+    }}
+
+
+
+
+# ---- merged from tests/test_r624_login_wait_is_visible.py ----
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def test_login_start_shows_in_progress_copy():
+    """静态旁证：文案与 aria-busy 的存在（渲染判据在主测试）。"""
+    w = webui_full_src()
+    i = w.index("async function loginStart(")
+    seg = w[i:i + 1400]
+    assert "正在打开窗口…" in seg, "loginStart 没有换成进行中文案"
+    assert "aria-busy" in seg, "进行中态没给读屏播报"
+    assert "b.disabled=true" in seg, "进行中应禁用按钮，避免重复触发"
+
+
+
+
+# ---- merged from tests/test_r805aj_login_wait_progress.py ----
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+
+
+
+
