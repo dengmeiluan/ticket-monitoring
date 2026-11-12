@@ -1,0 +1,75 @@
+name: 发版漂移自检（每日）
+
+# 目的：Release / 标签 / 部署 / 镜像 / 资产 / 历史形态这六处对外入口只要有一处
+# 落后于 HEAD，就在这里**开一个 issue**，而不是等人肉发现。
+#
+# 2026-11-16 的教训：Release 停在 229a947、main 走到 69364a0、Pages 部署堆到 7 条，
+# 三个入口互相矛盾，但 CI 全绿、没人被告知。定时体检补的就是这条反馈回路。
+#
+# 修复方式：按 issue 里的「收敛步骤」走一遍（tools/converge_history.py 起头）。
+
+on:
+  schedule:
+    # 每天 01:20 UTC ≈ 09:20 北京时间
+    - cron: "20 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  deployments: read
+  packages: read
+
+concurrency:
+  group: drift-${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: 全量漂移体检（含远端）
+        id: guard
+        continue-on-error: true
+        run: |
+          python tools/release_guard.py --issue-body /tmp/drift.md --json > /tmp/drift.json 2>&1 || true
+          tail -40 /tmp/drift.json || true
+      - name: 有漂移 → 开/更新 issue
+        if: steps.guard.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="发版漂移自检：main 与 Release/部署不一致"
+          existing=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number' || true)
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file /tmp/drift.md
+            echo "已更新既有 issue #$existing"
+          else
+            gh issue create --title "$TITLE" --body-file /tmp/drift.md --label "release-drift" \
+              || gh issue create --title "$TITLE" --body-file /tmp/drift.md
+          fi
+      - name: 无漂移 → 关闭既有 issue
+        if: steps.guard.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="发版漂移自检：main 与 Release/部署不一致"
+          existing=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number' || true)
+          if [ -n "$existing" ]; then
+            gh issue close "$existing" --comment "漂移已消除（本地+远端全部对齐），自动关闭。"
+          fi
+      - name: 让 job 状态如实反映体检结果
+        if: steps.guard.outcome == 'failure'
+        run: exit 1

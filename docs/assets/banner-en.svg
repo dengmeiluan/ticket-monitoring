@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="420" viewBox="0 0 1600 420" role="img" aria-labelledby="tmTitle tmDesc">
+  <title id="tmTitle">ticket-monitoring — self-hosted flight fare monitoring</title>
+  <desc id="tmDesc">Self-hosted multi-channel flight fare monitoring: 10 channels, 7 dimensions, 11 quality axes; data, config and login state stay on your machine.</desc>
+  <rect width="1600" height="420" fill="#0d3b32"/>
+  <rect width="1600" height="6" fill="#34c08a"/>
+  <path d="M700 386 C 800 356, 884 340, 968 306" fill="none" stroke="#1f6a58" stroke-width="2" stroke-dasharray="6 10"/>
+  <path d="M960 302 l26 -9 -11 19 z" fill="#34c08a"/>
+
+  <g font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif">
+    <text x="80" y="76" fill="#8fe3c0" font-size="17" letter-spacing="3">SELF-HOSTED FLIGHT FARE MONITORING</text>
+    <text x="78" y="164" fill="#ffffff" font-size="62" font-weight="700">ticket-monitoring</text>
+    <text x="80" y="212" fill="#d7f5e8" font-size="28">Multi-channel fare monitoring on your own machine</text>
+    <text x="80" y="258" fill="#a8cfc0" font-size="21">Real flight details, price rules, DingTalk reports and four-layer alerts.</text>
+
+    <g font-size="18" fill="#e8fbf2">
+      <rect x="80" y="304" width="112" height="46" rx="23" fill="#124c41" stroke="#1f6a58"/>
+      <text x="136" y="333" text-anchor="middle">Collect</text>
+      <path d="M204 327 h14" stroke="#34c08a" stroke-width="2"/>
+      <path d="M218 327 l-7 -5 v10 z" fill="#34c08a"/>
+      <rect x="230" y="304" width="112" height="46" rx="23" fill="#124c41" stroke="#1f6a58"/>
+      <text x="286" y="333" text-anchor="middle">Judge</text>
+      <path d="M354 327 h14" stroke="#34c08a" stroke-width="2"/>
+      <path d="M368 327 l-7 -5 v10 z" fill="#34c08a"/>
+      <rect x="380" y="304" width="112" height="46" rx="23" fill="#124c41" stroke="#1f6a58"/>
+      <text x="436" y="333" text-anchor="middle">Notify</text>
+      <path d="M504 327 h14" stroke="#34c08a" stroke-width="2"/>
+      <path d="M518 327 l-7 -5 v10 z" fill="#34c08a"/>
+      <rect x="530" y="304" width="128" height="46" rx="23" fill="#124c41" stroke="#1f6a58"/>
+      <text x="594" y="333" text-anchor="middle">Alert</text>
+    </g>
+    <text x="80" y="392" fill="#7fae9f" font-size="17">Data, config and login state stay on this machine · Free &amp; open source</text>
+
+    <rect x="980" y="56" width="540" height="312" rx="20" fill="#10463b" stroke="#1f6a58"/>
+    <text x="1014" y="104" fill="#ffffff" font-size="20" font-weight="600">10 channels · 7 dimensions · 11 quality axes</text>
+
+    <text x="1014" y="148" fill="#8fe3c0" font-size="15">Browser 5</text>
+    <g font-size="14" fill="#d7f5e8" text-anchor="middle">
+      <rect x="1014" y="162" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1060" y="186">Ctrip</text>
+      <rect x="1114" y="162" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1160" y="186">Qunar</text>
+      <rect x="1214" y="162" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1260" y="186">Fliggy</text>
+      <rect x="1314" y="162" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1360" y="186">Tongcheng</text>
+      <rect x="1414" y="162" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1460" y="186">Tuniu</text>
+    </g>
+
+    <text x="1014" y="228" fill="#8fe3c0" font-size="15">App 5</text>
+    <g font-size="12" fill="#d7f5e8" text-anchor="middle">
+      <rect x="1014" y="242" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1060" y="265">Zhixing</text>
+      <rect x="1114" y="242" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1160" y="265">Qunar</text>
+      <rect x="1214" y="242" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1260" y="265">Fliggy</text>
+      <rect x="1314" y="242" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1360" y="265">Ctrip</text>
+      <rect x="1414" y="242" width="92" height="36" rx="10" fill="#124c41" stroke="#1f6a58"/>
+      <text x="1460" y="265">Tongcheng</text>
+    </g>
+
+    <text x="1014" y="318" fill="#8fe3c0" font-size="16">Three states: supported / unsupported / unverified</text>
+    <text x="1014" y="344" fill="#7fae9f" font-size="15">The matrix and crawlers read one declaration</text>
+  </g>
+</svg>

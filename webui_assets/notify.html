@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>达标通知 · 机票监控</title>
+<script>
+/* 与主控制台同一主题体系（localStorage jptheme: auto/light/dark）——
+   否则主站暗色、弹窗落地页亮色，主题体验断裂。渲染前落 data-theme 防闪白 */
+(function(){var t='auto';try{t=localStorage.getItem('jptheme')||'auto'}catch(e){}
+ var dark=t==='dark'||(t!=='light'&&window.matchMedia
+   &&window.matchMedia('(prefers-color-scheme:dark)').matches);
+ document.documentElement.dataset.theme=dark?'dark':'light';})();
+</script>
+<style>
+ :root{--bg:#eceff4;--card:#ffffff;--tx:#141f2b;--mut:#5a6c7d;--line:#dde3ea;
+       --line2:#cbd4de;--blue:#0b62d6;--green:#0e8345;--okbg:#e9f4ec;
+       --ok-txt:#0b6e39;
+       --at-bg:#ffd24d;--at-fg:#7a4b00;   /* @手机高亮双令牌（.md-at 消费）：与主站令牌区同值成对 */
+       --okrgb:14,131,69; /* 绿档通道令牌（hitbar/hitpulse 消费）；暗色两块覆写随主站 #43c072 换谱 */
+       --blue-rgb:11,98,214; /* 蓝 RGB 令牌：pillbd/pillbg/pillbh/pillbd2 消费，暗色随主站 #63a4f8 换谱 */
+       --pillbd:rgba(var(--blue-rgb),.32);--pillbg:rgba(var(--blue-rgb),.07);
+       --pillbh:rgba(var(--blue-rgb),.14);--pillbd2:rgba(var(--blue-rgb),.55);
+       --num:"Cascadia Mono","Consolas","SF Mono","Menlo",monospace;--r:14px;
+       --r3:9px;
+       --r10:10px;--ls1:1px;--ls2:2px;
+       --pill:999px} /* notify 独立页自带 :root 令牌区，--pill 须随 .md a 消费同步在册（P2-C 漏补则 CTA 圆角塌 0）；--mut/--r3 系 P2-D 在册对齐主站；--r10/--ls1/--ls2 随主站令牌区同步在册 */
+ *{box-sizing:border-box}
+ html{color-scheme:light}
+ :root[data-theme="dark"]{color-scheme:dark;--bg:#0a0f16;--card:#101823;--tx:#dbe4ee;
+   --mut:#8497ab;--line:#1e2a3a;--line2:#2a3a50;--okbg:#12241a;--blue:#63a4f8;
+   --green:#43c072;--ok-txt:#43c072;--okrgb:67,192,114;--blue-rgb:99,164,248;
+   --pillbd:rgba(var(--blue-rgb),.5);--pillbg:rgba(var(--blue-rgb),.12);
+   --pillbh:rgba(var(--blue-rgb),.22);--pillbd2:rgba(var(--blue-rgb),.75);
+   --at-bg:rgba(255,210,77,.16);--at-fg:#ffd24d}   /* @手机高亮暗谱：降饱和暗底+原亮字（主站同值成对） */
+ @media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;
+   --bg:#0a0f16;--card:#101823;--tx:#dbe4ee;
+   --mut:#8497ab;--line:#1e2a3a;--line2:#2a3a50;--okbg:#12241a;--blue:#63a4f8;
+   --green:#43c072;--ok-txt:#43c072;--okrgb:67,192,114;--blue-rgb:99,164,248;
+   --pillbd:rgba(var(--blue-rgb),.5);--pillbg:rgba(var(--blue-rgb),.12);
+   --pillbh:rgba(var(--blue-rgb),.22);--pillbd2:rgba(var(--blue-rgb),.75);
+   --at-bg:rgba(255,210,77,.16);--at-fg:#ffd24d}}   /* @手机高亮暗谱：与上块同值成对 */
+ body{font-family:"Segoe UI Variable Text","Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+      margin:0;background:var(--bg);color:var(--tx)}
+ .top{display:flex;align-items:center;gap:10px;padding:12px 18px;background:var(--card);
+      border-bottom:1px solid var(--line2);position:sticky;top:0;z-index:5}
+ .logo{width:26px;height:26px;border-radius:var(--r3);background:var(--tx);color:var(--bg);
+       display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+ .top b{font-size:12px;letter-spacing:var(--ls1);text-transform:uppercase}
+ .wrap{max-width:680px;margin:0 auto;padding:22px 18px}
+ .hitbar{display:flex;align-items:center;gap:10px;background:var(--okbg);
+      border:1px solid rgba(var(--okrgb),.35);border-radius:var(--r10);padding:12px 16px;margin-bottom:16px}
+      /* 圆角对齐主站 10px 容器瓦片档（12px 出圈档） */
+ .hitbar b{color:var(--ok-txt);font-size:14px}   /* 绿字对绿底：--green 4.28:1 欠 AA → --ok-txt 亮 5.63/暗 6.98（主控台 P2-3 同案孪生页同步） */
+ .hitbar.ok b::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;
+      background:var(--green);margin-right:8px;vertical-align:1px;
+      animation:hitpulse 1.6s ease-in-out infinite}
+ @keyframes hitpulse{0%,100%{box-shadow:0 0 0 0 rgba(var(--okrgb),.4)}
+      50%{box-shadow:0 0 0 5px rgba(var(--okrgb),0)}}
+ .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 22px}
+ .md h1{font-size:18px;margin:6px 0 14px;line-height:1.5}
+ .md .h2{font-size:16px;color:var(--blue);margin:16px 0 8px;font-weight:700}
+ .md .h3{font-size:13px;margin:12px 0 6px;font-weight:700}
+ .md p{margin:7px 0;line-height:1.85;font-size:14px}
+ .md .md-at{background:var(--at-bg);color:var(--at-fg);border-radius:4px;padding:0 5px;font-weight:700}   /* 与主站 .pvbody .md-at 同谱（双主题令牌消费） */
+ /* CTA 胶囊：落地页里所有链接都是动作（去下单/看详情），胶囊化提质感 */
+ .md a{display:inline-block;color:var(--blue);text-decoration:none;font-weight:600;
+      padding:5px 14px;margin:2px 6px 2px 0;border-radius:var(--pill);
+      border:1px solid var(--pillbd);background:var(--pillbg);
+      transition:background .15s,border-color .15s}
+ .md a:hover{background:var(--pillbh);border-color:var(--pillbd2)}
+ /* 触控地板：主站同位件（#foot a::after/.kpisum a）已外扩，轻页
+    CTA/页脚链同族清点补齐（36px 基准——CTA 实高 29/页脚 17 均欠）。
+    竖向外扩为主横向收敛（-4px < CTA 右距 6px，不互叠邻链接误触） */
+ .md a,.foot a{position:relative}
+ .md a::after,.foot a::after{content:'';position:absolute;inset:-10px -4px}
+ /* --- 分隔线：渐隐 hairline（默认裸 hr 极廉价） */
+ .md hr{border:none;height:1px;margin:14px 0;
+       background:linear-gradient(90deg,transparent,var(--line2) 18%,var(--line2) 82%,transparent)}
+ .md .g{letter-spacing:var(--ls2);font-size:16px}
+ .md b{font-variant-numeric:tabular-nums}
+ .md img{max-width:100%;border-radius:var(--r10);border:1px solid var(--line);display:block;margin:10px 0}
+ .foot{margin-top:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+ .foot a{display:inline;color:var(--blue);font-size:13px;font-weight:400;
+        padding:0;margin:0;border:none;background:none;text-decoration:none}
+ .foot a:hover{background:none;text-decoration:underline}
+ .ts{color:var(--mut);font-size:12px;font-variant-numeric:tabular-nums}
+</style></head><body>
+<div class="top"><span class="logo"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 13.5l19-7-7 19-3.2-8.3L2.5 13.5z"/></svg></span><b>机票监控 · 达标通知</b></div>
+<div class="wrap">
+ <div class="hitbar"><b>已达标——可出手</b><span id="ts" class="ts" style="margin-left:auto"></span></div>
+ <div class="card md" id="md"></div>
+ <div class="foot">
+  <a id="console" href="/#details">打开完整控制台 →</a>
+  <span class="ts">点系统弹窗直达本页 · 数据仅存本机</span>
+ </div>
+</div>
+<script>
+const N=__PAYLOAD__;
+document.getElementById("ts").textContent=N.ts||"";
+document.title=(N.title||"达标通知")+" · 机票监控";
+/* 横幅随内容如实变化：非达标通知（如"通知不存在"）不冒充达标 */
+(function(){const hb=document.querySelector(".hitbar"),hbB=hb.querySelector("b");
+ if((N.title||"").indexOf("达标")>=0){hb.classList.add("ok");
+  hbB.textContent="🚨 已达标——可出手";return;}
+ hbB.textContent=N.title||"通知";
+ hb.style.background="var(--card)";hb.style.borderColor="var(--line)";
+ hbB.style.color="var(--tx)";})();
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
+function inline(s){let t=esc(s)
+ .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
+ .replace(/@(\d[\d*]+)/g,'<span class="md-at">@$1</span>')
+ const parts=t.split("**");let o=""
+ for(let i=0;i<parts.length;i++)o+=(i%2)?"<b>"+parts[i]+"</b>":parts[i]
+ return o}
+const NL=String.fromCharCode(10)
+const md=document.getElementById("md")
+String(N.desp||"").split(NL).forEach(ln=>{
+ const t=ln.trim()
+ if(!t){return}
+ if(t.indexOf("![")===0){const m=t.match(/\((https?:[^)]+)\)/)
+  if(m){const im=document.createElement("img");im.src=m[1];md.appendChild(im)}return}
+ if(t.indexOf("#### ")===0){const d=document.createElement("div");d.className="h3";d.innerHTML=inline(t.slice(5));md.appendChild(d);return}
+ if(t.indexOf("### ")===0){const d=document.createElement("div");d.className="h3";d.innerHTML=inline(t.slice(4));md.appendChild(d);return}
+ if(t.indexOf("## ")===0){const d=document.createElement("div");d.className="h2";d.innerHTML=inline(t.slice(3));md.appendChild(d);return}
+ if(t.indexOf("# ")===0){const d=document.createElement("h1");d.innerHTML=inline(t.slice(2));md.appendChild(d);return}
+ if(/^-{3,}$/.test(t)){const d=document.createElement("hr");md.appendChild(d);return}
+ if(t.indexOf("> ")===0){const d=document.createElement("p");d.style.cssText="border-left:3px solid var(--blue);padding:4px 12px;margin:6px 0;color:var(--mut)";d.innerHTML=inline(t.slice(2));md.appendChild(d);return}
+ if(/^[🟦🟩🟨⬜🟥]+$/.test(t.replace(/\s/g,""))){const d=document.createElement("div");d.className="g";d.textContent=t;md.appendChild(d);return}
+ const p=document.createElement("p");p.innerHTML=inline(t);md.appendChild(p)})
+document.getElementById("console").href=location.origin+"/#details"
+</script></body></html>

@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "packages": [
+    "com.taobao.trip"
+  ],
+  "markers": [
+    "houdini",
+    "nemu",
+    "mumu",
+    "netease"
+  ]
+}
