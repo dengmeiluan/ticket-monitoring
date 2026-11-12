@@ -1,0 +1,72 @@
+[
+ {
+  "arrCityCode": "TYO",
+  "backDate": "2026-11-20",
+  "depCityCode": "SHA",
+  "discount": 0.0,
+  "leaveDate": "2026-11-16",
+  "price": 771.0,
+  "tax": 1550.0,
+  "url": "//sijipiao.fliggy.com/ie/flight_search_result.htm?depCityName=上海&depCityCode=SHA&arrCityName=东京&arrCityCode=TYO&tripType=1&depDate=2026-11-16&arrDate=2026-11-20&searchBy=1281&scene=null"
+ },
+ {
+  "arrCityCode": "TYO",
+  "backDate": "2026-11-21",
+  "depCityCode": "SHA",
+  "discount": 0.0,
+  "leaveDate": "2026-11-17",
+  "price": 900.0,
+  "tax": 1457.0,
+  "url": "//sijipiao.fliggy.com/ie/flight_search_result.htm?depCityName=上海&depCityCode=SHA&arrCityName=东京&arrCityCode=TYO&tripType=1&depDate=2026-11-17&arrDate=2026-11-21&searchBy=1281&scene=null"
+ },
+ {
+  "arrCityCode": "TYO",
+  "backDate": "2026-11-22",
+  "depCityCode": "SHA",
+  "discount": 0.0,
+  "leaveDate": "2026-11-18",
+  "price": 900.0,
+  "tax": 1457.0,
+  "url": "//sijipiao.fliggy.com/ie/flight_search_result.htm?depCityName=上海&depCityCode=SHA&arrCityName=东京&arrCityCode=TYO&tripType=1&depDate=2026-11-18&arrDate=2026-11-22&searchBy=1281&scene=null"
+ },
+ {
+  "arrCityCode": "TYO",
+  "backDate": "2026-11-23",
+  "depCityCode": "SHA",
+  "discount": 0.0,
+  "leaveDate": "2026-11-19",
+  "price": 900.0,
+  "tax": 1457.0,
+  "url": "//sijipiao.fliggy.com/ie/flight_search_result.htm?depCityName=上海&depCityCode=SHA&arrCityName=东京&arrCityCode=TYO&tripType=1&depDate=2026-11-19&arrDate=2026-11-23&searchBy=1281&scene=null"
+ },
+ {
+  "arrCityCode": "TYO",
+  "backDate": "2026-11-24",
+  "depCityCode": "SHA",
+  "discount": 0.0,
+  "leaveDate": "2026-11-20",
+  "price": 900.0,
+  "tax": 1457.0,
+  "url": "//sijipiao.fliggy.com/ie/flight_search_result.htm?depCityName=上海&depCityCode=SHA&arrCityName=东京&arrCityCode=TYO&tripType=1&depDate=2026-11-20&arrDate=2026-11-24&searchBy=1281&scene=null"
+ },
+ {
+  "arrCityCode": "TYO",
+  "backDate": "2026-11-25",
+  "depCityCode": "SHA",
+  "discount": 0.0,
+  "leaveDate": "2026-11-21",
+  "price": 900.0,
+  "tax": 1457.0,
+  "url": "//sijipiao.fliggy.com/ie/flight_search_result.htm?depCityName=上海&depCityCode=SHA&arrCityName=东京&arrCityCode=TYO&tripType=1&depDate=2026-11-21&arrDate=2026-11-25&searchBy=1281&scene=null"
+ },
+ {
+  "arrCityCode": "TYO",
+  "backDate": "2026-11-26",
+  "depCityCode": "SHA",
+  "discount": 0.0,
+  "leaveDate": "2026-11-22",
+  "price": 822.0,
+  "tax": 1491.0,
+  "url": "//sijipiao.fliggy.com/ie/flight_search_result.htm?depCityName=上海&depCityCode=SHA&arrCityName=东京&arrCityCode=TYO&tripType=1&depDate=2026-11-22&arrDate=2026-11-26&searchBy=1281&scene=null"
+ }
+]

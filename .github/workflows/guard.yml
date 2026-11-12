@@ -1,0 +1,47 @@
+name: 发版形态守卫
+
+# 只做一件事：main 的**公开历史形态**必须是单一 root commit。
+#
+# 为什么单独成 workflow 而不塞进 ci.yml：
+# 1) ci.yml 被优化成 3 分钟的两条泳道（分片测试 + UI 自检），形态检查只需要 10 秒，
+#    混进去反而拖慢它；
+# 2) 这条检查**只对 main 有意义**——PR 分支本来就应该有多笔提交，塞进 ci.yml 会让
+#    每个 PR 无脑变红。
+#
+# 2026-11-16 的实况是：main 上叠了 6 笔、Pages 部署 7 条、Release 停在旧 SHA，
+# 而所有 CI 都是绿的——因为没人校验"对外发布形态"。这个 workflow 补的就是这个洞。
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: guard-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # fetch-depth 0：要数提交数、要找 root，浅克隆数不出来
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: 历史形态（单一 root commit）+ 站点戳 + 人员名单核对
+        env:
+          # contributors 核对要读 PR 列表；CI 里没有 scripts/ghtoken.txt，
+          # 必须把内置 token 传进去（只读 API，够用）。
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "提交数: $(git rev-list --count HEAD)"
+          git log --format='  %h | %an | %s' | head -20
+          python tools/release_guard.py --offline --no-collect
+      - name: 站点构建戳 / 版本说明 / README 计数
+        run: python tools/release_guard.py --offline --no-collect

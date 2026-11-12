@@ -1,0 +1,48 @@
+#!/bin/sh
+# 推 main 前拦一道：公开历史必须是**单一 root commit**。
+#
+# 为什么：Release 页会写「N commit to main since this release」，Deployments 也会
+# 一次 push 一条；历史一叠起来，对外三处入口就互相矛盾（2026-11-16 实例：
+# 6 笔提交 + 7 条部署 + Release 停在旧 SHA）。CI 只跑测试、不看发布形态，
+# 所以这道拦截放在推送这一步，比事后对齐便宜得多。
+#
+# 启用（一次性）：
+#     git config core.hooksPath .githooks
+#
+# 没有绕过开关（维护者 2026-11-16 决定）：多提交就**不能**推 main，
+# 先 `python tools/converge_history.py --yes` 收敛成单一 root commit 再推。
+
+ref=$(git rev-parse --symbolic-full-name HEAD 2>/dev/null)
+remote="$1"
+
+# 只关心推到 main 的情况
+if [ "$ref" != "refs/heads/main" ]; then
+    exit 0
+fi
+
+# 形态判据与 tools/release_guard.py 一致（规范 v2）：root + 外部贡献提交 + 收尾提交，
+# 禁 merge 提交；维护者自己的过程提交必须合并进最后一笔。
+root_sha=$(git rev-list --max-parents=0 HEAD)
+root_count=$(printf '%s\n' "$root_sha" | grep -c .)
+if [ "$root_count" -ne 1 ]; then
+    echo "[pre-push] 拒绝推送：root 提交必须恰好 1 个（当前 $root_count）"
+    exit 1
+fi
+if [ -n "$(git rev-list --merges HEAD)" ]; then
+    echo "[pre-push] 拒绝推送：历史里不能有 merge 提交"
+    exit 1
+fi
+python_bin="${PYTHON:-python}"
+if command -v "$python_bin" >/dev/null 2>&1; then
+    "$python_bin" -X utf8 tools/release_guard.py --offline --no-collect --history-only >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo ""
+        echo "[pre-push] 拒绝推送：公开历史形态不符合规范（root + 外部贡献提交 + 1 笔收尾）。"
+        echo "  自查：$python_bin -X utf8 tools/release_guard.py --offline --no-collect --history-only"
+        echo "  收敛：$python_bin -X utf8 tools/converge_history.py --yes   （保留外部贡献提交）"
+        echo "  说明：docs/RELEASE_PROCESS.md §3"
+        exit 1
+    fi
+fi
+
+exit 0
