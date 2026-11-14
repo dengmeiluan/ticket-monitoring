@@ -24,6 +24,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -417,6 +418,25 @@ def prune_tree_snaps(root: str = "", keep: int = 2) -> list:
     return removed
 
 
+def _safe_extract(z, dest):
+    """只解压落在 dest 内的成员：`..`、绝对路径、符号链接一律拒绝。
+
+    升级包是下载来的，成员名由发布方决定；`extractall` 会照名字落盘，
+    `../x` 或 `/x` 就能写到缓存目录之外。正常发行包不受影响。
+    """
+    root = os.path.realpath(dest)
+    for info in z.infolist():
+        name = info.filename
+        if name.endswith("/"):
+            continue
+        target = os.path.realpath(os.path.join(root, name))
+        if target != root and not target.startswith(root + os.sep):
+            raise RuntimeError("拒绝不安全的升级包成员：%s" % name)
+        if stat.S_ISLNK(info.external_attr >> 16):
+            raise RuntimeError("拒绝升级包里的符号链接：%s" % name)
+    z.extractall(root)
+
+
 def apply(zip_path: str = "", force: bool = False) -> dict:
     """把 zip 覆盖到项目目录：**先备份，失败回滚**；用户数据目录一律跳过。"""
     root = _root()
@@ -444,7 +464,7 @@ def apply(zip_path: str = "", force: bool = False) -> dict:
                            "python -m core.update --apply --force"}
     try:
         with zipfile.ZipFile(zip_path) as z:
-            z.extractall(tmp)        # zip 里可能多套一层目录
+            _safe_extract(z, tmp)    # zip 里可能多套一层目录
         base = tmp
         entries = os.listdir(tmp)
         if len(entries) == 1 and os.path.isdir(os.path.join(tmp, entries[0])):
