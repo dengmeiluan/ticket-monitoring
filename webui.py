@@ -2980,6 +2980,38 @@ def _spawn_cli_login(plat: str) -> tuple:
         return False, "另起登录进程也失败：%s" % str(e)[:120]
 
 
+def _login_phase_view(key: str) -> dict:
+    """登录流程的**服务端真实阶段**（给按钮文案用，不当进度条）。
+
+    前端原来的秒表只是从点击时刻起算 Date.now() 差值，与登录窗口的
+    真实状态无关：用户切到登录窗口后，控制台页面被浏览器节流，
+    setInterval 从 500ms 掉到分钟级，秒数就停住，读作卡死。这里回后端
+    真实阶段，前端只负责把它翻成中文；秒数仅作辅助信息。
+    """
+    import time as _t
+    key = str(key or "")
+    sess = _State.login_sessions.get(key)
+    if not sess:
+        return {"ok": True, "slot": key, "active": False, "phase": "",
+                "msg": "", "phase_s": 0, "elapsed_ms": 0, "err": ""}
+    now = _t.time()
+    phase = str(sess.get("phase") or "")
+    since = float(sess.get("phase_at") or now)
+    opened = float(sess.get("opened_at") or 0)
+    msg = {
+        "queued": "排队等采集让出该渠道（已请求叫停本轮）",
+        "opening": "正在启动浏览器并打开登录页",
+        "waiting_user": "窗口已打开，请在窗口里完成登录",
+        "saving": "正在保存会话",
+        "saved": "会话已保存",
+        "error": "登录未完成",
+    }.get(phase, "")
+    return {"ok": True, "slot": key, "active": True, "phase": phase,
+            "phase_s": max(0, int(now - since)),
+            "elapsed_ms": (int((now - opened) * 1000) if opened else 0),
+            "msg": msg, "err": str(sess.get("error") or "")}
+
+
 def _start_login(plat: str, slot: str = "", url: str = "",
                  desktop: bool = False, mobile: bool = False) -> dict:
     """网页登录：按登录槽位弹出有头浏览器窗口并保存独立会话。
@@ -3023,7 +3055,12 @@ def _start_login(plat: str, slot: str = "", url: str = "",
         ready = threading.Event()
         session = {"evt": evt, "done": threading.Event(),
                    "ready": ready, "saving": False,
-                   "saved": False, "error": ""}
+                   "saved": False, "error": "",
+                   # 服务端真实阶段（前端按钮文案据此显示，不再拿自由秒表
+                   # 冒充进度）：queued → opening → waiting_user →
+                   # saving → saved / error
+                   "phase": "queued", "phase_at": _t.time(),
+                   "opened_at": 0.0}
         _State.login_errors.pop(key, None)
         # r1063 T183：登录窗要拿和采集同一把渠道锁。开会话就请采集收尾，
         # 否则用户要干等一轮（并且超时后线程仍会开窗 → 窗口一直闪）。
@@ -3058,6 +3095,8 @@ def _start_login(plat: str, slot: str = "", url: str = "",
             session["queued"] = True
             with channel_slot(_lock_key):
                 session["queued"] = False
+                session["phase"] = "opening"
+                session["phase_at"] = _t.time()
                 # r1063 T183：等锁期间调用方已判超时并取消 → 不许再开窗
                 # （否则就是"僵尸窗口"：面板说失败，窗口却在几十秒后弹出来）。
                 if session.get("cancel") is not None \
@@ -3069,10 +3108,17 @@ def _start_login(plat: str, slot: str = "", url: str = "",
                         url, evt, timeout_s=600, idx=0,
                         ready_evt=session.get("ready"))
                 else:
+                    # 并发的登录窗按序错开位置，避免几个窗口叠在同一坐标
+                    # 反复互相遮挡（用户误以为窗口在不停重开）。
+                    _win_idx = max(0, min(4,
+                                          len(_State.login_sessions) - 1))
                     confirmed = crawler._login_window(
-                        evt, 0, timeout_s=600, ready_evt=session.get("ready"))
+                        evt, _win_idx, timeout_s=600,
+                        ready_evt=session.get("ready"))
             if not confirmed and not evt.is_set():
                 raise RuntimeError("登录窗口已关闭，尚未确认完成")
+            session["phase"] = "saving"
+            session["phase_at"] = _t.time()
             session["saved"] = True
             _State.login_pending[key] = _t.time()
             try:
@@ -3090,6 +3136,8 @@ def _start_login(plat: str, slot: str = "", url: str = "",
                         "[登录] %s 会话已保存，采集缓存刷新失败", key)
             _State.logger.info("[登录] %s 会话已保存（%s）", key,
                                "人机验证" if url else "网页登录")
+            session["phase"] = "saved"
+            session["phase_at"] = _t.time()
             # 重登入账（r478）：这是对成功率影响最大的一次干预（实测去哪儿
             # 国际 H5 被登录墙拦 13/17 后重登即恢复出数），但原先只有
             # warm/verify/probe/reset 写 interventions——重登过什么、之后
@@ -3185,6 +3233,8 @@ def _start_login(plat: str, slot: str = "", url: str = "",
                         (str(e)[:120] or type(e).__name__), _pdetail)
             _State.login_errors[key] = session.get("error") or ""
             _State.login_pending.pop(key, None)
+            session["phase"] = "error"
+            session["phase_at"] = _t.time()
             _State.logger.warning("[登录] %s 登录窗口异常: %s", key, e)
         finally:
             with _State.lock:
@@ -3233,6 +3283,11 @@ def _start_login(plat: str, slot: str = "", url: str = "",
         _State.logger.warning("[登录] %s 登录窗口未能打开：%s", key, _msg)
         return {"ok": False, "err": _msg, "kind": "window_failed"}
     _State.logger.info("[登录] 已弹出 %s 登录窗口", key)
+    # 窗口真的开了才进入「等用户操作」阶段——前端据此把按钮从
+    # 「正在打开窗口」换成「窗口已打开，请去完成登录」。
+    session["phase"] = "waiting_user"
+    session["phase_at"] = _t.time()
+    session["opened_at"] = _t.time()
     # 开窗耗时如实回传：用户在等待期间只能看到一个静态「正在打开窗口…」，
     # 分不清「在排队等渠道锁」和「在等浏览器启动」。实测（2026-11-01）
     # 起窗耗时主要取决于是否撞上采集锁，两者对用户意味着完全不同的处置
@@ -3336,6 +3391,8 @@ def _finish_login(plat: str, slot: str = "") -> dict:
     except Exception:
         pass
     sess["saving"] = True
+    sess["phase"] = "saving"
+    sess["phase_at"] = time.time()
     SRX_LOGIN_T=0;SCAT=0;
     sess["evt"].set()
     # Acknowledges the save request; only the worker may publish saved/pending.
@@ -9282,6 +9339,16 @@ class _Handler(BaseHTTPRequestHandler):
                 self._json(_exit_check())
             except Exception as e:
                 self._json({"ok": False, "err": str(e)}, 500)
+        elif self.path.split("?")[0] == "/api/login-phase":
+            # 登录阶段轮询（轻量 GET）：只读内存里的 session 阶段，
+            # 不走 _login_state_view（那个要算健康证据，代价大）。
+            try:
+                from urllib.parse import urlparse as _up, parse_qs as _pq
+                _q = _pq(_up(self.path).query)
+                _slot = str((_q.get("slot") or [""])[0] or "")
+                self._json(_login_phase_view(_slot))
+            except Exception as e:
+                self._json({"ok": False, "err": str(e)}, 500)
         elif self.path == "/api/state":
             try:
                 # body/etag/gz 同锁快照一次取齐，304 判定不再撕裂
@@ -11103,9 +11170,11 @@ class _Handler(BaseHTTPRequestHandler):
                     to=str(body.get("to") or ""),
                     logger=st.logger,
                     snapshot_base="http://%s/" % host)
+                # 整段走 % 格式化，正文里的字面 % 必须写成 %%
+                # （issue #18：「100% 同视觉」漏转义曾让测试邮件 100% 发不出去）
                 desp = ("#### 📸 测试邮件——通路正常（控制台整页截图）\n\n"
                         "正文即正式推送形态：控制台整页截图直嵌，KPI/走势/"
-                        "明细与网页 100% 同视觉。\n\n"
+                        "明细与网页 100%% 同视觉。\n\n"
                         "> 版本 v%s ｜ ⏰ %s\n\n"
                         "- 截图渲染失败自动降级纯文字轻壳，通路不受影响"
                         % (ver or "?", now))

@@ -44,6 +44,10 @@ class Route:
     dates: list
     alert_threshold: float = 0
     alert_direct: float = 0        # 直飞阈值（0 不启用）
+    # 含免费托运的直飞阈值（0=不启用分档）。>0 时进入「按托运分档」：
+    # 无托运/未标注的班次走 alert_direct，明确含免费托运的走本条。
+    # 两条线各自成池判定，取相对阈值更优的一条推送，标题标注池别。
+    alert_direct_bag: float = 0
     alert_transfer: float = 0      # 中转阈值（0 不启用，须满足到达时间约束）
     transfer_arrival_max: str = "02:00"  # 中转最晚到达（次日该时刻前）
     transfer_layover_min: int = 0  # 中转最短衔接分钟（0=不限；需托运建议 ≥90）

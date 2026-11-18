@@ -1047,7 +1047,11 @@ class BaseCrawler:
         # 同名还不够：空值/已过期的持久 Cookie 是残留，不是登录证据
         # （2026-11-02 实测 QN1/cookie2 匿名就下发，曾导致登出态回写）。
         want = tuple(getattr(self, "AUTH_COOKIES", ()) or ())
-        if not want:
+        # 弹窗登录（Google/淘宝等第三方）的凭证未必落在主页 cookie 里，
+        # 有的只写 localStorage。AUTH_STORAGE_KEYS 让渠道声明这部分键名，
+        # 与 cookie 名单同时参与判定（匹配为子串，兼容带前缀的键）。
+        want_ls = tuple(getattr(self, "AUTH_STORAGE_KEYS", ()) or ())
+        if not want and not want_ls:
             return False
         now = time.time()
         for c in (state or {}).get("cookies") or []:
@@ -1062,7 +1066,101 @@ class BaseCrawler:
             if exp > 0 and exp <= now:
                 continue
             return True
+        if want_ls:
+            for o in (state or {}).get("origins") or []:
+                if not isinstance(o, dict):
+                    continue
+                for it in o.get("localStorage") or []:
+                    if not isinstance(it, dict):
+                        continue
+                    _n = str(it.get("name") or "")
+                    if not _n:
+                        continue
+                    if not any(w in _n for w in want_ls):
+                        continue
+                    if str(it.get("value") or "").strip():
+                        return True
         return False
+
+
+    def _collect_state(self, ctx) -> dict:
+        """汇总**同一浏览器上下文里所有页面（含弹窗）**的 cookie 与
+        localStorage，返回 storage_state 同构的字典。
+
+        为什么不能只用 ctx.storage_state()：第三方登录（Google / 淘宝
+        等）常在 window.open 出来的页面完成，凭证可能只落在弹窗页的
+        localStorage；storage_state 的 origins 偶尔拿不到刚写入的条目，
+        于是「人明明登进去了，判定仍说没登录」。这里逐页补一遍。
+        """
+        state = {}
+        try:
+            state = ctx.storage_state() or {}
+        except Exception:
+            state = {}
+        cookies = state.get("cookies") or []
+        try:
+            # context 级 cookie 覆盖所有域（含弹窗页打开的域）
+            cookies = ctx.cookies() or cookies
+        except Exception:
+            pass
+        origins = {}
+        for o in state.get("origins") or []:
+            if not isinstance(o, dict):
+                continue
+            org = str(o.get("origin") or "")
+            if not org:
+                continue
+            origins[org] = {
+                str(x.get("name")): dict(x)
+                for x in (o.get("localStorage") or []) if isinstance(x, dict)
+            }
+        try:
+            pages = list(ctx.pages)
+        except Exception:
+            pages = []
+        _JS_LS = ("() => { try { const o = {};"
+                  " for (let i = 0; i < localStorage.length; i++) {"
+                  "  const k = localStorage.key(i);"
+                  "  if (k) o[k] = localStorage.getItem(k); }"
+                  " return {origin: location.origin, ls: o}; }"
+                  " catch (e) { return null; } }")
+        for pg in pages:
+            try:
+                if pg.is_closed():
+                    continue
+                got = pg.evaluate(_JS_LS)
+            except Exception:
+                continue
+            if not isinstance(got, dict):
+                continue
+            org = str(got.get("origin") or "")
+            if not org:
+                continue
+            cur = origins.setdefault(org, {})
+            for k, v in (got.get("ls") or {}).items():
+                cur[str(k)] = {"name": str(k),
+                               "value": "" if v is None else str(v)}
+        return {"cookies": cookies,
+                "origins": [{"origin": o,
+                             "localStorage": list(v.values())}
+                            for o, v in origins.items()]}
+
+    def _auth_gap_hint(self) -> str:
+        """判定失败时告诉用户「缺什么」，别只丢一句未检测到凭证。"""
+        want = tuple(getattr(self, "AUTH_COOKIES", ()) or ())
+        want_ls = tuple(getattr(self, "AUTH_STORAGE_KEYS", ()) or ())
+        bits = []
+        if want:
+            bits.append("Cookie: " + " / ".join(want))
+        if want_ls:
+            bits.append("localStorage: " + " / ".join(want_ls))
+        if not bits:
+            return ("该渠道没有声明登录凭证名单（AUTH_COOKIES / "
+                    "AUTH_STORAGE_KEYS 为空），无法判定登录态——"
+                    "这是渠道配置问题，不是你没有登录")
+        return ("未找到以下任一项：" + "；".join(bits)
+                + "。若你是扫码/第三方弹窗登录，请确认登录已在弹窗内完成"
+                  "并等页面跳回，再点「我已登录完成」")
 
     def _should_refresh_snapshot(self, save_session) -> bool:
         """采集态是否回写快照（沿用 saved_at，不冒充重新登录）。"""
@@ -1399,8 +1497,13 @@ class BaseCrawler:
                 # 重启后快照已过期，表现成「过一会又要登录」。
                 _refresh = self._should_refresh_snapshot(save_session)
                 try:
-                    state = (ctx.storage_state()
-                             if (save_session or _refresh) else None)
+                    # 登录收尾必须走合并态：用户可能是在弹窗里完成的登录，
+                    # 只取主页面 storage_state 会把弹窗里的凭证漏掉。
+                    if save_session == "login":
+                        state = self._collect_state(ctx)
+                    else:
+                        state = (ctx.storage_state()
+                                 if (save_session or _refresh) else None)
                 except Exception as e:
                     # 验证窗口关得太快时上下文可能已经关闭；若周期快照
                     # 已成功，可以安全忽略收尾失败。登录窗口没有任何快照
@@ -1427,7 +1530,8 @@ class BaseCrawler:
                         # 用户点了“我已登录完成”，但快照里没有登录凭证：
                         # 不能把登出态写成刚登录，也不覆盖旧快照。
                         raise RuntimeError(
-                            "未检测到登录凭证（AUTH_COOKIES），未覆盖旧快照")
+                            "未检测到登录凭证（AUTH_COOKIES），未覆盖旧快照。"
+                            + self._auth_gap_hint())
                     # 采集回写只在认证 Cookie 仍在场时发生：已掉登录的
                     # 状态不覆盖上一份可用快照。
                     state = None
@@ -2373,6 +2477,12 @@ class BaseCrawler:
         # 于是 tuniu_h5 / ctrip_h5 都登在 PC 域上（H5 域拿不到 cookie）。
         url = (str(getattr(self, "login_url_override", "") or "")
                or self.login_url())
+        # 排队等渠道锁期间用户可能已点「我已登录完成」/撤销：此时再开窗
+        # 就是一次纯粹的闪窗（开了立刻关，抢走输入焦点）。直接返回。
+        if done_evt is not None and done_evt.is_set():
+            self.logger.info("[%s] 登录窗口未打开：请求已取消/已确认完成",
+                             self.name)
+            return False
         self.logger.info("[%s] 正在打开登录窗口：%s（端=%s）", self.name, url,
                          getattr(self, "login_surface", "") or "未标注")
         self._session_snap_ok = False
@@ -2397,7 +2507,7 @@ class BaseCrawler:
                     if deadline and _t.time() >= deadline:
                         # 超时但已拿到凭证：同样按「已存待验」处理（r1063 T103）
                         try:
-                            _st = ctx.storage_state()
+                            _st = self._collect_state(ctx)
                             if _st and self._session_state_allowed(
                                     _st, "login"):
                                 self._write_session_state(_st, keep_saved_at)
@@ -2420,7 +2530,7 @@ class BaseCrawler:
                         # 把"关窗"伪装成"刚保存登录"，登录态卡片会说谎。
                         _saved = False
                         try:
-                            state = ctx.storage_state()
+                            state = self._collect_state(ctx)
                             if state and self._session_state_allowed(
                                     state, "login"):
                                 self._write_session_state(state, keep_saved_at)
@@ -2444,11 +2554,12 @@ class BaseCrawler:
                             return True
                         raise RuntimeError(
                             "登录窗口已关闭，且未检测到登录凭证"
-                            "（请确认已登录后再关闭窗口）")
+                            "（请确认已登录后再关闭窗口）。"
+                            + self._auth_gap_hint())
                     now = _t.time()
                     if now - last_snap >= 5:
                         try:
-                            state = ctx.storage_state()
+                            state = self._collect_state(ctx)
                             # 登录未完成前不落盘：否则会用登出态覆盖旧快照
                             if state and self._session_state_allowed(
                                     state, "login"):
@@ -2503,7 +2614,7 @@ class BaseCrawler:
                     # 关窗=人认为验证完成。上下文可能随窗口一起关闭，
                     # 所以先尝试最后一次快照；失败则用 5s 内的周期快照。
                     try:
-                        state = ctx.storage_state()
+                        state = self._collect_state(ctx)
                         if state:
                             self._write_session_state(state, _t.time())
                             self._session_snap_ok = True
@@ -2516,7 +2627,7 @@ class BaseCrawler:
                 if now - last_snap >= 5:
                     # 周期快照：避免"刚过完验证就关窗"丢掉最后一组成熟 cookie
                     try:
-                        state = ctx.storage_state()
+                        state = self._collect_state(ctx)
                         if state:
                             self._write_session_state(state, keep_saved_at)
                             self._session_snap_ok = True

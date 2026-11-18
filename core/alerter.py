@@ -81,6 +81,29 @@ def _qual_price(f) -> float:
     return p
 
 
+def _has_free_bag(f) -> bool:
+    """该行是否**明确含免费托运**（分档阈值的分池判据）。
+
+    与 min_baggage 同口径：从 `baggage` 词面解析 kg 数，取最大者；
+    明示「无免费托运 / 需另购 / 收费」的一律不算（渠道常把「无免费
+    托运」也写进同一个字段）。词面没有任何 kg 数的行**不算**含托运
+    ——与 min_baggage 的 fail-close 同律：未标注不等于有。
+    """
+    t = str(f.get("baggage") or "").strip()
+    if not t:
+        return False
+    if _RE_NO_BAG.search(t):
+        return False
+    kgs = [float(x) for x in re.findall(
+        r"(\d+(?:\.\d+)?)\s*(?:kg|公斤)", t, re.I)]
+    return bool(kgs) and max(kgs) >= 1
+
+
+# 「无/不含/需另购/收费 + 托运/行李」：渠道把否定词和「托运」写在同一
+# 个字段里（「无免费托运」「行李需另购」），必须先否掉再判 kg。
+_RE_NO_BAG = re.compile(r"(?:无|不含|需另购|另购|收费)(?:免费)?(?:托运|行李)")
+
+
 # 档位词面单源（收编 审校 P1-2 挂账：_legend_line/图 markdown
 # 头×2/report 两处图例/_suggest_line 手抄散点，改词只动此表）。键序=
 # 判定梯度同向。四投影语义：全词=PNG 图例/图头长词面；短词=钉钉图例
@@ -1228,7 +1251,15 @@ class Alerter:
         # 非 digest 模式：逐航线单条去抖告警
         for route, sections in built:
             for s in sections:
-                if route.alert_direct > 0 and s["best_direct"] is not None:
+                _tier = self._direct_tier_pick(route, s)
+                if _tier is not None:
+                    self._category_alert(route, s["date"], _tier[0],
+                                         "direct", _tier[1],
+                                         s["n_direct"], s["src_platform"],
+                                         pool=s.get("all_flights"))
+                elif float(getattr(route, "alert_direct_bag", 0) or 0) <= 0 \
+                        and route.alert_direct > 0 \
+                        and s["best_direct"] is not None:
                     self._category_alert(route, s["date"], s["best_direct"],
                                          "direct", route.alert_direct,
                                          s["n_direct"], s["src_platform"],
@@ -1364,6 +1395,7 @@ class Alerter:
         cfg = route if isinstance(route, dict) else {
             "airlines": route.airlines, "no_lcc": route.no_lcc,
             "min_baggage": route.min_baggage,
+            "alert_direct_bag": getattr(route, "alert_direct_bag", 0) or 0,
             "widebody_only": route.widebody_only,
             "price_max": getattr(route, "price_max", 0) or 0,
             "no_cross": getattr(route, "no_cross", False),
@@ -1379,7 +1411,14 @@ class Alerter:
         # （r341 用户令「更多智能筛选项」：只想剔某几家时不被迫列全白名单）
         ban = [s2[1:].strip() for s2 in want if s2.startswith("!") and s2[1:].strip()]
         want = [s2 for s2 in want if not s2.startswith("!")]
-        min_bg = int(cfg.get("min_baggage") or 0)
+        # 分档模式（alert_direct_bag>0）下 min_baggage 不再当过滤器：
+        # 它会把「无托运」那半个池整体清空，让 alert_direct 这条线永远
+        # 失效（用户要的正是「无托运线更低」）。分池由 _has_free_bag 做。
+        try:
+            _tier_on = float(cfg.get("alert_direct_bag") or 0) > 0
+        except (TypeError, ValueError):
+            _tier_on = False
+        min_bg = 0 if _tier_on else int(cfg.get("min_baggage") or 0)
         pmax = float(cfg.get("price_max") or 0)
         mdh = float(cfg.get("max_duration_h") or 0)
         out = []
@@ -1511,6 +1550,27 @@ class Alerter:
         diff = min(diff, 1440 - diff)  # 环形差
         return diff <= 10
 
+    def _direct_tier_pick(self, route: Route, s: dict):
+        """按托运分档选「该推哪条直飞」，返回 (flight, 阈值) 或 None。
+
+        两条线各自成池：无托运/未标注走 `alert_direct`，明确含免费托运
+        走 `alert_direct_bag`。两边都达标时取「相对阈值更优」的一条
+        （price/th 更小 = 相对更划算），避免同日两条消息被去抖互相压制。
+        未启用分档（alert_direct_bag<=0）返回 None，调用方走原逻辑。
+        """
+        th_bag = float(getattr(route, "alert_direct_bag", 0) or 0)
+        if th_bag <= 0:
+            return None
+        cands = []
+        if route.alert_direct > 0 and s.get("best_direct_nobag") is not None:
+            cands.append((s["best_direct_nobag"], route.alert_direct))
+        if s.get("best_direct_bag") is not None:
+            cands.append((s["best_direct_bag"], th_bag))
+        hits = [(f, th) for f, th in cands if _qual_price(f) <= th]
+        if not hits:
+            return None
+        return min(hits, key=lambda c: _qual_price(c[0]) / max(c[1], 1))
+
     def _handle_categories(self, route: Route, prices: List[FlightPrice]):
         sections = self._build_sections(route, prices)
         if not sections:
@@ -1523,7 +1583,16 @@ class Alerter:
 
         # 非 digest 模式：沿用单条去抖告警
         for s in sections:
-            if route.alert_direct > 0 and s["best_direct"] is not None:
+            _tier = self._direct_tier_pick(route, s)
+            if _tier is not None:
+                # 分档命中：推送选中的那一池（无托运线 / 含托运线）
+                self._category_alert(route, s["date"], _tier[0],
+                                     "direct", _tier[1],
+                                     s["n_direct"], s["src_platform"],
+                                     pool=s.get("all_flights"))
+            elif float(getattr(route, "alert_direct_bag", 0) or 0) <= 0 \
+                    and route.alert_direct > 0 \
+                    and s["best_direct"] is not None:
                 self._category_alert(route, s["date"], s["best_direct"],
                                      "direct", route.alert_direct,
                                      s["n_direct"], s["src_platform"],
@@ -1716,6 +1785,15 @@ class Alerter:
             # 后超线，次低行真达标却永不参判，达标漏报）
             best_direct = (min(fresh_d, key=_qual_price)
                            if fresh_d else None)
+            # 分档（r-bag）：按「是否明确含免费托运」把直飞池拆两半各取
+            # 最优，供 alert_direct / alert_direct_bag 两条线分别判定。
+            # 只在启用分档时算，未启用零额外开销。
+            best_direct_bag = best_direct_nobag = None
+            if float(getattr(route, "alert_direct_bag", 0) or 0) > 0:
+                _db = [f for f in fresh_d if _has_free_bag(f)]
+                _dn = [f for f in fresh_d if not _has_free_bag(f)]
+                best_direct_bag = min(_db, key=_qual_price) if _db else None
+                best_direct_nobag = min(_dn, key=_qual_price) if _dn else None
             best_transfer = (min(fresh_t, key=_qual_price)
                              if fresh_t else None)
             # 行情口径最优（不限直挂）：KPI 展示/建议行差值基——与达标链
@@ -1816,6 +1894,8 @@ class Alerter:
                 "top_transfer": _dedup_tie(
                     sorted(top_transfers, key=lambda f: f["price"]))[:5],
                 "best_direct": best_direct,
+                "best_direct_bag": best_direct_bag,
+                "best_direct_nobag": best_direct_nobag,
                 "best_transfer": best_transfer,
                 "best_transfer_mkt": best_transfer_mkt,
                 "n_direct": len(directs),

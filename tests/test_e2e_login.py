@@ -74,11 +74,17 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def test_login_start_shows_in_progress_copy():
-    """静态旁证：文案与 aria-busy 的存在（渲染判据在主测试）。"""
+    """静态旁证：文案与 aria-busy 的存在（渲染判据在主测试）。
+
+    r-登录体验：进行中文案不再用「正在打开窗口…」冒充进度，而是先写
+    「正在提交登录请求」，随后由服务端阶段（排队/起窗/等用户/保存）
+    逐段替换；两者都算合格的「进行中」文案。
+    """
     w = webui_full_src()
     i = w.index("async function loginStart(")
     seg = w[i:i + 1400]
-    assert "正在打开窗口…" in seg, "loginStart 没有换成进行中文案"
+    assert ("正在提交登录请求" in seg) or ("正在打开窗口…" in seg), \
+        "loginStart 没有换成进行中文案"
     assert "aria-busy" in seg, "进行中态没给读屏播报"
     assert "b.disabled=true" in seg, "进行中应禁用按钮，避免重复触发"
 

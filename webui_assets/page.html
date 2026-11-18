@@ -15373,10 +15373,13 @@ function _rowRoving(e,el){/* 明细行 ↑/↓ 族内移动（审计 P2-6：
  const i=els.indexOf(el);if(i<0)return;
  const j=e.key==='ArrowDown'?i+1:i-1;
  if(j>=0&&j<els.length)els[j].focus();}
-function heFriendly(e){/* 服务端 500 的原始异常串不直出中文界面：
-   截断 + 指路服务日志（有更友好映射的场景由调用点自行给词） */
+function heFriendly(e,max){/* 服务端 500 的原始异常串不直出中文界面：
+   截断 + 指路服务日志（有更友好映射的场景由调用点自行给词）。
+   r-登录体验：登录失败必须让用户读到「缺哪个 cookie / localStorage」，
+   默认 80 字会正好把它截掉，故支持调用点放宽上限（传第二参数）。 */
  e=String(e==null?'':e).trim();if(!e)return'';
- return e.length>80?Array.from(e).slice(0,80).join('')+'…（详见服务日志）':e;}
+ const cap=(max&&max>0)?max:80;
+ return e.length>cap?Array.from(e).slice(0,cap).join('')+'…（详见服务日志）':e;}
 function expCsv(){if(!S||!S.users.length){toast('数据加载中，请稍候再导出');return;}
  const rows=filteredRows();
  if(!rows.length){toast('当前筛选无数据，先调整筛选条件');return;}
@@ -21378,18 +21381,57 @@ let SRX_LOGIN_T=0,SCAT=0;   /* 旧检索页同步点保留，实际以 loadChann
    轮询一旦重建卡片，进行中就被换回旧文案——实测停在「… 5s」二十多秒，
    用户读作卡死。重建后的按钮从同一份起点继续计时，中间态不再丢。 */
 const LOGIN_WAIT={};
+/* 服务端真实登录阶段（r-登录体验）：LOGIN_WAIT 只记「点击时刻」，
+   LOGIN_PHASE 记后端此刻到底在哪一步——排队等锁 / 起浏览器 / 等用户
+   操作 / 保存中。页面被遮挡时浏览器会把 setInterval 节流到分钟级，
+   秒数必然停滞；阶段来自服务端，切回来立刻是真实值，不会被读成卡死。 */
+const LOGIN_PHASE={};
+async function loginPhasePoll(){
+ const ks=Object.keys(LOGIN_WAIT);if(!ks.length)return;
+ for(const k of ks){
+  try{
+   const r=await fetch('/api/login-phase?slot='+encodeURIComponent(k),
+     {cache:'no-store'});
+   const j=await r.json();
+   if(j&&j.ok!==false&&j.slot===k){
+    LOGIN_PHASE[k]={phase:j.phase||'',msg:j.msg||'',
+      phase_s:j.phase_s||0,at:Date.now()};}
+  }catch(e){/* 轮询失败不打扰用户，保持上一次阶段 */}
+ }
+}
+function loginPhaseLabel(k){
+ const p=LOGIN_PHASE[k]||{};
+ if(p.phase==='queued')return '排队等采集让出渠道';
+ if(p.phase==='opening')return '正在打开登录窗口';
+ if(p.phase==='waiting_user')return '窗口已打开 · 请去完成登录';
+ if(p.phase==='saving')return '正在保存会话';
+ if(p.phase==='saved')return '会话已保存';
+ if(p.phase==='error')return '登录未完成';
+ return '正在提交登录请求';
+}
+/* 秒数只作辅助：优先显示「进入当前阶段已多久」，拿不到阶段才退回
+   从点击时刻起算的总等待。绝不把自由秒表当进度。 */
+function loginWaitLabel(k,secs){
+ const p=LOGIN_PHASE[k]||{};const t=loginPhaseLabel(k);
+ let tail='';
+ if(p.phase_s>1)tail=' · '+p.phase_s+'s';
+ else if(!p.phase&&secs>=3)tail=' · 已等 '+secs+'s';
+ return t+tail;
+}
 function loginWaitTick(){
  const ks=Object.keys(LOGIN_WAIT);if(!ks.length)return;
+ loginPhasePoll();
  document.querySelectorAll('[data-loginwait]').forEach(b=>{
   const w=LOGIN_WAIT[b.dataset.loginwait];if(!w)return;
   const s=Math.round((Date.now()-w.t0)/1000);
-  b.textContent='正在打开窗口… '+s+'s'+(s>=6?' · 等采集':'');b.title=s>=6?'等采集让出该渠道':'正在打开登录窗口';
+  b.textContent=loginWaitLabel(b.dataset.loginwait,s);
+  b.title=(LOGIN_PHASE[b.dataset.loginwait]||{}).msg||'正在打开登录窗口';
   b.setAttribute('aria-busy','true');b.disabled=true;});
 }
 let LGSIG='';   /* 登录态内容签名：轮询期状态无变化不重绘（重建按钮
    会打断用户正要点按的动作件——签名防抖+失败显式失效签名） */
 const SLOT_STATUS_CN={active:'登录窗口已打开',saving:'正在保存…',pending:'已保存 · 下轮采集验证中',
- page_ok:'已保存 · 页面可访问（明细未验证）',available:'已保存 · 会话有效 · 明细可用',login_required:'需登录',
+ page_ok:'已保存 · 页面可访问（该端未跑过明细）',available:'已保存 · 会话有效 · 明细可用',login_required:'需登录',
  challenge:'需人机验证',save_error:'会话保存失败',missing:'未保存会话',saved:'已保存 · 会话待验证',
  /* r1372：设备上确实登着（账本里有出数），只是我们没导出快照——两件事必须分开写，
     否则用户看到「未保存会话」会以为系统不认他的登录。 */
@@ -21418,9 +21460,11 @@ function lgActionHTML(s){
  /* 开窗等待中：卡片被轮询重建后仍显示同一个进行中（起点在 LOGIN_WAIT）。 */
  const _w=LOGIN_WAIT[key];
  if(_w){
-  const _ws=Math.round((Date.now()-_w.t0)/1000);
-  return '<button class="btn2" disabled aria-busy="true" data-loginwait="'+he(key)+'" title="'+(_ws>=6?'等采集让出该渠道':'正在打开登录窗口')+'">正在打开窗口… '
-   +_ws+'s'+(_ws>=6?' · 等采集':'')+'</button>';
+  /* 这里只给阶段、不带秒数：秒数每 500ms 变一次，会逼着弹窗每 2 秒
+     轮询都重绘（闪屏）。细化的秒数由 loginWaitTick 直接改 textContent。 */
+  return '<button class="btn2" disabled aria-busy="true" data-loginwait="'+he(key)+'" title="'
+   +he((LOGIN_PHASE[key]||{}).msg||'正在打开登录窗口')+'">'
+   +he(loginPhaseLabel(key))+'</button>';
  }
  /* 账本说会话已失效（needs_login）时，卡片必须以「需重登」示人——
     快照文件还在 ≠ 会话有效（现场：去哪儿 App 快照已失效，卡却写「待验证」）。 */
@@ -21482,7 +21526,7 @@ const LG_DUAL={
         note:'两端都必须登录：PC 与 m 站出价/明细都要登录后才有。同一携程账号，但两域会话不共享，需要分别登录。'},
  fliggy:{title:'飞猪双端登录',pc:'fliggy',h5:'fliggy_h5',
         pcLabel:'PC 飞猪账号',h5Label:'H5 淘宝账号',
-        note:'两端都必须登录：PC 与淘宝 H5 出价/明细都要登录后才有。同一淘宝账号，但两域会话不共享，需要分别登录。'},
+        note:'两端会话独立：同一淘宝账号，PC 与 H5 需分别登录。PC 是主通路；H5 仅在 PC 被登录墙/验证拦住时兜底取数——所以 PC 正常时 H5 卡会长期显示「未跑过明细」，那不是登录失效。'},
  tongcheng:{title:'同程双端登录',pc:'tongcheng',h5:'tongcheng_h5',
         pcLabel:'PC 同程账号',h5Label:'H5 同程账号',
         note:'两端都必须登录：PC 与 m 站出价/明细都要登录后才有。同一同程账号，两域会话不共享，需要分别登录。'},
@@ -22034,6 +22078,17 @@ function lgOpenDual(plat){
  const x=_LASTKBD?m.querySelector('.x'):null;if(x)try{x.focus()}catch(e){}
 }
 function lgOpenFliggy(){lgOpenDual('fliggy')}
+/* 双端弹窗重绘（r-登录体验）：列表每 2 秒轮询一次，原先无条件
+   innerHTML 重写——弹窗开着时画面每 2 秒闪一下、按钮停在旧阶段文案
+   （POST 返回后 LOGIN_WAIT 已删，重建时才会刷新，而重建又被下一步
+   覆盖）。改为内容签名去重：阶段没变就不动 DOM；force=true 时强制
+   重绘（用户点了登录/完成，必须立刻反映）。 */
+function lgRefreshDual(force){
+ const m=$('lgModal');
+ if(!m||!m.classList.contains('open')||m.dataset.kind!=='dual')return;
+ const h=lgDualModalHTML(m.dataset.plat||'fliggy');
+ if(force||m._dualSig!==h){m._dualSig=h;m.innerHTML=h;}
+}
 function lgCloseModal(){
  const m=$('lgModal'),k=$('lgMask');
  if(m&&m.dataset.kind==='app'){appLoginClose();return}
@@ -22161,10 +22216,10 @@ function renderLoginCards(force){
          .filter(Boolean).join(' '))
     : (v?v.label:slotStatusCn(st));
   const _stText=_appRow?appLoginStatusCn(st):(v?v.label:slotStatusCn(st));
-  /* r1028：双端半格只有 113px，完整状态句「已保存 · 页面可访问（明细未验证）」
+  /* r1028：双端半格只有 113px，完整状态句「已保存 · 页面可访问（该端未跑过明细）」
      实测 scrollWidth 173 / clientWidth 113 被 ellipsis 切掉一半。半格改用
      等义短句；完整句仍进 title，卡片状态徽标不受影响。 */
-  const _tightCn={'已保存 · 页面可访问（明细未验证）':'页面可达·明细待验',
+  const _tightCn={'已保存 · 页面可访问（该端未跑过明细）':'页面可达·未跑明细',
                   '已保存 · 会话有效 · 明细可用':'会话有效·明细可用',
                   '已保存 · 下轮采集验证中':'验证中',
                   '已保存 · 会话待验证':'已保存·待验证'};
@@ -22221,13 +22276,9 @@ function renderLoginCards(force){
  }).join('')+'</div>';
  /* r1063 T185：双端弹窗是静态快照——卡片重绘后必须同步刷新它，
     否则登录窗开了、会话也存了，弹窗里那条 lane 还写着「弹窗登录」，
-    用户就找不到「我已登录完成」（现场：同程 H5 已登进去但弹窗没变）。 */
- try{
-  const _m=$('lgModal');
-  if(_m&&_m.classList.contains('open')&&_m.dataset.kind==='dual'){
-   _m.innerHTML=lgDualModalHTML(_m.dataset.plat||'fliggy');
-  }
- }catch(e){}
+    用户就找不到「我已登录完成」（现场：同程 H5 已登进去但弹窗没变）。
+    r-登录体验：改为签名去重，阶段没变不重写 DOM（否则每 2 秒闪一次）。 */
+ try{lgRefreshDual(false)}catch(e){}
 }
 let CHLINK_CFG_LOADED=false;
 var CHLINK_CFG_DATA=null;
@@ -22900,7 +22951,7 @@ async function loginStart(p,b,slot){
    只改当前按钮节点，不触发列表重建（重建会立刻把中间态换掉）。 */
  const key=slot||p;
  const _lb=b?b.textContent:'';
- if(b){b.textContent='正在打开窗口…';b.setAttribute('aria-busy','true');b.disabled=true;
+ if(b){b.textContent='正在提交登录请求';b.setAttribute('aria-busy','true');b.disabled=true;
   b.classList.add('busy');}
  /* 等待要看得见地在走（用户报「弹得比较慢」）：接口是同步的，最长等
     45 秒（窗口真开成才返回），期间按钮若只有静态四个字，读作卡死。
@@ -22908,17 +22959,21 @@ async function loginStart(p,b,slot){
     实测慢的场景几乎都是撞上采集占着渠道锁，而不是浏览器起不来。 */
  const _t0=Date.now();let _tick=null;
  LOGIN_WAIT[key]={t0:_t0};
+ delete LOGIN_PHASE[key];
  if(!window._LOGIN_WAIT_TIMER)window._LOGIN_WAIT_TIMER=setInterval(loginWaitTick,500);
  if(b){_tick=setInterval(()=>{
    if(!b.isConnected){clearInterval(_tick);return}
-   /* 用 Date.now 差值而不是自增计数：后台标签页会把 setInterval
-     节流到 1 分钟，自增计数会停在很离谱的数字上（实测停在 6s），
-     用户切回来看到的进度就不对。 */
+   /* 文案来自服务端阶段（loginPhaseLabel）；秒数只是辅助。
+      后台标签页会把 setInterval 节流到 1 分钟，因此绝不拿秒数当进度。 */
    const s=Math.round((Date.now()-_t0)/1000);
-   b.textContent='正在打开窗口… '+s+'s'+(s>=6?' · 等采集':'');b.title=s>=6?'等采集让出该渠道':'正在打开登录窗口';
+   b.textContent=loginWaitLabel(key,s);
+   b.title=(LOGIN_PHASE[key]||{}).msg||'正在打开登录窗口';
  },500);}
  const _restore=()=>{if(_tick)clearInterval(_tick);
-  delete LOGIN_WAIT[key];
+  delete LOGIN_WAIT[key];delete LOGIN_PHASE[key];
+  /* 立刻让开着的双端弹窗重绘：否则它的按钮会停在上一个阶段文案
+     （「正在打开登录窗口 · Ns」），用户找不到「我已登录完成」。 */
+  try{lgRefreshDual(true)}catch(e){}
   if(!b||!b.isConnected)return;
   b.textContent=_lb;b.removeAttribute('aria-busy');b.disabled=false;b.classList.remove('busy');};
  try{const r=await fetch('/api/login',{method:'POST',
@@ -22935,7 +22990,7 @@ async function loginStart(p,b,slot){
      +'——请在窗口完成登录，回这里点「我已登录完成」','ok');}
   else if(j.kind==='no_gui')toast('⚠ 这台服务没有图形界面，弹不出登录窗口。请在桌面环境运行后登录，或把 user_data 拷过来；详情见「渠道登录」每张卡的说明。','err');
   else if(j.kind==='window_failed')toast('⚠ '+(j.err||'登录窗口没能打开')+'（可在「渠道健康 → 诊断卡 → 自检」确认浏览器是否可用）','err');
-  else toast(heFriendly(j.err)||'启动失败','err');
+  else toast(heFriendly(j.err,260)||'启动失败','err');
  }catch(e){toast('请求失败','err');}
  _restore();b.classList.remove('busy');setTimeout(loadLogin,400);}
 /* 打开人机验证**被拦页**（r805cg）：URL 由服务端从账本取，不接受客户端
@@ -22944,15 +22999,16 @@ async function loginChallenge(key,b){
  if(b&&b.classList.contains('busy'))return;
  if(b){b.classList.add('busy');b.disabled=true;}
  LOGIN_WAIT[key]={t0:Date.now()};
+ delete LOGIN_PHASE[key];
  if(!window._LOGIN_WAIT_TIMER)window._LOGIN_WAIT_TIMER=setInterval(loginWaitTick,500);
  try{
   const r=await fetch('/api/login-challenge',{method:'POST',
    headers:{'Content-Type':'application/json'},body:JSON.stringify({slot:key})});
   const j=await r.json();
   if(j.ok)toast('验证窗口已打开——请在被拦页面完成验证，完成后关闭窗口（会话会自动保存）','ok');
-  else toast(heFriendly(j.err)||'验证窗口打不开','err');
+  else toast(heFriendly(j.err,260)||'验证窗口打不开','err');
  }catch(e){toast('请求失败','err');}
- delete LOGIN_WAIT[key];
+ delete LOGIN_WAIT[key];delete LOGIN_PHASE[key];
  if(b&&b.isConnected){b.disabled=false;b.classList.remove('busy');}
  setTimeout(loadLogin,400);
 }
@@ -22964,8 +23020,12 @@ async function loginFinish(plat,b,slot){if(b&&b.classList.contains('busy'))retur
   headers:{'Content-Type':'application/json'},
   body:JSON.stringify({platform:plat,slot:p})});
   const j=await r.json();
-  toast(j.ok?'✅ 会话已保存；下一轮采集验证后自动更新状态（无需重启）'
-   :'⚠ '+(j.err||'操作失败'),j.ok?'ok':'err');
+  /* r-登录体验：保存是后台异步收尾，这里只能确认「请求已受理」。
+     原先一律 toast「✅ 会话已保存」，后台判定失败时就是假成功
+     （用户以为登好了，卡片随后又跳回「需登录」）。改成中性口径，
+     真实结果由卡片状态（lgFinishWatch 跟 10 秒）呈现。 */
+  toast(j.ok?'⏳ 已提交保存，正在校验会话（卡片状态会自动更新）'
+   :'⚠ '+(heFriendly(j.err,260)||'操作失败'),j.ok?'ok':'err');
   if(j.ok){lgFinishWatch(p,10);loadChannelState(true)}   /* 短周跟到 active 翻落（保存是异步尾部） */
  }catch(e){toast('请求失败','err');}
  if(b)b.classList.remove('busy');
@@ -26401,6 +26461,7 @@ function buildForm(){if(!CFG)return;let h='',gh='';
     +(_rtOn(r)?_dateRowHTML(i,j,'r'):'')
     +`
     <div class="srow"><div class="slab"><b>心理价</b><div class="shint">低于即触发强提醒 · 0=关（按明细展示价判定，含税渠道已含税）</div></div><div class="sctl" style="flex-wrap:wrap;justify-content:flex-end;gap:6px"><span class="sunit" style="font-weight:700">￥直飞</span><input type="number" min="0" step="10" class="keyin" value="${esc(r.alert_direct||0)}" onchange="setRoute(${i},${j},'alert_direct',this.value)"><span class="chip schip${r.direct_only?' on':''}" title="只盯直飞：关闭中转提醒并收起中转价，再点恢复" onclick="toggleDirectOnly(${i},${j},this)">只要直飞</span><span class="sunit trlab" style="display:${r.direct_only?'none':''}">/ ￥中转</span><input type="number" min="0" step="10" class="trprice" style="width:88px;display:${r.direct_only?'none':''}" value="${esc(r.alert_transfer||0)}" onchange="setRoute(${i},${j},'alert_transfer',this.value)"><span class="sunit" style="font-weight:700">￥总阈值</span><input type="number" min="0" step="10" class="keyin" style="width:88px" title="旧版单一总阈值：命中即提醒，不分直飞/中转。0=关。新配置建议用左侧分项" value="${esc(r.alert_threshold||0)}" onchange="setRoute(${i},${j},'alert_threshold',this.value)"></div></div>
+    <div class="srow"><div class="slab"><b>含托运提醒线</b><div class="shint">填了才启用「按托运分档」：<b>未标注 / 无免费托运</b>的班次走上面的 ￥直飞，<b>明确含免费托运</b>（词面有 kg 数）的班次走这一条；两边各自判达标，取相对更划算的一条推送。0=不启用分档（沿用单一 ￥直飞）</div></div><div class="sctl"><span class="sunit" style="font-weight:700">￥含托运</span><input type="number" min="0" step="10" class="keyin" value="${esc(r.alert_direct_bag||0)}" onchange="setRoute(${i},${j},'alert_direct_bag',this.value)"></div></div>
     <div class="rthead" role="button" tabindex="0" aria-expanded="false" onclick="foldRtadv(this)" title="智能预设/航司白名单(!排除)/排除廉航/经停/共享/行李直挂/衔接窗口/最晚到达/价格上限/最长飞行时长/排除跨天/出发与到达时段——精准需求展开微调，默认值即可用"><b>筛选与时段约束</b><span class="rfsum" id="rfsum-${i}-${j}">${esc(_rfSummary(r))}</span><span class="rfltbadge" id="rfdcnt-${i}-${j}" style="display:${_rfCount(r)?'':'none'}">${_rfCount(r)?'筛 '+_rfCount(r)+' 项':''}</span><span class="chev">▾</span></div>
     <div class="rfpresets"><span class="rfl">智能预设</span>
      <span class="chip schip${_presetOn(r,'easy')?' on':''}" title="只看直飞：关闭中转提醒并剔除经停/共享/廉航" onclick="applyRoutePreset(${i},${j},'easy',this)">省心直飞</span>

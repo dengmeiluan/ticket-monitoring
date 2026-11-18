@@ -160,6 +160,12 @@ class FliggyH5Crawler(BaseCrawler):
     name = "fliggy"
     profile_name = "fliggy_h5"
     use_mobile = True
+    # 淘宝 H5 的登录凭证（r-登录态修复）：此前本类**没有声明**
+    # AUTH_COOKIES，base._state_has_auth 见状直接返回 False——用户在
+    # 淘宝登录页输完账号，工具仍判「未检测到登录凭证」，下一轮继续弹窗，
+    # 形成永远登不进去的死循环。unb/tracknick 只在登录后下发，
+    # _tb_token_ 匿名就有，故不列入。
+    AUTH_COOKIES = ("unb", "tracknick")
 
     def login_url(self) -> str:
         return H5_SEARCH_URL

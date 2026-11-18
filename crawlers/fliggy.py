@@ -37,6 +37,13 @@ class FliggyH5Login(BaseCrawler):
     name = "fliggy_h5"
     use_mobile = True
     login_mobile = True
+    # 淘宝 H5 登录凭证（r-登录态修复）：登录槽位用的是**这个类**（见
+    # core/login_slots.py::slot_crawler），不是 crawlers/fliggy_h5.py 的
+    # 采集器。此前两个类都没声明 AUTH_COOKIES，base._state_has_auth 见空
+    # 名单直接返回 False——用户在淘宝登录页登完，工具仍判「未检测到登录
+    # 凭证」，下一轮接着弹窗，形成永远登不进去的死循环。
+    # _tb_token_ 匿名就下发，不能当凭证；unb/tracknick 登录后才有。
+    AUTH_COOKIES = ("unb", "tracknick")
 
     def login_url(self) -> str:
         from core.login_slots import FLIGGY_H5_LOGIN_URL
