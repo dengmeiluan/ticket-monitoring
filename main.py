@@ -587,6 +587,9 @@ def _fail_evidence(paths):
       熔断跳过）。这是 r1063 T8/T9 之后最常见的「非失败」证据：策略里停用
       一条通路就记一条 `paced`，若把它当失败交上去，一条被停用的通路就能
       把**整家渠道**熔断——正是链路闸门要挡的连坐。
+    * `unsupported` —— **能力边界**（App 渠道的日期视野 `reject_far_dates`
+      / 本渠道不支持的通路）。它不是对方拒绝，重试一万次也不会变好，
+      拿它当证据只会把「渠道查不了这个日期」升级成「这家渠道坏了」。
 
     比较前先 `strip().lower()`：`path_note()` 只收 `PATH_STATUS` 里的字面量，
     但 `main.py` 自己会往 `c.paths` 里补行（软拒合成），渠道未来也可能直接
@@ -599,7 +602,7 @@ def _fail_evidence(paths):
     拼 `note`（同样只能拼真失败的说明）。各写一遍必然漏一处，而漏的那一处
     会静默改变熔断行为。
     """
-    drop = ("ok", "calendar", "empty", "paced")
+    drop = ("ok", "calendar", "empty", "paced", "unsupported")
     return [x for x in (paths or [])
             if str((x or {}).get("status") or "").strip().lower() not in drop]
 
@@ -632,6 +635,28 @@ def _evidence_path(rows):
     seen = {str((r or {}).get("path") or "").strip() for r in (rows or [])}
     seen.discard("")
     return seen.pop() if len(seen) == 1 else ""
+
+
+def _round_non_attempt(paths) -> bool:
+    """这一轮**根本没打站点**吗（能力边界 / 我方让位 / 纯基础设施步骤）？
+
+    判据复用 `core.yield_stats.is_non_attempt()`——账本侧早就按这个口径把
+    这类轮次排除出成功率分母了，主扫描侧此前**没接**：于是 App 渠道因为
+    「日期超出 62 天视野」每轮记一条 `unsupported`，被当成一次断供。
+
+    后果是连续 N 轮就推「[渠道告警] 携程 App 连续 34 轮无数据」，正文还
+    写着「可能原因：验证码/限流、会话失效、页面改版」，把排查引向完全
+    错误的方向；而只要航线日期在视野之外，这个告警**必然复现且永不恢复**
+    （2026-11-25 实录：6 条航线全在 2027-02，App 视野最远 2027-01-26）。
+
+    为什么要有这个函数：`_timed_fetch` 的返回元信息、渠道告警计数、健康
+    分母、失败换道四处都要同一个结论，各写一遍必然漂移。
+    """
+    try:
+        from core.yield_stats import is_non_attempt
+        return bool(is_non_attempt(paths))
+    except Exception:
+        return False
 
 
 def _dim_of_query(ret_dates):
@@ -2811,6 +2836,7 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
         PULSE.begin()
         ch_rows = {}   # 渠道 → 本轮合计行数（整轮零记录哨输入）
         _paced_n = [0]  # 本轮被节流主动跳过的渠道查询数（可观测）
+        _nonatt_n = [0]  # 本轮能力边界轮数（App 日期超视野等，不算断供）
         _ran_plats = set()  # 本轮真正发过请求的渠道（告警只对它们计数）
         qry_sup = {}   # 渠道 → {dom/intl: [有记录查询数, 采集查询数]}
         # （部分断供哨输入，c330 F1 起按域分流：intl 结构性零供给面
@@ -3063,12 +3089,17 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
             prices = _prices
             paths = _paths
             _soft = any(x.get("status") == "soft_reject" for x in paths)
-            if pac is not None:
+            # 非采集轮（能力边界/我方让位/基础设施）：**不产数，但也不算断供**。
+            # 早退的 App 渠道（日期超视野）与登录墙让位都落在这里——把它们
+            # 记成失败会同时污染三处：yield_stats 成功率、渠道零数据告警、
+            # 失败换道（换过去还是同一条能力边界，白烧设备时间）。
+            _non_attempt = (not prices) and _round_non_attempt(paths)
+            if pac is not None and not _non_attempt:
                 try:
                     pac.note_result(c.name, ok=bool(prices), soft=bool(_soft))
                 except Exception:
                     pass
-            if pac is not None and not prices and not _soft:
+            if pac is not None and not prices and not _soft and not _non_attempt:
                 try:
                     if _gen is None or rt.get("_round_gen") == _gen:
                         rt.setdefault("failed", {}).setdefault(
@@ -3262,7 +3293,7 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
                                  float(_gate_s or 0.0)))
             except Exception:
                 pass
-            return prices, "ok"
+            return prices, ("non_attempt" if _non_attempt else "ok")
 
         # 往返回程日旁挂（R15，INTL_DESIGN §2.6；r339 多返程扩展）：
         # 查询键 (fc,tc,d) → 返程日列表——同键多用户取并集（去重保
@@ -3517,6 +3548,14 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
                         except Exception:
                             pass
                         continue
+                    if _meta == "non_attempt":
+                        # 能力边界轮（App 日期超视野 / 本渠道不支持该通路）：
+                        # 请求可能发出去了，但**注定零行**。计进 ch_rows 会让
+                        # 「渠道连续零数据」告警永真，计进健康分母会把比率
+                        # 拉红，交给换道还会去试同一条边界——三处都错。
+                        # 与 paced 同处置：不进任何「断供」口径，只计数可观测。
+                        _nonatt_n[0] += 1
+                        continue
                     _ran_plats.add(_nm)
                     all_prices.extend(prices)
                     _flush_now(prices)   # r1778：采到即落库
@@ -3703,13 +3742,22 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
                             logger=logger)
                         _got = 0
                         _app_paced = False
+                        _app_nonatt = False
                         for _nm2, _res2 in _r2:
-                            _paced2 = (isinstance(_res2, tuple)
-                                      and len(_res2) == 2 and _res2[1] == "paced")
+                            _meta2 = (_res2[1] if isinstance(_res2, tuple)
+                                      and len(_res2) == 2 else "ok")
+                            _paced2 = _meta2 == "paced"
                             _pr2 = (_res2[0] if isinstance(_res2, tuple)
                                    and len(_res2) == 2 else (_res2 or []))
                             if _paced2:
                                 _app_paced = True
+                                continue
+                            if _meta2 == "non_attempt":
+                                # 能力边界（App 日期超视野等）：换道过去也
+                                # 注定零行。不算回采失败，更不能把这个渠道
+                                # 写进 ch_rows——整轮零记录哨只认 ch_rows，
+                                # 写进去就变成「渠道连续 N 轮零记录」永真。
+                                _app_nonatt = True
                                 continue
                             _got += len(_pr2 or [])
                             all_prices.extend(_pr2 or [])
@@ -3744,6 +3792,8 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
                                     .get("kind") or "")
                                 if _app_paced:
                                     _rs = "App 通路被节流"
+                                elif _app_nonatt:
+                                    _rs = "App 通路能力边界（如日期超出视野）"
                                 elif _app_kind:
                                     _rs = "App 通路也被拦（%s）" % _app_kind
                                 else:
@@ -3839,6 +3889,10 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
                     _fast + _slow + _ttl, _fast, _slow, _ttl, _paced_n[0],
                     len(_lr.get("trips") or []),
                     ",".join(_lr.get("busy") or []) or "无")
+                if _nonatt_n[0]:
+                    logger.info(
+                        "[节流] 其中 %d 次是能力边界轮（如 App 日期超出视野），"
+                        "不计断供、不进健康分母", _nonatt_n[0])
             except Exception as _pe:
                 logger.warning("[节流] 账本汇总失败: %s", _pe)
         # 渠道级告警：连续 N 轮零数据主动推一条（不替代面板，只是别让人
