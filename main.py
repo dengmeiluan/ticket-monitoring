@@ -3471,6 +3471,18 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
             for _src0, _app0 in list((_preload or {}).items()):
                 if _src0 in plats and _app0 not in plats:
                     plats.add(_app0)
+            # r1810 的视野过滤发生在「订阅平台并集」那一刻，而反补/预置换道
+            # 之后还会往 plats 里加 App 孪生——超视野的 App 就这样又混回来，
+            # 白起一次设备（账本里正是 `app-date unsupported`）。这里复滤一次：
+            # 过滤是幂等的，已经滤掉的不再出现，只有新加进来的会被剔。
+            try:
+                plats, _far2 = _drop_far_app_channels(plats, d, cfg)
+                for _fp2, _hz2 in _far2:
+                    logger.info("[规划] %s 不采 %s：超出 App 视野 %d 天"
+                                "（交浏览器通路）", _fp2, d, _hz2)
+            except Exception as _fe2:
+                logger.warning("[规划] App 视野复滤失败，照常派发: %s",
+                               str(_fe2)[:80])
             _crawlers = get_crawlers(plats)
             _chans = [c.name for c in _crawlers]
             for c in _crawlers:
@@ -3715,6 +3727,24 @@ def make_sweep_job(cfg, rt, logger, storage, charts_fn):
                             except Exception:
                                 pass
                         continue
+                    # 第二波换道走 `plan_switch` 挑 App，不经过 r1810 的规划
+                    # 过滤：日期超视野时换过去必然零行，白起一次设备，还会
+                    # 让这个 App 渠道背上「连续 N 轮零数据」（2026-11-25 实录：
+                    # 携程网页被拦 → 换 app_ctrip → 6 条航线全在 2027-02，
+                    # 34 轮零数据后误推「验证码/限流」告警）。
+                    try:
+                        _kept3, _far3 = _drop_far_app_channels({_app}, d, cfg)
+                        if _app not in _kept3:
+                            _hz3 = _far3[0][1] if _far3 else 0
+                            logger.info("[换道] %s 不换 %s：%s 超出 App 视野 "
+                                        "%d 天（交浏览器通路）",
+                                        _nm, _app, d, _hz3)
+                            if rt.get("pacing") is not None:
+                                rt["pacing"].note_failover(
+                                    reason="目标 App 超出日期视野")
+                            continue
+                    except Exception:
+                        pass
                     try:
                         _apps = get_crawlers([_app])
                     except Exception as _ae:

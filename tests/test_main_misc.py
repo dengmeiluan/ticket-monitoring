@@ -17,6 +17,7 @@ fixture 以 `# ---- merged from ... ----` 分段原样保留；
 """
 from support_webui_src import webui_full_src
 
+import io
 import json
 import main
 import main as M
@@ -489,3 +490,30 @@ def test_wal_companion_files_migrate_with_db(tmp_path, monkeypatch):
     assert not (tmp_path / "old" / "prices.db-shm").exists()
     assert (tmp_path / "new" / "prices.db-wal").exists() or not (
         tmp_path / "old" / "prices.db-wal").exists()
+
+
+def test_filter_is_rewired_after_preload():
+    """反补/预置换道会把 App 孪生加回来，加完必须再滤一次。
+
+    r1810 的过滤在「订阅平台并集」之后执行，而反补（plan_backstop）与
+    `_preload` 都在它**之后**才往 plats 里加 App——不加这道复滤，超视野的
+    App 会重新混进派发集合，白起一次设备（账本 `app-date unsupported`）。
+    """
+    src = io.open(os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "main.py"), encoding="utf-8").read()
+    i_pre = src.index("for _src0, _app0 in list((_preload or {}).items()):")
+    i_again = src.index("plats, _far2 = _drop_far_app_channels(plats, d, cfg)",
+                        i_pre)
+    i_crawl = src.index("_crawlers = get_crawlers(plats)", i_pre)
+    assert i_pre < i_again < i_crawl, (i_pre, i_again, i_crawl)
+
+
+def test_switch_target_respects_horizon():
+    """第二波换道目标也要过视野过滤（`plan_switch` 不经过规划过滤）。"""
+    src = io.open(os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "main.py"), encoding="utf-8").read()
+    i_switch = src.index("_app, _why = _fo.plan_switch(")
+    i_guard = src.index("_kept3, _far3 = _drop_far_app_channels({_app}, d, cfg)",
+                        i_switch)
+    i_crawl = src.index("_apps = get_crawlers([_app])", i_switch)
+    assert i_switch < i_guard < i_crawl, (i_switch, i_guard, i_crawl)
