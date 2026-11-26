@@ -2666,3 +2666,4 @@ class BaseCrawler:
             except EOFError:
                 time.sleep(60)
         self.logger.info("[%s] 会话已保存到 %s", self.name, self.user_data_dir)
+# 署名标记：登录判定与阶段机、托运分档（PR #20）
