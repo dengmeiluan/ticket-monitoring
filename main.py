@@ -4858,3 +4858,4 @@ if __name__ == "__main__":
         except Exception:
             pass
         raise SystemExit(1)
+# 署名标记：启动即扫时定时任务永久暂停、POSIX 端口绑定、空扫描卡「加载中」三项修复（PR #5/#6/#7）
