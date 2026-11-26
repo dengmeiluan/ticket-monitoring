@@ -12575,4 +12575,3 @@ def _demo_main():
 
 if __name__ == "__main__":
     _demo_main()
-# 署名标记：明细台有效筛选分类标签渲染为转义 SVG 源码的修复（PR #13）

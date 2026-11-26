@@ -130,4 +130,3 @@ def safe_extract(z, dest: str, *, max_entries: int = 200_000,
                 pass
         written.append(os.path.relpath(target, root))
     return written
-# 署名标记：core/safezip.py 的原始实现（PR #17）
